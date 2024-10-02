@@ -1,22 +1,22 @@
 from pylab import *
 from numpy import *
 from scipy.optimize import minimize
+import sys
+import os
 
-# import sys
-# import os
-import Model
+# import Model
 
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
-# from process import data, get_similarity_matrix, get_frequencies, get_category
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
+from process import data, get_similarity_matrix, get_frequencies, get_category
 from helpers import d2np
 
 
-class Hills(Model):
-    # def __init__(self):
-    #     self.data = data
-    #     self.sim_mat = get_similarity_matrix()
-    #     self.freq = get_frequencies()
-    #     self.animal_to_category = get_category()
+class Hills:
+    def __init__(self, hills_data, sim_mat, freq, animal_to_category):
+        self.data = hills_data
+        self.sim_mat = sim_mat
+        self.freq = freq
+        self.animal_to_category = animal_to_category
 
     def only_freq(self, word, beta):
         num = pow(self.freq[word], beta[0])
@@ -46,20 +46,12 @@ class Hills(Model):
     def one_cue_static_global(self, beta, seq):
         nll = 0
         for i in range(0, len(seq)):
-            # num = pow(self.freq[seq[i]], beta[0])
-            # den = sum(pow(d2np(self.freq), beta[0]))
-            # nll += -np.log(num / den)
             nll += self.only_freq(seq[i], beta)
         return nll
 
     def one_cue_static_local(self, beta, seq):
         nll = 0
         for i in range(1, len(seq)):
-            # num = pow(self.sim_mat[seq[i - 1]][seq[i]], beta[0])
-            # den = sum(
-            #     pow(d2np(self.sim_mat[seq[i - 1]]), beta[0])
-            # )  # if [a,b,c] is np array then pow([a,b,c],d) returns [a^d, b^d, c^d]
-            # nll += -np.log(num / den)
             nll += self.only_sim(seq[i], seq[i - 1], beta)
         return nll
 
@@ -67,18 +59,8 @@ class Hills(Model):
         nll = 0
         for i in range(0, len(seq)):
             if i == 0:
-                # num = pow(self.freq[seq[i]], beta[0])
-                # den = sum(pow(d2np(self.freq), beta[0]))
                 nll += self.only_freq(seq[i], beta)
             else:
-                # num = pow(self.freq[seq[i]], beta[0]) * pow(
-                #     self.sim_mat[seq[i - 1]][seq[i]],
-                #     beta[1],
-                # )
-                # den = sum(
-                #     pow(d2np(self.freq), beta[0])
-                #     * pow(d2np(self.sim_mat[seq[i - 1]]), beta[1])
-                # )
                 nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
         return nll
 
@@ -90,18 +72,8 @@ class Hills(Model):
                 or self.animal_to_category[seq[i]]
                 != self.animal_to_category[seq[i - 1]]
             ):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
-                # num = pow(self.freq[seq[i]], beta[0])
-                # den = sum(pow(d2np(self.freq), beta[0]))
                 nll += self.only_freq(seq[i], beta)
             else:
-                # num = pow(self.freq[seq[i]], beta[0]) * pow(
-                #     self.sim_mat[seq[i - 1]][seq[i]],
-                #     beta[1],
-                # )
-                # den = sum(
-                #     pow(d2np(self.freq), beta[0])
-                #     * pow(d2np(self.sim_mat[seq[i - 1]]), beta[1])
-                # )
                 nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
         return nll
 
@@ -109,8 +81,6 @@ class Hills(Model):
         nll = 0
         for i in range(0, len(seq)):
             if i == 0:
-                # num = pow(self.freq[seq[i]], beta[0])
-                # den = sum(pow(d2np(self.freq), beta[0]))
                 nll += self.only_freq(seq[i], beta)
             else:
                 try:
@@ -119,34 +89,20 @@ class Hills(Model):
                     sim3 = self.sim_mat[seq[i]][seq[i + 1]]
 
                     if sim1 > sim2 < sim3:
-                        # num = pow(self.freq[seq[i]], beta[0])
-                        # den = sum(pow(d2np(self.freq), beta[0]))
                         nll += self.only_freq(seq[i], beta)
                     else:
-                        # num = pow(self.freq[seq[i]], beta[0]) * pow(
-                        #     self.sim_mat[seq[i - 1]][seq[i]],
-                        #     beta[1],
-                        # )
-                        # den = sum(
-                        #     pow(d2np(self.freq), beta[0])
-                        #     * pow(d2np(self.sim_mat[seq[i - 1]]), beta[1])
-                        # )
                         nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
                 except:
-                    # num = pow(self.freq[seq[i]], beta[0]) * pow(
-                    #     self.sim_mat[seq[i - 1]][seq[i]],
-                    #     beta[1],
-                    # )
-                    # den = sum(
-                    #     pow(d2np(self.freq), beta[0])
-                    #     * pow(d2np(self.sim_mat[seq[i - 1]]), beta[1])
-                    # )
                     nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
         return nll
 
 
 if __name__ == "__main__":
-    models = Hills()
+    sim_mat = get_similarity_matrix()
+    freq = get_frequencies()
+    animal_to_category = get_category()
+
+    models = Hills(data, sim_mat, freq, animal_to_category)
 
     opt_one_cue_static_global = minimize(
         lambda beta: models.one_cue_static_global(beta, ["dog", "cat", "rat", "goat"]),

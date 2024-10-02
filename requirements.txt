@@ -6,3 +6,6 @@ transformers
 sentence_transformers
 scikit-learn
 scipy
+ipywidgets
+ipython
+seaborn
