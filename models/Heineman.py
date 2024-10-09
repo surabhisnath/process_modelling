@@ -37,8 +37,6 @@ class Heineman:
         nll = -np.log(num / den)
         return nll
 
-
-
     def subcategory(self, beta, seq):
         nll = 0
         for i in range(0, len(seq)):
