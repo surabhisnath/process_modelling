@@ -10,3 +10,5 @@ ipywidgets
 ipython
 seaborn
 hmmlearn
+wikipedia-api
+bs4
