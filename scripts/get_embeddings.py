@@ -38,12 +38,12 @@ if __name__ == "__main__":
 
     # Note: #words allowed = #tokens/2
     models = [
-        # "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
-        # "dunzhang/stella_en_1.5B_v5",
-        "thenlper/gte-large",
-        "jxm/cde-small-v1",
+        "Alibaba-NLP/gte-Qwen2-1.5B-instruct",
+        "dunzhang/stella_en_1.5B_v5",
+        # "thenlper/gte-large",
+        # "jxm/cde-small-v1",
     ]
-    model_to_id = dict(zip(models, ["gtelarge", "jxm"]))
+    model_to_id = dict(zip(models, ["qwen", "stella"]))
     contexts = ["brick", "paperclip", "animal"]
     context_to_contexttext = dict(
         zip(contexts, [wiki.page(context).summary for context in contexts])
