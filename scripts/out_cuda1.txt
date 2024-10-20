@@ -1,0 +1,10 @@
+dunzhang/stella_en_400M_v5
+nocontext
+paperclip
+Plastic
+Torsion_(mechanics)
+Elasticity_(physics)
+Friction
+Metal
+Spring_(device)
+Binder_clip

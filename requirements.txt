@@ -12,3 +12,4 @@ seaborn
 hmmlearn
 wikipedia-api
 bs4
+xformers
