@@ -13,3 +13,4 @@ hmmlearn
 wikipedia-api
 bs4
 xformers
+together
