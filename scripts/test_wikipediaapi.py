@@ -17,6 +17,7 @@ def get_summary_and_links(page_title):
         return
 
     # Extract summary
+    print(page)
     summary = page.summary
 
     # Extract links in the summary
@@ -26,7 +27,8 @@ def get_summary_and_links(page_title):
 
 
 # Example usage
-page_title = "paperclip"
+# page_title = "Wikipedia:Contents/Culture_and_the_arts"
+page_title = "Culture"
 summary, linked_pages = get_summary_and_links(page_title)
 
 print("Summary:")
