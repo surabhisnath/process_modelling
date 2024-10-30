@@ -1,12 +1,6 @@
 dunzhang/stella_en_400M_v5
-nocontext
-brick
-Masonry
-Clay
-Mortar_(masonry)
-Brickworks
-Concrete_masonry_unit
-Expanded_clay_aggregate
-Building_material
-Mudbrick
-Brickwork
+culture
+geography
+health
+humanbehaviour
+mathematics
