@@ -33,7 +33,7 @@ tasks = ["autbrick", "autpaperclip", "vf"]
 
 for i, textset in enumerate(texts):
     
-    for contextname, contexttext in wikipedia_contexts.items():
+    for contextname, contexttext in wikipedia_contexts[tasks[i]].items():
         # 3. First stage: embed the context docs
 
         dataset_embeddings = model.encode(
