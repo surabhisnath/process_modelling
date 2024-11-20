@@ -3,13 +3,15 @@ from datasets import load_dataset
 import torch
 import pandas as pd
 import pickle as pk
+import transformers
+from tqdm.autonotebook import tqdm
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # 1. Load the Sentence Transformer model
-model = SentenceTransformer("../../models/cde-small-v1", trust_remote_code=True)
-print(type(model))
-print(model)
+# model = SentenceTransformer("../../models/cde-small-v1", trust_remote_code=True)
+model = transformers.AutoModel.from_pretrained("../../models/cde-small-v1-transformers/", trust_remote_code=True)
+tokenizer = transformers.AutoTokenizer.from_pretrained("../../models/bert-base-uncased-tokenizer/")
 model_id = "jxm"
 model = model.to(device)
 
@@ -30,34 +32,70 @@ texts_vf = data[data["task"] == 1]["response"].unique().tolist()
 texts = [texts_autbrick, texts_autpaperclip, texts_vf]
 tasks = ["autbrick", "autpaperclip", "vf"]
 
-
-for i, textset in enumerate(texts):
+for taskid, textset in enumerate(texts):
+    print(taskid)
+    print(tasks[taskid])
     
-    for contextname, contexttext in wikipedia_contexts[tasks[i]].items():
-        # 3. First stage: embed the context docs
-
-        dataset_embeddings = model.encode(
-            [contexttext],
-            prompt_name="document",
-            convert_to_tensor=True,
-        )
+    for contextname, contexttext in wikipedia_contexts[tasks[taskid]].items():
         
-        # 4. Second stage: embed the docs
-        doc_embeddings = model.encode(
-            textset,
-            prompt_name="document",
-            dataset_embeddings=dataset_embeddings,
-            convert_to_tensor=True,
-        )
+        minicorpus_docs = tokenizer(
+            [contexttext],
+            truncation=True,
+            padding=True,
+            max_length=512,
+            return_tensors="pt"
+        ).to(model.device)
 
-        print(doc_embeddings[0, 0:10])
+        batch_size = 1
+
+        dataset_embeddings = []
+        for i in tqdm(range(0, len(minicorpus_docs["input_ids"]), batch_size)):
+            minicorpus_docs_batch = {k: v[i:i+batch_size] for k,v in minicorpus_docs.items()}
+            with torch.no_grad():
+                dataset_embeddings.append(
+                    model.first_stage_model(**minicorpus_docs_batch)
+                )
+        dataset_embeddings = torch.cat(dataset_embeddings)
+
+        # # 3. First stage: embed the context docs
+        # dataset_embeddings = model.encode(
+        #     [contexttext],
+        #     prompt_name="document",
+        #     convert_to_tensor=True,
+        # )
+
+        docs = tokenizer(
+            textset,
+            truncation=True,
+            padding=True,
+            max_length=512,
+            return_tensors="pt"
+        ).to(model.device)
+
+        with torch.no_grad():
+            doc_embeddings = model.second_stage_model(
+                input_ids=docs["input_ids"],
+                attention_mask=docs["attention_mask"],
+                dataset_embeddings=dataset_embeddings,
+            )
+        doc_embeddings /= doc_embeddings.norm(p=2, dim=1, keepdim=True)
+        
+        # # 4. Second stage: embed the docs
+        # doc_embeddings = model.encode(
+        #     textset,
+        #     prompt_name="document",
+        #     dataset_embeddings=dataset_embeddings,
+        #     convert_to_tensor=True,
+        # )
+
+        # print(doc_embeddings[0, 0:10])
+        # print(doc_embeddings.shape)
         embeddings_dict = dict(zip(textset, doc_embeddings))
 
         contextname = contextname.replace("(", "")
         contextname = contextname.replace(")", "")
         contextname = contextname.replace("_", "")
         contextname = contextname.replace("/", "")
-
-        torch.save(embeddings_dict, f"../embeddings/embeddings_{model_id}_{tasks[i]}_{contextname}.pk")
-        print(f"Written ../embeddings/embeddings_{model_id}_{tasks[i]}_{contextname}.pk")
-    break
+        
+        torch.save(embeddings_dict, f"../embeddings/embeddings_{model_id}_{tasks[taskid]}_{contextname}.pk")
+        print(f"Written ../embeddings/embeddings_{model_id}_{tasks[taskid]}_{contextname}.pk")
