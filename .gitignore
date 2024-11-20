@@ -4,4 +4,4 @@ __pycache__
 ./embeddings/*
 ./models
 ./models/*
-scripts/together.txt
+scripts/keys.json
