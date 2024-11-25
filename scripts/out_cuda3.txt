@@ -1,6 +1,0 @@
-dunzhang/stella_en_400M_v5
-culture
-geography
-health
-human_behaviour
-mathematics
