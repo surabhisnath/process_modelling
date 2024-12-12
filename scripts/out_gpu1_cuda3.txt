@@ -2,3 +2,4 @@
   warnings.warn("Can't initialize NVML")
 Loading checkpoint shards:   0%|          | 0/7 [00:00<?, ?it/s]Loading checkpoint shards:  14%|█▍        | 1/7 [00:00<00:02,  2.37it/s]Loading checkpoint shards:  29%|██▊       | 2/7 [00:00<00:02,  2.31it/s]Loading checkpoint shards:  43%|████▎     | 3/7 [00:01<00:01,  2.28it/s]Loading checkpoint shards:  57%|█████▋    | 4/7 [00:01<00:01,  2.27it/s]Loading checkpoint shards:  71%|███████▏  | 5/7 [00:02<00:00,  2.29it/s]Loading checkpoint shards:  86%|████████▌ | 6/7 [00:02<00:00,  2.30it/s]Loading checkpoint shards: 100%|██████████| 7/7 [00:02<00:00,  2.63it/s]Loading checkpoint shards: 100%|██████████| 7/7 [00:02<00:00,  2.43it/s]
   0%|          | 0/456 [00:00<?, ?it/s]Starting from v4.46, the `logits` model output will have the same type as the model (except at train time, where it will always be FP32)
+  0%|          | 1/456 [5:16:58<2403:45:19, 19018.72s/it]
