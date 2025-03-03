@@ -13,11 +13,13 @@ import warnings
 warnings.simplefilter("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
+data = pd.read_csv("../csvs/data.csv")  # 5072 rows
+num_participants = len(data["sid"].unique())  # 141 participants
+unique_animals = sorted(data["entry"].unique())  # 358 unique animals
 
-# %%
+# extract switches
 
 # Functions
-
 
 # Get word frequencies
 def get_counts(words):
@@ -134,14 +136,14 @@ def make_TSNE(embeddings, words, clusters, show_words=False):
 def get_category(words=unique_animals):
     # TODO: HANDLE MULTI CLASS LABELS
     category_name_to_num = (
-        pd.read_excel("../../category-fluency/Final_Categories_and_Exemplars.xlsx")
+        pd.read_excel("../category-fluency/Final_Categories_and_Exemplars.xlsx")
         .reset_index()
         .set_index("Category")
         .to_dict()
     )["index"]
 
     examples = pd.read_excel(
-        "../../category-fluency/Final_Categories_and_Exemplars.xlsx",
+        "../category-fluency/Final_Categories_and_Exemplars.xlsx",
         sheet_name="Exemplars",
     )
     examples["category"] = (
@@ -172,31 +174,20 @@ def get_category_transitions(num_categories=16):
                     transition_matrix[prev, curr] += 1
                 except:
                     continue  # when NaN
-    print(transition_matrix)
     normalized_transition_matrix = transition_matrix / transition_matrix.sum(
         axis=1, keepdims=True
     )
-    print(normalized_transition_matrix)
 
     return normalized_transition_matrix
 
 
-# %%
-# if __name__ == "__main__":
-data = pd.read_csv("../csvs/data.csv")  # 5072 rows
-num_participants = len(data["sid"].unique())  # 141 participants
-unique_animals = sorted(data["entry"].unique())  # 358 unique animals
-
-frequencies = get_frequencies(data["entry"])
-embeddings = get_embeddings(unique_animals)
-similarity_matrix = get_similarity_matrix(
-    unique_animals, embeddings
-)  # but will call this fn from model class inits
-animal_to_category, num_categories = get_category(unique_animals)
-print(num_categories, type(num_categories))
-category_transition_matrix = get_category_transitions(num_categories)
-
-# extract switches
+# frequencies = get_frequencies(data["entry"])
+# embeddings = get_embeddings(unique_animals)
+# similarity_matrix = get_similarity_matrix(
+#     unique_animals, embeddings
+# )  # but will call this fn from model class inits
+# animal_to_category, num_categories = get_category(unique_animals)
+# category_transition_matrix = get_category_transitions(num_categories)
 
 # %%
 # make_TSNE(
@@ -206,5 +197,3 @@ category_transition_matrix = get_category_transitions(num_categories)
 #     unique_animals,
 #     [animal_to_category[x][0]) for x in unique_animals],
 # )
-
-# %%

@@ -7,7 +7,7 @@ import os
 # import Model
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
-from process import data, get_similarity_matrix, get_frequencies, get_category
+from process import *
 from helpers import d2np
 
 
@@ -21,6 +21,8 @@ class Hills:
     def only_freq(self, word, beta):
         num = pow(self.freq[word], beta[0])
         den = sum(pow(d2np(self.freq), beta[0]))
+        if den == 0:
+            return np.inf
         nll = -np.log(num / den)
         return nll
 
@@ -40,6 +42,8 @@ class Hills:
             pow(d2np(self.freq), beta[0])
             * pow(d2np(self.sim_mat[previous_word]), beta[1])
         )
+        if den == 0:
+            return np.inf
         nll = -np.log(num / den)
         return nll
 
@@ -67,11 +71,7 @@ class Hills:
     def combined_cue_dynamic_cat(self, beta, seq):
         nll = 0
         for i in range(0, len(seq)):
-            if (
-                i == 0
-                or self.animal_to_category[seq[i]]
-                != self.animal_to_category[seq[i - 1]]
-            ):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
+            if (i == 0 or self.animal_to_category[seq[i]] != self.animal_to_category[seq[i - 1]]):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
                 nll += self.only_freq(seq[i], beta)
             else:
                 nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
@@ -94,13 +94,14 @@ class Hills:
                         nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
                 except:
                     nll += self.both_freq_sim(seq[i], seq[i - 1], beta)
+            
         return nll
 
 
 if __name__ == "__main__":
     sim_mat = get_similarity_matrix()
     freq = get_frequencies()
-    animal_to_category = get_category()
+    animal_to_category = get_category()[0]
 
     models = Hills(data, sim_mat, freq, animal_to_category)
 
@@ -168,7 +169,7 @@ if __name__ == "__main__":
         [np.random.rand(), np.random.rand()],
     )
     print("Optimal beta:", opt_combined_cue_dynamic_cat.x)
-    print("Optimization result:", opt_combined_cue_dynamic_cat)
+    print("Optimization result:", opt_combined_cue_dynamic_cat.fun)
 
     opt_combined_cue_dynamic_simdrop = minimize(
         lambda beta: models.combined_cue_dynamic_simdrop(
