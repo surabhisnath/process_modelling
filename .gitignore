@@ -5,3 +5,4 @@ __pycache__
 ./models
 ./models/*
 scripts/keys.json
+category-fluency
