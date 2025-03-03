@@ -167,7 +167,6 @@ if __name__ == "__main__":
     models = Hills(data, sim_mat, freq, animal_to_category)
 
     sequences = data.groupby("sid").agg(list)["entry"].tolist()
-    # print(sequences)
 
     models_to_run = [
         models.one_cue_static_global,
@@ -178,7 +177,6 @@ if __name__ == "__main__":
     ]
 
     results = fit_betas_for_models(models, sequences, models_to_run)
-
     for model_name, res in results.items():
         print(f"Model: {model_name}")
         print(f"Optimal Beta: {res['optimal_beta']}")
@@ -186,98 +184,19 @@ if __name__ == "__main__":
         print()
 
     sampled_sequences = generate_sequences_for_models(models, results, seq_length=10)
-
     for model_name, seq in sampled_sequences.items():
         print(f"{model_name}: {seq}")
 
-    # opt_one_cue_static_global = minimize(
-    #     lambda beta: models.one_cue_static_global(beta, ["dog", "cat", "rat", "goat"]),
-    #     [np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_one_cue_static_global.x)
-    # print("Optimization result:", opt_one_cue_static_global.fun)
-
-    # opt_one_cue_static_global = minimize(
-    #     lambda beta: models.one_cue_static_global(
-    #         beta, ["dog", "cat", "rat", "hamster"]
-    #     ),
-    #     [np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_one_cue_static_global.x)
-    # print("Optimization result:", opt_one_cue_static_global.fun)
-
-    # opt_one_cue_static_local = minimize(
-    #     lambda beta: models.one_cue_static_local(beta, ["dog", "cat", "rat", "goat"]),
-    #     [np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_one_cue_static_local.x)
-    # print("Optimization result:", opt_one_cue_static_local.fun)
-
-    # opt_one_cue_static_local = minimize(
-    #     lambda beta: models.one_cue_static_local(
-    #         beta, ["dog", "cat", "rat", "hamster"]
-    #     ),
-    #     [np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_one_cue_static_local.x)
-    # print("Optimization result:", opt_one_cue_static_local.fun)
-
-    # opt_combined_cue_static = minimize(
-    #     lambda beta: models.one_cue_static_local(beta, ["dog", "cat", "rat", "goat"]),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_static.x)
-    # print("Optimization result:", opt_combined_cue_static.fun)
-
-    # opt_combined_cue_static = minimize(
-    #     lambda beta: models.one_cue_static_local(
-    #         beta, ["dog", "cat", "rat", "hamster"]
-    #     ),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_static.x)
-    # print("Optimization result:", opt_combined_cue_static.fun)
-
-    # opt_combined_cue_dynamic_cat = minimize(
-    #     lambda beta: models.combined_cue_dynamic_cat(
-    #         beta, ["dog", "cat", "rat", "goat"]
-    #     ),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_dynamic_cat.x)
-    # print("Optimization result:", opt_combined_cue_dynamic_cat.fun)
-
-    # opt_combined_cue_dynamic_cat = minimize(
-    #     lambda beta: models.combined_cue_dynamic_cat(
-    #         beta, ["dog", "cat", "rat", "hamster"]
-    #     ),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_dynamic_cat.x)
-    # print("Optimization result:", opt_combined_cue_dynamic_cat.fun)
-
-    # opt_combined_cue_dynamic_simdrop = minimize(
-    #     lambda beta: models.combined_cue_dynamic_simdrop(
-    #         beta, ["dog", "cat", "rat", "goat"]
-    #     ),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_dynamic_simdrop.x)
-    # print("Optimization result:", opt_combined_cue_dynamic_simdrop.fun)
-
-    # opt_combined_cue_dynamic_simdrop = minimize(
-    #     lambda beta: models.combined_cue_dynamic_simdrop(
-    #         beta, ["dog", "cat", "rat", "hamster"]
-    #     ),
-    #     [np.random.rand(), np.random.rand()],
-    # )
-    # print("Optimal beta:", opt_combined_cue_dynamic_simdrop.x)
-    # print("Optimization result:", opt_combined_cue_dynamic_simdrop.fun)
+    bleu_scores = calculate_bleu(sampled_sequences, sequences)
+    for model_name, score in bleu_scores.items():
+        print(f"BLEU Score for {model_name}: {score:.4f}")
+    
+    rouge_scores = calculate_rouge(sampled_sequences, [" ".join(seq) for seq in sequences])
+    for model_name, score in rouge_scores.items():
+        print(f"ROUGE Scores for {model_name}: {score}")
 
     # print(calculate_bic(-models.one_cue_static_global(opt_one_cue_static_global.x, ["dog", "cat", "rat", "hamster"]), opt_one_cue_static_global.x, ["dog", "cat", "rat", "hamster"]))    
     # print(calculate_bic(-models.one_cue_static_local(opt_one_cue_static_local.x, ["dog", "cat", "rat", "hamster"]), opt_one_cue_static_local.x, ["dog", "cat", "rat", "hamster"]))
     # print(calculate_bic(-models.combined_cue_static(opt_combined_cue_static.x, ["dog", "cat", "rat", "hamster"]), opt_combined_cue_static.x, ["dog", "cat", "rat", "hamster"]))
     # print(calculate_bic(-models.combined_cue_dynamic_cat(opt_combined_cue_dynamic_cat.x, ["dog", "cat", "rat", "hamster"]), opt_combined_cue_dynamic_cat.x, ["dog", "cat", "rat", "hamster"]))
     # print(calculate_bic(-models.combined_cue_dynamic_simdrop(opt_combined_cue_dynamic_simdrop.x, ["dog", "cat", "rat", "hamster"]), opt_combined_cue_dynamic_simdrop.x, ["dog", "cat", "rat", "hamster"]))
-
-    # print(sample_sequence(models, opt_combined_cue_static.x))
