@@ -50,13 +50,16 @@ def word_frequency_alignment(model, beta, real_sequences, num_samples=100):
     plt.show()
 
 def get_persistance(sequence):
+    pass
 
 def plot_similarity(sequence):
+    pass
 
 def plot_RT(sequence):      # only applicable to true data
+    pass
 
 def get_repeats():
-
+    pass
 
 def calculate_bleu(generated_sequences, real_sequences):
     bleu_scores = {}
