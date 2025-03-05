@@ -13,14 +13,18 @@ def calculate_bic(likelihood, beta, seq):
     bic = k * np.log(n) - 2 * likelihood
     return bic
 
-def sample_sequence_from_model(model, model_func, beta, seq_length=10, start_word="dog"):
+def sample_sequence_from_model(model, model_func, beta, seq_length=10, start_word="goat"):
     sequence = [start_word]
     
     for i in range(seq_length - 1):
-        prev_word = sequence[-1]        
-        prob_dist = np.array([np.exp(-model_func(beta, [prev_word, word])) for word in model.freq.keys()])
+        prev_word = sequence[-1]
+        if model_func == model.one_cue_static_global:
+            prob_dist = np.array([np.exp(-model_func(beta, [word])) for word in model.freq.keys()])
+        else:
+            prob_dist = np.array([np.exp(-model_func(beta, [prev_word, word])) for word in model.freq.keys()])
         prob_dist /= prob_dist.sum()
         next_word = np.random.choice(list(model.freq.keys()), p=prob_dist)
+        next_word = list(model.freq.keys())[np.argmax(prob_dist)]
         sequence.append(str(next_word))
     
     return sequence
@@ -44,6 +48,15 @@ def word_frequency_alignment(model, beta, real_sequences, num_samples=100):
     plt.ylabel("Generated Word Frequency")
     plt.title("Posterior Predictive Check: Word Frequencies")
     plt.show()
+
+def get_persistance(sequence):
+
+def plot_similarity(sequence):
+
+def plot_RT(sequence):      # only applicable to true data
+
+def get_repeats():
+
 
 def calculate_bleu(generated_sequences, real_sequences):
     bleu_scores = {}

@@ -97,18 +97,6 @@ class Hills:
         return nll
 
 def fit_betas_for_models(model, sequences, models_to_run, beta_init=None):
-    """
-    Fits beta parameters across multiple sequences for each specified model.
-
-    Args:
-        model: The Hills model instance
-        sequences: List of sequences (each sequence is a list of words)
-        models_to_run: List of model functions to run (e.g., [model.one_cue_static_global, model.combined_cue_static])
-        beta_init: Initial guess for beta parameters (default: random)
-
-    Returns:
-        Dict containing optimized beta values for each model
-    """
     results = {}
 
     for model_func in tqdm(models_to_run):
@@ -124,19 +112,7 @@ def fit_betas_for_models(model, sequences, models_to_run, beta_init=None):
 
     return results
 
-def generate_sequences_for_models(model, beta_dict, seq_length=10, start_word="dog"):
-    """
-    Generate sequences for all models using their optimized beta values.
-    
-    Args:
-        model: The Hills model instance.
-        beta_dict: Dictionary of {model_name: optimized_beta}.
-        seq_length: Length of the sequence to generate.
-        start_word: Initial word in the sequence.
-    
-    Returns:
-        Dictionary of generated sequences for each model.
-    """
+def generate_sequences_for_models(model, beta_dict, seq_length=10, start_word="goat"):
     models_to_run = {
         "one_cue_static_global": model.one_cue_static_global,
         "one_cue_static_local": model.one_cue_static_local,
