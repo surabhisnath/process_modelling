@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
     bleu_scores = calculate_bleu(sampled_sequences, sequences)
     for model_name, score in bleu_scores.items():
-        print(f"BLEU Score for {model_name}: {score:.4f}")
+        print(f"BLEU Scores for {model_name}: {score}")
     
     rouge_scores = calculate_rouge(sampled_sequences, [" ".join(seq) for seq in sequences])
     for model_name, score in rouge_scores.items():

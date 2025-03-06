@@ -4,9 +4,6 @@ import matplotlib.pyplot as plt
 from rouge_score import rouge_scorer
 
 def calculate_bic(likelihood, beta, seq):
-    """
-    Compute BIC score for a given model.
-    """
     k = len(beta)
     n = len(seq)
     
@@ -24,7 +21,7 @@ def sample_sequence_from_model(model, model_func, beta, seq_length=10, start_wor
             prob_dist = np.array([np.exp(-model_func(beta, [prev_word, word])) for word in model.freq.keys()])
         prob_dist /= prob_dist.sum()
         next_word = np.random.choice(list(model.freq.keys()), p=prob_dist)
-        next_word = list(model.freq.keys())[np.argmax(prob_dist)]
+        # next_word = list(model.freq.keys())[np.argmax(prob_dist)]
         sequence.append(str(next_word))
     
     return sequence
@@ -64,8 +61,12 @@ def get_repeats():
 def calculate_bleu(generated_sequences, real_sequences):
     bleu_scores = {}
     for model_name, gen_seq in generated_sequences.items():
-        score = sentence_bleu(real_sequences, gen_seq)
-        bleu_scores[model_name] = score
+        score1 = sentence_bleu(real_sequences, gen_seq, weights=(1, 0, 0, 0))
+        score2 = sentence_bleu(real_sequences, gen_seq, weights=(0, 1, 0, 0))
+        score3 = sentence_bleu(real_sequences, gen_seq, weights=(0, 0, 1, 0))
+        score4 = sentence_bleu(real_sequences, gen_seq, weights=(0, 0, 0, 1))
+
+        bleu_scores[model_name] = {"1-gram": score1, "2-gram": score2, "3-gram": score3, "4-gram": score4}
     return bleu_scores
 
 def calculate_rouge(generated_sequences, real_sequences):
