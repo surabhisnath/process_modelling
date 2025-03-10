@@ -1,4 +1,4 @@
-"sid","entry","irt","fpatchnum","fpatchitem","fitemsfromend","flastitem","meanirt","catitem"
+pid,response,RT,"fpatchnum","fpatchitem","fitemsfromend","flastitem","meanirt","catitem"
 51,"cat",8,1,1,2,0,5.2,1
 51,"dog",3,1,2,1,1,5.2,2
 51,"mouse",3,2,1,2,0,5.2,3

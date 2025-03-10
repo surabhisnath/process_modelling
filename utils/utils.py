@@ -36,7 +36,7 @@ def smooth_counts(word_count, words, smoothing=0.01):
     return smoothed_count
 
 
-def get_frequencies(words=data["entry"]):
+def get_frequencies(words):
     counts = get_counts(words)
     smoothed_counts = smooth_counts(counts, words)
     total_count = sum(smoothed_counts.values())
@@ -49,10 +49,12 @@ def get_frequencies(words=data["entry"]):
 
 
 # Get word embeddings
-def get_embeddings(words):
+def get_embeddings(config, unique_responses):
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14")
-    tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14")
+    if config["representation"] == "clip":
+        model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14")
+        tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14")
+    
     inputs = tokenizer(words, padding=True, return_tensors="pt")
     outputs = model(**inputs)
     embeddings = outputs.text_embeds

@@ -6,13 +6,27 @@ import os
 import pandas as pd
 from tqdm import tqdm
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
-from process import *
+from utils import *
 from helpers import d2np
 from metrics import *
 
+class one_cue_static_global(Hills):
+    def __init__(self):
+
+    def get_nll(weights):
+        nll = 0
+        for i in range(0, len(seq)):
+            nll += self.only_freq(seq[i], weights)
+        return nll
+
+
+class one_cue_static_local()
+class combined_cue_static()
+class combined_cue_dynamic_cat()
+class combined_cue_dynamic_simdrop()
+
 class Hills:
-    def __init__(self, hills_data, sim_mat, freq, animal_to_category):
-        self.data = hills_data
+    def __init__(self, sim_mat, freq, animal_to_category):
         self.sim_mat = sim_mat
         self.freq = freq
         self.animal_to_category = animal_to_category
