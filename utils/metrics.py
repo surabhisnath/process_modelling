@@ -1,5 +1,5 @@
 import numpy as np
-from nltk.translate.bleu_score import sentence_bleu
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 import matplotlib.pyplot as plt
 from rouge_score import rouge_scorer
 
@@ -9,22 +9,6 @@ def calculate_bic(likelihood, beta, seq):
     
     bic = k * np.log(n) - 2 * likelihood
     return bic
-
-def sample_sequence_from_model(model, model_func, beta, seq_length=10, start_word="goat"):
-    sequence = [start_word]
-    
-    for i in range(seq_length - 1):
-        prev_word = sequence[-1]
-        if model_func == model.one_cue_static_global:
-            prob_dist = np.array([np.exp(-model_func(beta, [word])) for word in model.freq.keys()])
-        else:
-            prob_dist = np.array([np.exp(-model_func(beta, [prev_word, word])) for word in model.freq.keys()])
-        prob_dist /= prob_dist.sum()
-        next_word = np.random.choice(list(model.freq.keys()), p=prob_dist)
-        # next_word = list(model.freq.keys())[np.argmax(prob_dist)]
-        sequence.append(str(next_word))
-    
-    return sequence
 
 def word_frequency_alignment(model, beta, real_sequences, num_samples=100):
     """
@@ -52,33 +36,40 @@ def get_persistance(sequence):
 def plot_similarity(sequence):
     pass
 
-def plot_RT(sequence):      # only applicable to true data
+def plot_RT(sequence):
     pass
 
 def get_repeats():
     pass
 
 def calculate_bleu(generated_sequences, real_sequences):
-    bleu_scores = {}
-    for model_name, gen_seq in generated_sequences.items():
+    scores = []
+    for gen_seq in generated_sequences:
         score1 = sentence_bleu(real_sequences, gen_seq, weights=(1, 0, 0, 0))
         score2 = sentence_bleu(real_sequences, gen_seq, weights=(0, 1, 0, 0))
         score3 = sentence_bleu(real_sequences, gen_seq, weights=(0, 0, 1, 0))
         score4 = sentence_bleu(real_sequences, gen_seq, weights=(0, 0, 0, 1))
+        scores.append([score1, score2, score3, score4])
+    return dict(zip(["bleu1", "bleu2", "bleu3", "bleu4"], np.round(np.mean(scores, axis=0), 2).tolist()))
 
-        bleu_scores[model_name] = {"1-gram": score1, "2-gram": score2, "3-gram": score3, "4-gram": score4}
-    return bleu_scores
+# def calculate_rouge(generated_sequences, real_sequences):
+#     scores = []
+#     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+#     for gen_seq in generated_sequences:
+#         scores.append([scorer.score(ref, gen_seq) for ref in real_sequences])
+#     return dict(zip(['rouge1', 'rouge2', 'rougeL'], np.round(np.mean(scores, axis=0), 2).tolist()))
 
 def calculate_rouge(generated_sequences, real_sequences):
-    rouge_scores = {}
+    scores = []
     scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
-    for model_name, gen_seq in generated_sequences.items():
-        gen_str = " ".join(gen_seq)
-        scores = [scorer.score(ref, gen_str) for ref in real_sequences]
-        avg_scores = {
-            "rouge1": sum(score["rouge1"].fmeasure for score in scores) / len(scores),
-            "rouge2": sum(score["rouge2"].fmeasure for score in scores) / len(scores),
-            "rougeL": sum(score["rougeL"].fmeasure for score in scores)
-        }
-        rouge_scores[model_name] = avg_scores
-    return rouge_scores
+    
+    for gen_seq in generated_sequences:
+        rouge_scores = [
+            max(scorer.score(ref, gen_seq)['rouge1'].fmeasure for ref in real_sequences),
+            max(scorer.score(ref, gen_seq)['rouge2'].fmeasure for ref in real_sequences),
+            max(scorer.score(ref, gen_seq)['rougeL'].fmeasure for ref in real_sequences)
+        ]
+        scores.append(rouge_scores)
+
+    mean_scores = np.round(np.mean(scores, axis=0), 2).tolist()
+    return dict(zip(['rouge1', 'rouge2', 'rougeL'], mean_scores))

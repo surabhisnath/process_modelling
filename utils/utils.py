@@ -44,7 +44,12 @@ def get_embeddings(config, unique_responses):
     return dict(zip(unique_responses, embeddings))
 
 def fit(func, sequence_s, individual_or_group, name):
-    num_weights = 1 if "One" in name else 2             # 1 weight for single-cue models, 2 for combined-cue
+    if "One" in name:
+        num_weights = 1
+    elif "Subcategory" in name:
+        num_weights = 3
+    else:
+        num_weights = 2
     weights_init = np.random.rand(num_weights)
 
     if individual_or_group == "individual":
@@ -55,11 +60,28 @@ def fit(func, sequence_s, individual_or_group, name):
             return sum(func(weights, seq) for seq in sequence_s)
         return minimize(total_nll, weights_init)
 
-def make_TSNE(embeddings, words, clusters, show_words=False):
+def simulate(config, func, weights, unique_responses, num_sequences = 5, sequence_length = 10):
+    simulations = []
+    for i in range(num_sequences):
+        simulated_sequence = []    
+        for j in range(sequence_length):
+            if config["preventrepetition"]:
+                prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in list(set(unique_responses) - set(simulated_sequence))])
+                prob_dist /= prob_dist.sum()
+                next_response = np.random.choice(list(set(unique_responses) - set(simulated_sequence)), p=prob_dist)
+            else:
+                prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in unique_responses])        
+                prob_dist /= prob_dist.sum()
+                next_response = np.random.choice(unique_responses, p=prob_dist)
+            simulated_sequence.append(next_response)
+        simulations.append(simulated_sequence)
+    return simulations
+
+def make_TSNE(embeddings, responses, clusters, show_responses=False):
     """Plot TSNE
     Args:
         embeddings (list): List of embeddings
-        words (list): List of words -- used if show_words is True
+        responses (list): List of responses -- used if show_responses is True
     """
     tsne = TSNE(n_components=2, perplexity=5, n_iter=3000, random_state=42)
     tsne_embeddings = tsne.fit_transform(embeddings)
@@ -73,12 +95,12 @@ def make_TSNE(embeddings, words, clusters, show_words=False):
         c=clusters,
         cmap="hsv",
     )
-    if show_words:
+    if show_responses:
         n = 50
-        for i, word in enumerate(words):
+        for i, response in enumerate(responses):
             if i % n == 0:
                 ax.annotate(
-                    word, (tsne_embeddings[i, 0], tsne_embeddings[i, 1])
+                    response, (tsne_embeddings[i, 0], tsne_embeddings[i, 1])
                 )  # plot every nth text on the TSNE
     plt.xlabel("TSNE-1")
     plt.ylabel("TSNE-2")
@@ -90,34 +112,7 @@ def make_TSNE(embeddings, words, clusters, show_words=False):
     # ax.grid(False)
     # ax.axis("off")
 
-def get_category_transitions(num_categories=16):
-    transition_matrix = np.zeros((num_categories, num_categories))
-    data["previous_categories"] = data.groupby("sid")["categories"].shift()
-    data_of_interest = data.dropna(subset=["previous_categories"])
 
-    for _, row in data_of_interest.iterrows():
-        for prev in row["previous_categories"]:
-            for curr in row["categories"]:
-                try:
-                    transition_matrix[prev, curr] += 1
-                except:
-                    continue  # when NaN
-    normalized_transition_matrix = transition_matrix / transition_matrix.sum(
-        axis=1, keepdims=True
-    )
-
-    return normalized_transition_matrix
-
-
-# frequencies = get_frequencies(data["entry"])
-# embeddings = get_embeddings(unique_animals)
-# similarity_matrix = get_similarity_matrix(
-#     unique_animals, embeddings
-# )  # but will call this fn from model class inits
-# animal_to_category, num_categories = get_category(unique_animals)
-# category_transition_matrix = get_category_transitions(num_categories)
-
-# %%
 # make_TSNE(
 #     np.array(
 #         [embeddings[x] for x in unique_animals],

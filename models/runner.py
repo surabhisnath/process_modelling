@@ -3,17 +3,17 @@ import argparse
 import sys
 import os 
 from Hills import *
+from Heineman import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 from metrics import *
 
 def run(config):
     data = pd.read_csv("../csvs/" + config["dataset"] + ".csv")
-    num_participants = len(data["pid"].unique())
     unique_responses = sorted(data["response"].unique())  # 358 unique animals
     embeddings = get_embeddings(config, unique_responses)
     
-    models = {} # nll function: min nll, betas, 
+    models = {}
     fit_results = {}
     if config["hills"]:
         hills = Hills(data, unique_responses, embeddings)
@@ -21,10 +21,11 @@ def run(config):
         models["hills"] = hills
         fit_results["hills"] = {}
     
-    # if config["heineman"]:
-    #     heineman = Heineman()
-    #     heineman.create_models()
-    #     models["heineman"] = heineman
+    if config["heineman"]:
+        heineman = Heineman(data, unique_responses, embeddings)
+        heineman.create_models()
+        models["heineman"] = heineman
+        fit_results["heineman"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
 
@@ -35,6 +36,8 @@ def run(config):
                 minNLL_list = []
                 weights_list = []
                 for i, sequence in enumerate(sequences):
+                    if "mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence:
+                        continue
                     fit_results[model_class][modelname][f"seq{i+1}"] = {}
                     fitted = fit(models[model_class].models[modelname].get_nll, sequence, "individual", modelname)
                     fit_results[model_class][modelname][f"seq{i+1}"]["minNLL"] = fitted.fun
@@ -47,6 +50,7 @@ def run(config):
                 fit_results[model_class][modelname]["std_weights"] = np.std(weights_list, axis = 0)
 
             if config["fitting"] == "group":
+                # remove the sequence with mammal in it for Heineman to work
                 fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
                 fit_results[model_class][modelname]["minNLL"] = fitted.fun
                 fit_results[model_class][modelname]["weights"] = fitted.x
@@ -57,14 +61,29 @@ def run(config):
                     for modelname in models[model_class].models:
                         print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
                         print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
+            if config["fitting"] == "group":
+                for model_class in models:
+                    for modelname in models[model_class].models:
+                        print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
+                        print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
 
-
+        if config["simulate"]:
+            simulations = {}
+            for model_class in models:
+                simulations[model_class] = {}
+                for modelname in models[model_class].models:
+                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+                    if config["print"]:
+                        print(model_class, modelname, "simulations..................")
+                        print('\n'.join(['\t  '.join(map(str, row)) for row in simulations[model_class][modelname]]))
+                    if config["test"]:
+                        print(calculate_bleu(simulations[model_class][modelname], sequences))
+                        print(calculate_rouge([" ".join(seq) for seq in simulations[model_class][modelname]], [" ".join(seq) for seq in sequences]))
+        
         # if config["test"]:
-        #     simulate()
         #     test()
 
 if __name__ == "__main__":
-    print("HI")
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")
 
     parser.add_argument("--dataset", type=str, default="hills", help="claire or hills")
@@ -92,10 +111,20 @@ if __name__ == "__main__":
     parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
     parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")
 
+    parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
+    parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
+
+    parser.add_argument("--preventrepetition", action="store_true", default=True, help="prevent repetition (default: True)")
+    parser.add_argument("--allowrepetition", action="store_false", dest="preventrepetition", help="don't preventrepetition")
+
+    parser.add_argument("--sensitivity", type=float, default=4, help="sampling sensitivity")
+
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
 
     args = parser.parse_args()
     config = vars(args)
+    
     print(config)
+    
     run(config)
