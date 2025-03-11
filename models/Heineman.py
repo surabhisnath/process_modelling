@@ -102,7 +102,6 @@ class Heineman:
         cats_prev = set(self.response_to_category[previous_response])
         cats_curr = set(self.response_to_category[response])
         cats_intersection = cats_prev.intersection(cats_curr)
-        # print(previous_response, cats_prev, response, cats_curr)
 
         if len(cats_intersection) != 0:
             return max([self.cat_trans[c, c] for c in cats_intersection])
@@ -110,13 +109,14 @@ class Heineman:
             return max([self.cat_trans[c1, c2] for c1 in cats_prev for c2 in cats_curr])
         
     def all_freq_sim_cat(self, response, previous_response, weights):
-        category_cue = self.get_category_cue(response, previous_response)
         num = pow(self.freq[response], weights[0]) * pow(
-            self.sim_mat[previous_response][response], weights[1]) * pow(category_cue, weights[2])
-        den = sum(
-            pow(d2np(self.freq), weights[0])
-            * pow(d2np(self.sim_mat[previous_response]), weights[1])
-        )
+            self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
+        
+        den = 0
+        for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
+            den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) \
+                * pow(self.get_category_cue(resp, previous_response), weights[2])
+
         nll = -np.log(num / den)
         return nll
         

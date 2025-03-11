@@ -53,7 +53,7 @@ def fit(func, sequence_s, individual_or_group, name):
     weights_init = np.random.rand(num_weights)
 
     if individual_or_group == "individual":
-        return minimize(lambda beta: func(beta, sequence_s), weights_init)
+        return minimize(lambda beta: func(beta, sequence_s), weights_init, options={'maxiter': 100})
     
     elif individual_or_group == "group":
         def total_nll(weights):

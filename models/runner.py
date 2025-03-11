@@ -7,6 +7,7 @@ from Heineman import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 from metrics import *
+from tqdm import tqdm
 
 def run(config):
     data = pd.read_csv("../csvs/" + config["dataset"] + ".csv")
@@ -24,19 +25,20 @@ def run(config):
     if config["heineman"]:
         heineman = Heineman(data, unique_responses, embeddings)
         heineman.create_models()
+        print(heineman.models)
         models["heineman"] = heineman
         fit_results["heineman"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
-
     for model_class in models:
         for modelname in models[model_class].models:
+            print(modelname)
             fit_results[model_class][modelname] = {}
             if config["fitting"] == "individual":
                 minNLL_list = []
                 weights_list = []
                 for i, sequence in enumerate(sequences):
-                    if "mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence:
+                    if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & (modelname == "SubcategoryCue")):
                         continue
                     fit_results[model_class][modelname][f"seq{i+1}"] = {}
                     fitted = fit(models[model_class].models[modelname].get_nll, sequence, "individual", modelname)
@@ -50,38 +52,45 @@ def run(config):
                 fit_results[model_class][modelname]["std_weights"] = np.std(weights_list, axis = 0)
 
             if config["fitting"] == "group":
-                # remove the sequence with mammal in it for Heineman to work
+                # TODO: remove the sequences with mammal, woollymammoth, unicorn, bacterium in it for Heineman to work
                 fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
                 fit_results[model_class][modelname]["minNLL"] = fitted.fun
                 fit_results[model_class][modelname]["weights"] = fitted.x
         
-        if config["print"]:
-            if config["fitting"] == "individual":
-                for model_class in models:
-                    for modelname in models[model_class].models:
-                        print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
-                        print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
-            if config["fitting"] == "group":
-                for model_class in models:
-                    for modelname in models[model_class].models:
-                        print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
-                        print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
-
-        if config["simulate"]:
-            simulations = {}
+    if config["print"]:
+        if config["fitting"] == "individual":
             for model_class in models:
-                simulations[model_class] = {}
                 for modelname in models[model_class].models:
+                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
+                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
+        if config["fitting"] == "group":
+            for model_class in models:
+                for modelname in models[model_class].models:
+                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
+                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
+
+    if config["simulate"]:
+        simulations = {}
+        for model_class in models:
+            simulations[model_class] = {}
+            for modelname in models[model_class].models:
+                if modelname == "SubcategoryCue":
+                    unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
+                
+                if config["fitting"] == "individual":
                     simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, num_sequences = 3, sequence_length = 10)
-                    if config["print"]:
-                        print(model_class, modelname, "simulations..................")
-                        print('\n'.join(['\t  '.join(map(str, row)) for row in simulations[model_class][modelname]]))
-                    if config["test"]:
-                        print(calculate_bleu(simulations[model_class][modelname], sequences))
-                        print(calculate_rouge([" ".join(seq) for seq in simulations[model_class][modelname]], [" ".join(seq) for seq in sequences]))
-        
-        # if config["test"]:
-        #     test()
+                elif config["fitting"] == "group":
+                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+
+                if config["print"]:
+                    print(model_class, modelname, "simulations..................")
+                    print('\n'.join(['\t  '.join(map(str, row)) for row in simulations[model_class][modelname]]))
+                if config["test"]:
+                    print(calculate_bleu(simulations[model_class][modelname], sequences))
+                    print(calculate_rouge([" ".join(seq) for seq in simulations[model_class][modelname]], [" ".join(seq) for seq in sequences]))
+    
+    # if config["test"]:
+    #     test()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")
@@ -121,6 +130,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
+
+    # test-train split.
 
     args = parser.parse_args()
     config = vars(args)
