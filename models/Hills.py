@@ -11,9 +11,9 @@ class Hills:
         self.data = data
         self.unique_responses = unique_responses
         self.embeddings = embeddings
-        self.sim_mat = self.get_similarity_matrix(unique_responses, embeddings)
-        self.freq = self.get_frequencies(unique_responses)
-        self.response_to_category, self.num_categories = self.get_categories(data, unique_responses)
+        self.sim_mat = self.get_similarity_matrix()
+        self.freq = self.get_frequencies()
+        self.response_to_category, self.num_categories = self.get_categories()
     
     def create_models(self):
         self.models = {
@@ -46,7 +46,7 @@ class Hills:
                     frequencies[key] = float(value)
         return frequencies
     
-    def get_categories(self, data, unique_responses):
+    def get_categories(self):
         # TODO: HANDLE MULTI CLASS LABELS
         category_name_to_num = (
             pd.read_excel("../category-fluency/Final_Categories_and_Exemplars.xlsx")
@@ -69,9 +69,9 @@ class Hills:
         )  # account for multi-class
         examples_to_category = examples.set_index("Exemplar").to_dict()["category"]
 
-        data["categories"] = data["response"].map(examples_to_category)
+        self.data["categories"] = self.data["response"].map(examples_to_category)
 
-        assert all(item in examples_to_category for item in unique_responses)
+        assert all(item in examples_to_category for item in self.unique_responses)
         return examples_to_category, num_categories
 
     def only_freq(self, response, weights):

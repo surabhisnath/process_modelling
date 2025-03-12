@@ -26,21 +26,27 @@ def run(config):
     if config["heineman"]:
         heineman = Heineman(data, unique_responses, embeddings)
         heineman.create_models()
-        print(heineman.models)
         models["heineman"] = heineman
         fit_results["heineman"] = {}
     
     if config["abbott"]:
         abbott = Abbott(data, unique_responses)
         abbott.create_models()
-        print(abbott.models)
         models["abbott"] = abbott
         fit_results["abbott"] = {}
     
+    if config["morales"]:
+        morales = Morales(data, unique_responses)
+        morales.create_models()
+        models["morales"] = morales
+        fit_results["morales"] = {}
+    
     sequences = data.groupby("pid").agg(list)["response"].tolist()
+    print("--------------------------------FITTING MODELS--------------------------------")
     for model_class in models:
+        if model_class == "abbott":
+            continue
         for modelname in models[model_class].models:
-            print(modelname)
             fit_results[model_class][modelname] = {}
             if config["fitting"] == "individual":
                 minNLL_list = []
@@ -66,29 +72,34 @@ def run(config):
                 fit_results[model_class][modelname]["weights"] = fitted.x
         
     if config["print"]:
-        if config["fitting"] == "individual":
-            for model_class in models:
-                for modelname in models[model_class].models:
+        print("--------------------------------PRINTING FITS--------------------------------")
+        for model_class in models:
+            if model_class == "abbott":
+                continue
+            for modelname in models[model_class].models:
+                if config["fitting"] == "individual":
                     print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
                     print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
-        if config["fitting"] == "group":
-            for model_class in models:
-                for modelname in models[model_class].models:
+                elif config["fitting"] == "group":
                     print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
                     print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
 
     if config["simulate"]:
+        print("--------------------------------SIMULATING MODELS--------------------------------")
         simulations = {}
         for model_class in models:
             simulations[model_class] = {}
             for modelname in models[model_class].models:
                 if modelname == "SubcategoryCue":
                     unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
-                
-                if config["fitting"] == "individual":
-                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, num_sequences = 3, sequence_length = 10)
-                elif config["fitting"] == "group":
-                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+                if model_class == "abbott":
+                    unique_responses = models["abbott"].unique_responses
+                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = 3, sequence_length = 10)          
+                else:
+                    if config["fitting"] == "individual":
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+                    elif config["fitting"] == "group":
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, num_sequences = 3, sequence_length = 10)
 
                 if config["print"]:
                     print(model_class, modelname, "simulations..................")

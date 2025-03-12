@@ -44,7 +44,7 @@ def get_embeddings(config, unique_responses):
     return dict(zip(unique_responses, embeddings))
 
 def fit(func, sequence_s, individual_or_group, name):
-    if "One" in name:
+    if "One" in name or "RandomWalk" in name:
         num_weights = 1
     elif "Subcategory" in name:
         num_weights = 3
@@ -63,7 +63,7 @@ def fit(func, sequence_s, individual_or_group, name):
 def simulate(config, func, weights, unique_responses, num_sequences = 5, sequence_length = 10):
     simulations = []
     for i in range(num_sequences):
-        simulated_sequence = []    
+        simulated_sequence = [] 
         for j in range(sequence_length):
             if config["preventrepetition"]:
                 prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in list(set(unique_responses) - set(simulated_sequence))])
