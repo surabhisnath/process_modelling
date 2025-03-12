@@ -4,6 +4,7 @@ import sys
 import os 
 from Hills import *
 from Heineman import *
+from Abbott import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 from metrics import *
@@ -28,6 +29,13 @@ def run(config):
         print(heineman.models)
         models["heineman"] = heineman
         fit_results["heineman"] = {}
+    
+    if config["abbott"]:
+        abbott = Abbott(data, unique_responses)
+        abbott.create_models()
+        print(abbott.models)
+        models["abbott"] = abbott
+        fit_results["abbott"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     for model_class in models:
@@ -108,8 +116,8 @@ if __name__ == "__main__":
     parser.add_argument("--heineman", action="store_true", default=True, help="implement heineman models (default: True)")
     parser.add_argument("--noheineman", action="store_false", dest="heineman", help="don't implement heineman models")
 
-    parser.add_argument("--abott", action="store_true", default=True, help="implement abott model (default: True)")
-    parser.add_argument("--noabott", action="store_false", dest="abott", help="don't implement abott model")
+    parser.add_argument("--abbott", action="store_true", default=True, help="implement abbott model (default: True)")
+    parser.add_argument("--noabbott", action="store_false", dest="abbott", help="don't implement abbott model")
 
     parser.add_argument("--our1", action="store_true", default=True, help="implement our class 1 models (default: True)")
     parser.add_argument("--noour1", action="store_false", dest="our1", help="don't implement our class 1 models")

@@ -37,13 +37,13 @@ class Heineman:
                 sim_matrix[resp2][resp1] = sim
         return sim_matrix
 
-    def get_frequencies(self, unique_responses):
+    def get_frequencies(self):
         file_path = 'datafreqlistlog.txt'
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
                 key, value = line.strip().split('\t')
-                if key in unique_responses:
+                if key in self.unique_responses:
                     frequencies[key] = float(value)
         return frequencies
     

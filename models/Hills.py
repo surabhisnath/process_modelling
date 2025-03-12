@@ -21,28 +21,28 @@ class Hills:
             for subclass in Hills.__subclasses__()
         }
 
-    def get_similarity_matrix(self, unique_responses, embeddings):
-        sim_matrix = {response: {} for response in unique_responses}
+    def get_similarity_matrix(self):
+        sim_matrix = {response: {} for response in self.unique_responses}
 
-        for i in range(len(unique_responses)):
-            for j in range(i, len(unique_responses)):
-                resp1 = unique_responses[i]
-                resp2 = unique_responses[j]
+        for i in range(len(self.unique_responses)):
+            for j in range(i, len(self.unique_responses)):
+                resp1 = self.unique_responses[i]
+                resp2 = self.unique_responses[j]
                 if i == j:
                     sim = 1.0  # Similarity with itself is 1
                 else:
-                    sim = np.dot(embeddings[resp1], embeddings[resp2].T)
+                    sim = np.dot(self.embeddings[resp1], self.embeddings[resp2].T)
                 sim_matrix[resp1][resp2] = sim
                 sim_matrix[resp2][resp1] = sim
         return sim_matrix
 
-    def get_frequencies(self, unique_responses):
+    def get_frequencies(self):
         file_path = 'datafreqlistlog.txt'
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
                 key, value = line.strip().split('\t')
-                if key in unique_responses:
+                if key in self.unique_responses:
                     frequencies[key] = float(value)
         return frequencies
     
