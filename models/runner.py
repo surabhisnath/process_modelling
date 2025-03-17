@@ -5,13 +5,17 @@ import os
 from Hills import *
 from Heineman import *
 from Abbott import *
+from Ours1 import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 from metrics import *
 from tqdm import tqdm
+import time
 
 def run(config):
     data = pd.read_csv("../csvs/" + config["dataset"] + ".csv")
+    if config["dataset"] == "claire":
+        data = data[data["task"] == 1]
     unique_responses = sorted(data["response"].unique())  # 358 unique animals
     embeddings = get_embeddings(config, unique_responses)
     
@@ -29,17 +33,23 @@ def run(config):
         models["heineman"] = heineman
         fit_results["heineman"] = {}
     
-    if config["abbott"]:
-        abbott = Abbott(data, unique_responses)
-        abbott.create_models()
-        models["abbott"] = abbott
-        fit_results["abbott"] = {}
+    # if config["abbott"]:
+    #     abbott = Abbott(data, unique_responses)
+    #     abbott.create_models()
+    #     models["abbott"] = abbott
+    #     fit_results["abbott"] = {}
     
-    if config["morales"]:
-        morales = Morales(data, unique_responses)
-        morales.create_models()
-        models["morales"] = morales
-        fit_results["morales"] = {}
+    # if config["morales"]:
+    #     morales = Morales(data, unique_responses)
+    #     morales.create_models()
+    #     models["morales"] = morales
+    #     fit_results["morales"] = {}
+    
+    if config["ours1"]:
+        ours1 = Ours1(data, unique_responses)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     print("--------------------------------FITTING MODELS--------------------------------")
@@ -47,12 +57,22 @@ def run(config):
         if model_class == "abbott":
             continue
         for modelname in models[model_class].models:
+            print(modelname)
+            start_time = time.time()
             fit_results[model_class][modelname] = {}
             if config["fitting"] == "individual":
                 minNLL_list = []
                 weights_list = []
                 for i, sequence in enumerate(sequences):
+                    flag = False
                     if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & (modelname == "SubcategoryCue")):
+                        continue
+                    if "HammingDistance" in modelname:
+                        urset = set(models[model_class].unique_responses)
+                        for item in sequence:
+                            if item not in urset:
+                                flag = True
+                    if flag:
                         continue
                     fit_results[model_class][modelname][f"seq{i+1}"] = {}
                     fitted = fit(models[model_class].models[modelname].get_nll, sequence, "individual", modelname)
@@ -70,7 +90,10 @@ def run(config):
                 fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
                 fit_results[model_class][modelname]["minNLL"] = fitted.fun
                 fit_results[model_class][modelname]["weights"] = fitted.x
-        
+            end_time = time.time()    
+            elapsed_time = end_time - start_time
+            print(f"{modelname} completed in {elapsed_time:.2f} seconds\n")
+
     if config["print"]:
         print("--------------------------------PRINTING FITS--------------------------------")
         for model_class in models:
@@ -90,16 +113,20 @@ def run(config):
         for model_class in models:
             simulations[model_class] = {}
             for modelname in models[model_class].models:
-                if modelname == "SubcategoryCue":
-                    unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
+                start = None
                 if model_class == "abbott":
                     unique_responses = models["abbott"].unique_responses
                     simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = 3, sequence_length = 10)          
                 else:
+                    if modelname == "SubcategoryCue":
+                        unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
+                    elif "HammingDistance" in modelname:
+                        unique_responses = models[model_class].unique_responses
+                        start = "dog"
                     if config["fitting"] == "individual":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, start, num_sequences = 3, sequence_length = 10,)
                     elif config["fitting"] == "group":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, num_sequences = 3, sequence_length = 10)
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, start, num_sequences = 3, sequence_length = 10)
 
                 if config["print"]:
                     print(model_class, modelname, "simulations..................")
@@ -130,11 +157,11 @@ if __name__ == "__main__":
     parser.add_argument("--abbott", action="store_true", default=True, help="implement abbott model (default: True)")
     parser.add_argument("--noabbott", action="store_false", dest="abbott", help="don't implement abbott model")
 
-    parser.add_argument("--our1", action="store_true", default=True, help="implement our class 1 models (default: True)")
-    parser.add_argument("--noour1", action="store_false", dest="our1", help="don't implement our class 1 models")
+    parser.add_argument("--ours1", action="store_true", default=True, help="implement our class 1 models (default: True)")
+    parser.add_argument("--noours1", action="store_false", dest="ours1", help="don't implement our class 1 models")
 
-    parser.add_argument("--our2", action="store_true", default=True, help="implement our class 2 models (default: True)")
-    parser.add_argument("--noour2", action="store_false", dest="our2", help="don't implement our class 2 models")
+    parser.add_argument("--ours2", action="store_true", default=True, help="implement our class 2 models (default: True)")
+    parser.add_argument("--noours2", action="store_false", dest="ours2", help="don't implement our class 2 models")
 
     parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
     parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")

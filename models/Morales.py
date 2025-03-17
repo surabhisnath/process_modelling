@@ -11,7 +11,7 @@ class Morales:
         self.data = data
         self.unique_responses = unique_responses
         self.embeddings = embeddings
-        self.
+        self.tsne_coordinates = get_tsne_coordinates()
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
         self.response_to_category, self.num_categories = self.get_categories()
@@ -19,8 +19,11 @@ class Morales:
     def create_models(self):
         self.models = {
             subclass.__name__: subclass(self.data, self.unique_responses, self.embeddings)
-            for subclass in Hills.__subclasses__()
+            for subclass in Morales.__subclasses__()
         }
+    
+    def get_tsne_coordinates(self):
+        
 
     def get_similarity_matrix(self):
         sim_matrix = {response: {} for response in self.unique_responses}

@@ -44,15 +44,18 @@ def get_embeddings(config, unique_responses):
     return dict(zip(unique_responses, embeddings))
 
 def fit(func, sequence_s, individual_or_group, name):
-    if "One" in name or "RandomWalk" in name:
+    if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "Freq":
         num_weights = 1
-    elif "Subcategory" in name:
+    elif "Subcategory" in name or name == "FreqPersistantHammingDistance":
         num_weights = 3
+    elif "Weighted" in name:
+        num_weights = 127
     else:
         num_weights = 2
     weights_init = np.random.rand(num_weights)
 
     if individual_or_group == "individual":
+        # bounds=[(0, 1)] * len(weights_init), 
         return minimize(lambda beta: func(beta, sequence_s), weights_init, options={'maxiter': 100})
     
     elif individual_or_group == "group":
@@ -60,10 +63,13 @@ def fit(func, sequence_s, individual_or_group, name):
             return sum(func(weights, seq) for seq in sequence_s)
         return minimize(total_nll, weights_init)
 
-def simulate(config, func, weights, unique_responses, num_sequences = 5, sequence_length = 10):
+def simulate(config, func, weights, unique_responses, start, num_sequences = 5, sequence_length = 10):
     simulations = []
     for i in range(num_sequences):
-        simulated_sequence = [] 
+        if start is None:
+            simulated_sequence = []
+        else:
+            simulated_sequence = [start]
         for j in range(sequence_length):
             if config["preventrepetition"]:
                 prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in list(set(unique_responses) - set(simulated_sequence))])
@@ -111,7 +117,6 @@ def make_TSNE(embeddings, responses, clusters, show_responses=False):
     # ax.set_ylabel("TSNE-2")
     # ax.grid(False)
     # ax.axis("off")
-
 
 # make_TSNE(
 #     np.array(

@@ -14,7 +14,7 @@ class Hills:
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
         self.response_to_category, self.num_categories = self.get_categories()
-    
+
     def create_models(self):
         self.models = {
             subclass.__name__: subclass(self.data, self.unique_responses, self.embeddings)
