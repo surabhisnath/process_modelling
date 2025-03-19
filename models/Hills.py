@@ -31,7 +31,7 @@ class Hills:
                 if i == j:
                     sim = 1.0  # Similarity with itself is 1
                 else:
-                    sim = np.dot(self.embeddings[resp1], self.embeddings[resp2].T)
+                    sim = np.dot(self.embeddings[resp1], self.embeddings[resp2])
                 sim_matrix[resp1][resp2] = sim
                 sim_matrix[resp2][resp1] = sim
         return sim_matrix
@@ -82,12 +82,20 @@ class Hills:
         nll = -np.log(num / den)
         return nll
 
+    def only_freq_softmax(self, response, weights):
+        nll = (-1 * weights[0] * self.freq[response]) + np.log(sum([np.exp(weights[0] * self.freq[resp]) for resp in self.unique_responses]))
+        return nll
+    
     def only_sim(self, response, previous_response, weights):
         num = pow(self.sim_mat[previous_response][response], weights[0])
         den = sum(
             pow(d2np(self.sim_mat[previous_response]), weights[0])
         )  # if [a,b,c] is np array then pow([a,b,c],d) returns [a^d, b^d, c^d]
         nll = -np.log(num / den)
+        return nll
+    
+    def only_sim_softmax(self, response, previous_response, weights):
+        nll = (-1 * weights[0] * self.sim_mat[previous_response][response]) + np.log(sum([np.exp(weights[0] * self.sim_mat[previous_response][resp]) for resp in self.unique_responses]))
         return nll
 
     def both_freq_sim(self, response, previous_response, weights):
@@ -110,11 +118,25 @@ class OneCueStaticGlobal(Hills):
             nll += self.only_freq(seq[i], weights)
         return nll
 
+class OneCueStaticGlobalSoftmax(Hills):
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(len(seq)):
+            nll += self.only_freq_softmax(seq[i], weights)
+        return nll
+
 class OneCueStaticLocal(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(1, len(seq)):
             nll += self.only_sim(seq[i], seq[i - 1], weights)
+        return nll
+
+class OneCueStaticLocalSoftmax(Hills):
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(1, len(seq)):
+            nll += self.only_sim_softmax(seq[i], seq[i - 1], weights)
         return nll
 
 class CombinedCueStatic(Hills):

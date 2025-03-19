@@ -41,17 +41,17 @@ def run(config):
     #     models["abbott"] = abbott
     #     fit_results["abbott"] = {}
     
-    if config["morales"]:
-        morales = Morales(data, unique_responses, embeddings)
-        morales.create_models()
-        models["morales"] = morales
-        fit_results["morales"] = {}
+    # if config["morales"]:
+    #     morales = Morales(data, unique_responses, embeddings)
+    #     morales.create_models()
+    #     models["morales"] = morales
+    #     fit_results["morales"] = {}
     
-    # if config["ours1"]:
-    #     ours1 = Ours1(data, unique_responses)
-    #     ours1.create_models()
-    #     models["ours1"] = ours1
-    #     fit_results["ours1"] = {}
+    if config["ours1"]:
+        ours1 = Ours1(data, unique_responses)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     print("--------------------------------FITTING MODELS--------------------------------")

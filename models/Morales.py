@@ -115,4 +115,12 @@ class AgentBasedModel(Morales):
                     nll += self.only_freq(seq[i], weights)
                 else:
                     nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+                
+                # if not global_cue:
+                #     p_switch = weights[2] / (weights[2] + sum([self.sim_mat[seq[i]][neigh] for neigh in neighbours]))
+                #     switch = np.random.choice([True, False], p=[p_switch, 1 - p_switch])
+                #     if switch:
+                #         global_cue = not global_cue
+                # if global_cue:
+                #     nll += self.only_freq(seq[i], weights)
         return nll
