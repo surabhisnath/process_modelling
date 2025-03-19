@@ -5,6 +5,7 @@ import os
 from Hills import *
 from Heineman import *
 from Abbott import *
+from Morales import *
 from Ours1 import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
@@ -21,17 +22,18 @@ def run(config):
     
     models = {}
     fit_results = {}
-    if config["hills"]:
-        hills = Hills(data, unique_responses, embeddings)
-        hills.create_models()
-        models["hills"] = hills
-        fit_results["hills"] = {}
     
-    if config["heineman"]:
-        heineman = Heineman(data, unique_responses, embeddings)
-        heineman.create_models()
-        models["heineman"] = heineman
-        fit_results["heineman"] = {}
+    # if config["hills"]:
+    #     hills = Hills(data, unique_responses, embeddings)
+    #     hills.create_models()
+    #     models["hills"] = hills
+    #     fit_results["hills"] = {}
+    
+    # if config["heineman"]:
+    #     heineman = Heineman(data, unique_responses, embeddings)
+    #     heineman.create_models()
+    #     models["heineman"] = heineman
+    #     fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(data, unique_responses)
@@ -39,17 +41,17 @@ def run(config):
     #     models["abbott"] = abbott
     #     fit_results["abbott"] = {}
     
-    # if config["morales"]:
-    #     morales = Morales(data, unique_responses)
-    #     morales.create_models()
-    #     models["morales"] = morales
-    #     fit_results["morales"] = {}
+    if config["morales"]:
+        morales = Morales(data, unique_responses, embeddings)
+        morales.create_models()
+        models["morales"] = morales
+        fit_results["morales"] = {}
     
-    if config["ours1"]:
-        ours1 = Ours1(data, unique_responses)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+    # if config["ours1"]:
+    #     ours1 = Ours1(data, unique_responses)
+    #     ours1.create_models()
+    #     models["ours1"] = ours1
+    #     fit_results["ours1"] = {}
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     print("--------------------------------FITTING MODELS--------------------------------")

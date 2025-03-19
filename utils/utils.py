@@ -46,7 +46,7 @@ def get_embeddings(config, unique_responses):
 def fit(func, sequence_s, individual_or_group, name):
     if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "Freq":
         num_weights = 1
-    elif "Subcategory" in name or name == "FreqPersistantHammingDistance":
+    elif "Subcategory" in name or name == "FreqPersistantHammingDistance" or name == "AgentBasedModel":
         num_weights = 3
     elif "Weighted" in name:
         num_weights = 127
@@ -55,8 +55,8 @@ def fit(func, sequence_s, individual_or_group, name):
     weights_init = np.random.rand(num_weights)
 
     if individual_or_group == "individual":
-        # bounds=[(0, 1)] * len(weights_init), 
-        return minimize(lambda beta: func(beta, sequence_s), weights_init, options={'maxiter': 100})
+        bounds=[(0, 5)] * (len(weights_init) - 1) + [(0, 100)]
+        return minimize(lambda beta: func(beta, sequence_s), weights_init, bounds=bounds, options={'maxiter': 100})
     
     elif individual_or_group == "group":
         def total_nll(weights):
