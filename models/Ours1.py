@@ -10,8 +10,8 @@ from utils import *
 class Ours1:
     def __init__(self, data, unique_responses):
         self.data = data
-        self.feature_names = 0
         self.unique_responses = unique_responses
+        self.feature_names = self.get_feature_names()
         self.features = self.get_features()
         self.freq = self.get_frequencies()
         # keys_to_remove = ["cat dog lion tiger parrot monkey human food cows milk eggs hamster",
@@ -31,9 +31,12 @@ class Ours1:
             for subclass in Ours1.__subclasses__()
         }
 
+    def get_feature_names(self):
+        feature_names = pk.load(open(f"../scripts/vf_final_features.pk", "rb"))
+        return feature_names[:30]
+    
     def get_features(self):
         featuredict = pk.load(open(f"../scripts/vf_features.pk", "rb"))
-        self.feature_names = pk.load(open(f"../scripts/vf_final_features.pk", "rb"))
         return {k: np.array([1 if v.lower()[:4] == 'true' else 0 for f, v in values.items() if f in self.feature_names]) for k, values in featuredict.items()}
     
     def get_frequencies(self):
@@ -100,16 +103,16 @@ class HammingDistance(Ours1):
             nll += self.only_ham(seq[i], seq[i - 1], weights)
         return nll
 
-class HammingDistanceSoftmax(Ours1):
-    def only_hamsm(self, response, previous_response, weights):
-        nll = (-1 * weights[0] * self.sim_mat[previous_response][response]) + np.log(sum([np.exp(weights[0] * self.sim_mat[previous_response][resp]) for resp in self.unique_responses]))
-        return nll
+# class HammingDistanceSoftmax(Ours1):
+#     def only_hamsm(self, response, previous_response, weights):
+#         nll = (-1 * weights[0] * self.sim_mat[previous_response][response]) + np.log(sum([np.exp(weights[0] * self.sim_mat[previous_response][resp]) for resp in self.unique_responses]))
+#         return nll
     
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(1, len(seq)):
-            nll += self.only_hamsm(seq[i], seq[i - 1], weights)
-        return nll
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.only_hamsm(seq[i], seq[i - 1], weights)
+#         return nll
 
 class CosineDistance(Ours1):
     def only_cos(self, response, previous_response, weights):
@@ -121,29 +124,12 @@ class CosineDistance(Ours1):
         nll = -np.log(num / den)
         if num == 0:
             return 0
-        print(nll)
         return nll
     
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(1, len(seq)):
             nll += self.only_cos(seq[i], seq[i - 1], weights)
-        print("--------------------------------", nll)
-        return nll
-
-class Freq(Ours1):
-    def onlyfreq(self, response, weights):
-        num = pow(self.freq[response], weights[0])
-        den = sum(pow(d2np(self.freq), weights[0]))
-        if den == 0:
-            return np.inf
-        nll = -np.log(num / den)
-        return nll
-    
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            nll += self.onlyfreq(seq[i], weights)
         return nll
 
 class FreqHammingDistance(Ours1):
@@ -166,6 +152,26 @@ class FreqHammingDistance(Ours1):
             nll += self.freq_ham(seq[i], seq[i - 1], weights)
         return nll
 
+class FreqCosineDistance(Ours1):
+    def freq_cos(self, response, previous_response, weights):
+        num = pow(self.freq[response], weights[0]) * pow(
+            self.sim_mat2[previous_response][response], weights[1]
+        )
+        den = sum(
+            pow(d2np(self.freq), weights[0]) * pow(d2np(self.sim_mat2[previous_response]), weights[1])
+        )
+
+        if num == 0:
+            return 0
+        nll = -np.log(num / den)
+        return nll
+    
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(1, len(seq)):
+            nll += self.freq_cos(seq[i], seq[i - 1], weights)
+        return nll
+    
 # class HammingDistanced0(Ours1):
 #     def ham_d0(self, response, previous_response, weights):
 #         num = weights[0] * (self.sim_mat[previous_response][response] - weights[1])**2
