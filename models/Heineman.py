@@ -119,13 +119,33 @@ class Heineman:
 
         nll = -np.log(num / den)
         return nll
+
+    def sim_cat(self, response, previous_response, weights):
+        num = pow(
+            self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
         
-class SubcategoryCue(Heineman):
+        den = 0
+        for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
+            den += pow(self.sim_mat[previous_response][resp], weights[1]) \
+                * pow(self.get_category_cue(resp, previous_response), weights[2])
+
+        nll = -np.log(num / den)
+        return nll
+
+
+class SubcategoryCueNoFreq(Heineman):
     def get_nll(self, weights, seq):
         nll = 0
-        for i in range(0, len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                nll += self.all_freq_sim_cat(seq[i], seq[i - 1], weights)
+        for i in range(1, len(seq)):
+            nll += self.sim_cat(seq[i], seq[i - 1], weights)
         return nll
+
+# class SubcategoryCue(Heineman):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(0, len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 nll += self.all_freq_sim_cat(seq[i], seq[i - 1], weights)
+#         return nll

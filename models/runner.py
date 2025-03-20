@@ -41,17 +41,28 @@ def run(config):
     #     models["abbott"] = abbott
     #     fit_results["abbott"] = {}
     
-    # if config["morales"]:
-    #     morales = Morales(data, unique_responses, embeddings)
-    #     morales.create_models()
-    #     models["morales"] = morales
-    #     fit_results["morales"] = {}
+    if config["morales"]:
+        morales = Morales(data, unique_responses, embeddings)
+        morales.create_models()
+        models["morales"] = morales
+        fit_results["morales"] = {}
     
-    if config["ours1"]:
-        ours1 = Ours1(data, unique_responses)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+    # if config["ours1"]:
+    #     ours1 = Ours1(data, unique_responses)
+    #     ours1.create_models()
+    #     models["ours1"] = ours1
+    #     fit_results["ours1"] = {}
+    
+    # print(ours1.feature_names)
+    
+    # dict_1 = models["hills"].sim_mat
+    # dict_2 = models["ours1"].sim_mat
+    # dict_3 = models["ours1"].sim_mat2
+    # dict_4 = models["ours1"].dist_mat
+    # correlation1 = np.corrcoef([dict_1[k1][k2] for k1 in dict_1 for k2 in dict_1[k1]], [dict_2[k1][k2] for k1 in dict_2 for k2 in dict_2[k1]])[0, 1]
+    # correlation2 = np.corrcoef([dict_1[k1][k2] for k1 in dict_1 for k2 in dict_1[k1]], [dict_3[k1][k2] for k1 in dict_3 for k2 in dict_3[k1]])[0, 1]
+    # correlation3 = np.corrcoef([dict_1[k1][k2] for k1 in dict_1 for k2 in dict_1[k1]], [dict_4[k1][k2] for k1 in dict_4 for k2 in dict_4[k1]])[0, 1]
+    # print(correlation1, correlation2, correlation3)
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     print("--------------------------------FITTING MODELS--------------------------------")
