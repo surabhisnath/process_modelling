@@ -29,11 +29,11 @@ def run(config):
     #     models["hills"] = hills
     #     fit_results["hills"] = {}
     
-    # if config["heineman"]:
-    #     heineman = Heineman(data, unique_responses, embeddings)
-    #     heineman.create_models()
-    #     models["heineman"] = heineman
-    #     fit_results["heineman"] = {}
+    if config["heineman"]:
+        heineman = Heineman(data, unique_responses, embeddings)
+        heineman.create_models()
+        models["heineman"] = heineman
+        fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(data, unique_responses)
@@ -41,11 +41,11 @@ def run(config):
     #     models["abbott"] = abbott
     #     fit_results["abbott"] = {}
     
-    if config["morales"]:
-        morales = Morales(data, unique_responses, embeddings)
-        morales.create_models()
-        models["morales"] = morales
-        fit_results["morales"] = {}
+    # if config["morales"]:
+    #     morales = Morales(data, unique_responses, embeddings)
+    #     morales.create_models()
+    #     models["morales"] = morales
+    #     fit_results["morales"] = {}
     
     # if config["ours1"]:
     #     ours1 = Ours1(data, unique_responses)
@@ -78,7 +78,7 @@ def run(config):
                 weights_list = []
                 for i, sequence in enumerate(sequences):
                     flag = False
-                    if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & (modelname == "SubcategoryCue")):
+                    if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & ("Subcategory" in modelname)):
                         continue
                     if "HammingDistance" in modelname:
                         urset = set(models[model_class].unique_responses)
@@ -131,7 +131,7 @@ def run(config):
                     unique_responses = models["abbott"].unique_responses
                     simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = 3, sequence_length = 10)          
                 else:
-                    if modelname == "SubcategoryCue":
+                    if "SubcategoryCue" in modelname:
                         unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
                     elif "HammingDistance" in modelname:
                         unique_responses = models[model_class].unique_responses

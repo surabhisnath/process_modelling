@@ -10,11 +10,14 @@ class Heineman:
     def __init__(self, data, unique_responses, embeddings):
         self.data = data
         self.unique_responses = unique_responses
+        self.valid_responses = list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
         self.embeddings = embeddings
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
         self.response_to_category, self.num_categories = self.get_categories()
         self.cat_trans = self.get_category_transition_matrix()
+        self.fluency_prompt = f"""List animals in whatever order comes first to mind, begin with the most animal-like example. Do not repeat the animals and only list the animals. Your list should be seperated by newlines."""
+
     
     def create_models(self):
         self.models = {
@@ -111,34 +114,60 @@ class Heineman:
     def all_freq_sim_cat(self, response, previous_response, weights):
         num = pow(self.freq[response], weights[0]) * pow(
             self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
-        
-        den = 0
-        for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
-            den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) \
-                * pow(self.get_category_cue(resp, previous_response), weights[2])
+        # den = 0
+        # for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
+        #     den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) \
+        #         * pow(self.get_category_cue(resp, previous_response), weights[2])
+        freq = np.array([self.freq[resp] for resp in self.valid_responses])
+        sim = np.array([self.sim_mat[previous_response][resp] for resp in self.valid_responses])
+        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.valid_responses])
+        den = np.sum(
+            (freq ** weights[0]) * (sim ** weights[1]) * (category_cue ** weights[2])
+        )
 
         nll = -np.log(num / den)
         return nll
 
     def sim_cat(self, response, previous_response, weights):
         num = pow(
-            self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
-        
-        den = 0
-        for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
-            den += pow(self.sim_mat[previous_response][resp], weights[1]) \
-                * pow(self.get_category_cue(resp, previous_response), weights[2])
+            self.sim_mat[previous_response][response], weights[0]) * pow(self.get_category_cue(response, previous_response), weights[1])
+        # den = 0
+        # for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
+        #     den += pow(self.sim_mat[previous_response][resp], weights[0]) \
+        #         * pow(self.get_category_cue(resp, previous_response), weights[1])
+        sim = np.array([self.sim_mat[previous_response][resp] for resp in self.valid_responses])
+        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.valid_responses])
+        den = np.sum(
+            (sim ** weights[0]) * (category_cue ** weights[1])
+        )
+
+        nll = -np.log(num / den)
+        return nll
+    
+    def freq_cat(self, response, previous_response, weights):
+        num = pow(self.freq[response], weights[0]) * pow(self.get_category_cue(response, previous_response), weights[1])
+        freq = np.array([self.freq[resp] for resp in self.valid_responses])
+        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.valid_responses])
+        den = np.sum(
+            (freq ** weights[0]) * (category_cue ** weights[1])
+        )
 
         nll = -np.log(num / den)
         return nll
 
-
-class SubcategoryCueNoFreq(Heineman):
+class SubcategoryCueNoSim(Heineman):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(1, len(seq)):
-            nll += self.sim_cat(seq[i], seq[i - 1], weights)
+            nll += self.freq_cat(seq[i], seq[i - 1], weights)
         return nll
+
+# class SubcategoryCueNoFreq(Heineman):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.sim_cat(seq[i], seq[i - 1], weights)
+#         return nll
 
 # class SubcategoryCue(Heineman):
 #     def get_nll(self, weights, seq):
@@ -149,3 +178,5 @@ class SubcategoryCueNoFreq(Heineman):
 #             else:
 #                 nll += self.all_freq_sim_cat(seq[i], seq[i - 1], weights)
 #         return nll
+
+# class LLM(Heineman):

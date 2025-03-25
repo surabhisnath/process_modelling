@@ -46,7 +46,7 @@ def get_embeddings(config, unique_responses):
 def fit(func, sequence_s, individual_or_group, name):
     if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "HammingDistanceSoftmax" or name == "Freq" or name == "CosineDistance" or name == "EuclideanDistance":
         num_weights = 1
-    elif "Subcategory" in name or name == "FreqPersistantHammingDistanceAND" or name == "AgentBasedModel":
+    elif name == "SubcategoryCue" or name == "FreqPersistantHammingDistanceAND" or name == "AgentBasedModel":
         num_weights = 3
     elif "Weighted" in name:
         num_weights = 127
