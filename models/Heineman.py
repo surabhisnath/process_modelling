@@ -5,6 +5,11 @@ import os
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
+import requests
+import json
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import torch.nn.functional as F
 
 class Heineman:
     def __init__(self, data, unique_responses, embeddings):
@@ -16,8 +21,13 @@ class Heineman:
         self.freq = self.get_frequencies()
         self.response_to_category, self.num_categories = self.get_categories()
         self.cat_trans = self.get_category_transition_matrix()
-        self.fluency_prompt = f"""List animals in whatever order comes first to mind, begin with the most animal-like example. Do not repeat the animals and only list the animals. Your list should be seperated by newlines."""
-
+        # self.fluency_prompt = f"""List animals in whatever order comes first to mind, begin with the most animal-like example. Do not repeat the animals and only list the animals. Your list should be seperated by newlines."""
+        self.prompt = "Generate a single next animal in this sequence."
+        
+        self.model_name = "meta-llama/Llama-3.1-8B-Instruct"
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        self.model.eval()
     
     def create_models(self):
         self.models = {
@@ -114,10 +124,6 @@ class Heineman:
     def all_freq_sim_cat(self, response, previous_response, weights):
         num = pow(self.freq[response], weights[0]) * pow(
             self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
-        # den = 0
-        # for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
-        #     den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) \
-        #         * pow(self.get_category_cue(resp, previous_response), weights[2])
         freq = np.array([self.freq[resp] for resp in self.valid_responses])
         sim = np.array([self.sim_mat[previous_response][resp] for resp in self.valid_responses])
         category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.valid_responses])
@@ -131,10 +137,6 @@ class Heineman:
     def sim_cat(self, response, previous_response, weights):
         num = pow(
             self.sim_mat[previous_response][response], weights[0]) * pow(self.get_category_cue(response, previous_response), weights[1])
-        # den = 0
-        # for resp in list(set(self.unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"])):
-        #     den += pow(self.sim_mat[previous_response][resp], weights[0]) \
-        #         * pow(self.get_category_cue(resp, previous_response), weights[1])
         sim = np.array([self.sim_mat[previous_response][resp] for resp in self.valid_responses])
         category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.valid_responses])
         den = np.sum(
@@ -155,12 +157,12 @@ class Heineman:
         nll = -np.log(num / den)
         return nll
 
-class SubcategoryCueNoSim(Heineman):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(1, len(seq)):
-            nll += self.freq_cat(seq[i], seq[i - 1], weights)
-        return nll
+# class SubcategoryCueNoSim(Heineman):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.freq_cat(seq[i], seq[i - 1], weights)
+#         return nll
 
 # class SubcategoryCueNoFreq(Heineman):
 #     def get_nll(self, weights, seq):
@@ -179,4 +181,60 @@ class SubcategoryCueNoSim(Heineman):
 #                 nll += self.all_freq_sim_cat(seq[i], seq[i - 1], weights)
 #         return nll
 
-# class LLM(Heineman):
+class LLM(Heineman):
+    # def LLM_prob(self, response, previous_responses, weights):
+        
+    #     context_tokens = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
+    #     with torch.no_grad():
+    #         outputs = self.model(**context_tokens)
+    #         logits = outputs.logits
+    #     next_token_logits = logits[0, -1]
+    #     probs = F.softmax(next_token_logits, dim=-1)
+        
+    #     animal_probs = {}
+    #     for animal in self.unique_responses:
+    #         animal = animal.replace(" ", "")
+    #         tokens = self. tokenizer.encode(animal, add_special_tokens=False)
+    #         if len(tokens) == 1:
+    #             animal_probs[animal] = probs[tokens[0]].item()
+    #         else:
+    #             print(f"Skipping '{animal}' (not a single token): {len(tokens)}")
+        
+    #     total_prob = sum(list(animal_probs.values()))
+    #     relative_probs = {k: v / total_prob for k, v in animal_probs.items()}
+    #     return relative_probs[response]
+
+    def LLM_prob(self, response, previous_responses, weights):
+        animal_probs = {}
+        for animal in self.unique_responses:
+            previous_responses.append(animal)
+            context_tokens = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
+            with torch.no_grad():
+                outputs = self.model(**context_tokens)
+                logits = outputs.logits
+            next_token_logits = logits[0, -1]
+            probs = F.softmax(next_token_logits, dim=-1)
+            animal_probs[animal] = probs.item()
+        
+        total_prob = sum(list(animal_probs.values()))
+        relative_probs = {k: v / total_prob for k, v in animal_probs.items()}
+        return relative_probs[response]
+
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(0, len(seq)):
+            if i == 0:
+                nll += self.only_freq(seq[i], weights)
+            else:
+                nll += self.LLM_prob(seq[i], seq[:i], weights)
+        return nll
+
+# class LLMasLocalCue(Heineman):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(0, len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 nll += self.freq_LLM(seq[i], seq[i - 1], weights)
+#         return nll

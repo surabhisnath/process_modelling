@@ -44,20 +44,19 @@ def get_embeddings(config, unique_responses):
     return dict(zip(unique_responses, embeddings))
 
 def fit(func, sequence_s, individual_or_group, name):
-    if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "HammingDistanceSoftmax" or name == "Freq" or name == "CosineDistance" or name == "EuclideanDistance":
+    if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "PersistantAND" or name == "HammingDistanceSoftmax" or name == "Freq" or name == "CosineDistance" or name == "EuclideanDistance":
         num_weights = 1
-    elif name == "SubcategoryCue" or name == "FreqPersistantHammingDistanceAND" or name == "AgentBasedModel":
+    elif name == "SubcategoryCue" or name == "FreqHammingDistancePersistantAND" or name == "AgentBasedModel":
         num_weights = 3
     elif "Weighted" in name:
         num_weights = 127
     else:
         num_weights = 2
-    weights_init = np.random.rand(num_weights)
+    weights_init = np.random.uniform(0.001, 10, size=num_weights)
 
     if individual_or_group == "individual":
-        # bounds=[(0, 5)] * (len(weights_init) - 1) + [(0, 100)]
-        bounds=[(0, 10)] * len(weights_init)
-        return minimize(lambda beta: func(beta, sequence_s), weights_init, bounds=bounds, options={'maxiter': 100})
+        bounds=[(0.001, 10)] * num_weights
+        return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds=bounds, options={'maxiter': 100})
     
     elif individual_or_group == "group":
         def total_nll(weights):

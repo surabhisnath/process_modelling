@@ -29,11 +29,11 @@ def run(config):
     #     models["hills"] = hills
     #     fit_results["hills"] = {}
     
-    if config["heineman"]:
-        heineman = Heineman(data, unique_responses, embeddings)
-        heineman.create_models()
-        models["heineman"] = heineman
-        fit_results["heineman"] = {}
+    # if config["heineman"]:
+    #     heineman = Heineman(data, unique_responses, embeddings)
+    #     heineman.create_models()
+    #     models["heineman"] = heineman
+    #     fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(data, unique_responses)

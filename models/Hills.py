@@ -118,12 +118,12 @@ class OneCueStaticGlobal(Hills):
             nll += self.only_freq(seq[i], weights)
         return nll
 
-class OneCueStaticGlobalSoftmax(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            nll += self.only_freq_softmax(seq[i], weights)
-        return nll
+# class OneCueStaticGlobalSoftmax(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             nll += self.only_freq_softmax(seq[i], weights)
+#         return nll
 
 class OneCueStaticLocal(Hills):
     def get_nll(self, weights, seq):
@@ -132,12 +132,12 @@ class OneCueStaticLocal(Hills):
             nll += self.only_sim(seq[i], seq[i - 1], weights)
         return nll
 
-class OneCueStaticLocalSoftmax(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(1, len(seq)):
-            nll += self.only_sim_softmax(seq[i], seq[i - 1], weights)
-        return nll
+# class OneCueStaticLocalSoftmax(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.only_sim_softmax(seq[i], seq[i - 1], weights)
+#         return nll
 
 class CombinedCueStatic(Hills):
     def get_nll(self, weights, seq):

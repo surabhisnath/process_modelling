@@ -20,3 +20,4 @@ accelerate>=0.26.0
 nltk
 openpyxl
 rouge-score
+vllm
