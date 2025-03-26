@@ -25,7 +25,8 @@ class Ours1:
         self.sim_mat = self.get_similarity_matrix()
         self.sim_mat2 = self.get_similarity_matrix2()
         self.dist_mat = self.get_distance_matrix()
-    
+        self.all_features = np.array([self.features[r] for r in self.unique_responses])  # shape: [R, D]
+
     def create_models(self):
         self.models = {
             subclass.__name__: subclass(self.data, self.unique_responses)
@@ -119,37 +120,37 @@ class Ours1:
 #         return nll
 
 # UNCOMM
-class PersistantAND(Ours1):
-    def only_persistentand(self, response, previous_response, previous_previous_response, weights):
-        same_ = self.features[previous_previous_response] & self.features[previous_response]
-        _same = self.features[previous_response] & self.features[response]
-        num = pow(np.dot(same_, _same), weights[0])
+# class PersistantAND(Ours1):
+#     def only_persistentand(self, response, previous_response, previous_previous_response, weights):
+#         same_ = self.features[previous_previous_response] & self.features[previous_response]
+#         _same = self.features[previous_response] & self.features[response]
+#         num = pow(np.dot(same_, _same), weights[0])
 
-        den = 0
-        for resp in self.unique_responses:
-            same_ = self.features[previous_previous_response] == self.features[previous_response]
-            _same = self.features[previous_response] == self.features[resp]
-            den += pow(np.dot(same_, _same), weights[0])
+#         den = 0
+#         for resp in self.unique_responses:
+#             same_ = self.features[previous_previous_response] == self.features[previous_response]
+#             _same = self.features[previous_response] == self.features[resp]
+#             den += pow(np.dot(same_, _same), weights[0])
         
-        # _same_all = np.array([self.features[resp] for resp in self.unique_responses])
-        # _same_all = self.features[previous_response] & _same_all
-        # dot_product = np.dot(same_, _same_all.T)
-        # dot_powers = np.power(dot_product, weights[0])
-        # den = np.sum(dot_powers)
-        if num == 0 or den == 0:
-            return 0
-        nll = -np.log(num / den)
-        return nll
+#         # _same_all = np.array([self.features[resp] for resp in self.unique_responses])
+#         # _same_all = self.features[previous_response] & _same_all
+#         # dot_product = np.dot(same_, _same_all.T)
+#         # dot_powers = np.power(dot_product, weights[0])
+#         # den = np.sum(dot_powers)
+#         if num == 0 or den == 0:
+#             return 0
+#         nll = -np.log(num / den)
+#         return nll
     
-    def get_nll(self, weights, seq):        
-        # if np.isnan(weights[0]):
-        #     print("HI2")
-        nll = 0
-        for i in range(2, len(seq)):
-            nll += self.only_persistentand(seq[i], seq[i - 1], seq[i - 2], weights)
-        # if np.isnan(nll) or np.isinf(nll):
-        #     return 1e10 
-        return nll
+#     def get_nll(self, weights, seq):        
+#         # if np.isnan(weights[0]):
+#         #     print("HI2")
+#         nll = 0
+#         for i in range(2, len(seq)):
+#             nll += self.only_persistentand(seq[i], seq[i - 1], seq[i - 2], weights)
+#         # if np.isnan(nll) or np.isinf(nll):
+#         #     return 1e10 
+#         return nll
 
 # class HammingDistanceSoftmax(Ours1):
 #     def only_hamsm(self, response, previous_response, weights):
@@ -475,9 +476,11 @@ class PersistantAND(Ours1):
 # class WeightedHammingDistance(Ours1):
 #     def weighted_ham(self, response, previous_response, weights):
 #         num = np.abs(self.features[previous_response] - self.features[response]) @ weights
+        
 #         den = 0
 #         for resp in self.unique_responses:
 #             den += np.abs(self.features[previous_response] - self.features[resp]) @ weights
+
 #         nll = -np.log(num / den)
 #         return nll
     
@@ -485,4 +488,37 @@ class PersistantAND(Ours1):
 #         nll = 0
 #         for i in range(1, len(seq)):
 #             nll += self.weighted_ham(seq[i], seq[i - 1], weights)
+#         return nll
+
+class Weighted_fast(Ours1):
+    def get_nll(self, weights, seq):
+        prev_features = np.array([self.features[seq[i]] for i in range(len(seq) - 1)])  # [N-1, D]
+        next_features = np.array([self.features[seq[i + 1]] for i in range(len(seq) - 1)])  # [N-1, D]
+
+        num = np.sum(np.abs(prev_features - next_features) * weights, axis=1)
+
+        diffs = np.abs(prev_features[:, None, :] - self.all_features[None, :, :])  # [N-1, R, D]
+        weighted_diffs = diffs * weights  # [N-1, R, D]
+        den = np.sum(np.sum(weighted_diffs, axis=2), axis=1)  # [N-1]
+
+        eps = 0
+        nll = -np.sum(np.log(num / (den + eps)))  # epsilon for stability
+        return nll
+
+# class WeightedHammingDistance(Ours1):
+
+#     def get_nll(self, weights, seq):
+#         seq_features = np.stack([self.features[seq[i]] for i in range(len(seq))])   # [L, D]
+
+#         prev_features = seq_features[:-1, :]   # [L-1, D]
+#         next_features = seq_features[1:, :]    # [L-1, D]
+
+#         num = np.sum(np.abs(prev_features - next_features) * weights, axis=1)  # [L-1]
+
+#         diffs = np.abs(prev_features[:, np.newaxis, :] - self.all_features[np.newaxis, :, :])  # [L-1, R, D]
+#         den = np.sum(diffs * weights, axis=2).sum(axis=1)  # [L-1]
+
+#         eps = 0
+#         nll = -np.sum(np.log(num / (den + eps)))
+
 #         return nll

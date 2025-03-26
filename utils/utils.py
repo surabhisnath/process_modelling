@@ -13,7 +13,17 @@ warnings.simplefilter("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from scipy.optimize import minimize
 
-# extract switches
+from tqdm import tqdm
+
+class ProgressTracker:
+    def __init__(self, total_iters=100):
+        self.pbar = tqdm(total=total_iters)
+    def __call__(self, xk):
+        print("CALL")
+        self.pbar.update(1)
+        self.pbar.set_description(f"Current weights: {xk}")
+    def close(self):
+        self.pbar.close()
 
 # Functions
 def d2np(some_dict):
@@ -49,7 +59,7 @@ def fit(func, sequence_s, individual_or_group, name):
     elif name == "SubcategoryCue" or name == "FreqHammingDistancePersistantAND" or name == "AgentBasedModel":
         num_weights = 3
     elif "Weighted" in name:
-        num_weights = 127
+        num_weights = 73
     else:
         num_weights = 2
     weights_init = np.random.uniform(0.001, 10, size=num_weights)
@@ -61,7 +71,17 @@ def fit(func, sequence_s, individual_or_group, name):
     elif individual_or_group == "group":
         def total_nll(weights):
             return sum(func(weights, seq) for seq in sequence_s)
-        return minimize(total_nll, weights_init)
+        # return minimize(total_nll, weights_init, method='Nelder-Mead')
+        tracker = ProgressTracker()
+        bounds=[(0.001, 10)] * num_weights
+        result = minimize(total_nll, weights_init,
+            method='Nelder-Mead',
+            # callback=tracker,
+            # bounds=bounds, 
+            options={'maxiter': 100}
+        )
+        tracker.close()
+        return result
 
 def simulate(config, func, weights, unique_responses, start, num_sequences = 5, sequence_length = 10):
     simulations = []

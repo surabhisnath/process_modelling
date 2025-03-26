@@ -47,11 +47,11 @@ def run(config):
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
     
-    # if config["ours1"]:
-    #     ours1 = Ours1(data, unique_responses)
-    #     ours1.create_models()
-    #     models["ours1"] = ours1
-    #     fit_results["ours1"] = {}
+    if config["ours1"]:
+        ours1 = Ours1(data, unique_responses)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     # print(ours1.feature_names)
     
