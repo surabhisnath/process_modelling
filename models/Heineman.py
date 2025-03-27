@@ -8,6 +8,7 @@ from utils import *
 import requests
 import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import LlamaForCausalLM, LlamaTokenizer
 import torch
 import torch.nn.functional as F
 
@@ -26,7 +27,9 @@ class Heineman:
         
         self.model_name = "meta-llama/Llama-3.1-8B-Instruct"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        # self.tokenizer = LlamaTokenizer.from_pretrained(self.model_name)
         self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        # self.model = LlamaForCausalLM.from_pretrained(self.model_name)
         self.model.eval()
     
     def create_models(self):
@@ -55,7 +58,7 @@ class Heineman:
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
-                key, value = line.strip().split('\t')
+                key, value = line.strip().split(',')
                 if key in self.unique_responses:
                     frequencies[key] = float(value)
         return frequencies
@@ -183,42 +186,61 @@ class Heineman:
 
 class LLM(Heineman):
     # def LLM_prob(self, response, previous_responses, weights):
-        
-    #     context_tokens = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
-    #     with torch.no_grad():
-    #         outputs = self.model(**context_tokens)
-    #         logits = outputs.logits
-    #     next_token_logits = logits[0, -1]
-    #     probs = F.softmax(next_token_logits, dim=-1)
-        
     #     animal_probs = {}
     #     for animal in self.unique_responses:
-    #         animal = animal.replace(" ", "")
-    #         tokens = self. tokenizer.encode(animal, add_special_tokens=False)
-    #         if len(tokens) == 1:
-    #             animal_probs[animal] = probs[tokens[0]].item()
-    #         else:
-    #             print(f"Skipping '{animal}' (not a single token): {len(tokens)}")
-        
+    #         previous_responses.append(animal)
+    #         inputs = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
+    #         # with torch.no_grad():
+    #         #     outputs = self.model(**context_tokens)
+    #         #     logits = outputs.logits
+    #         # next_token_logits = logits[0, -1]
+    #         # probs = F.softmax(next_token_logits, dim=-1)
+    #         # animal_probs[animal] = probs.item()
+    #         res = self.model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['input_ids'])
+    #         prob = np.exp(-res.loss.item())
+    #         animal_probs[animal] = prob
     #     total_prob = sum(list(animal_probs.values()))
     #     relative_probs = {k: v / total_prob for k, v in animal_probs.items()}
-    #     return relative_probs[response]
+    #     return -np.log(relative_probs[response])
+    
+    def LLM_prob(self, candidate, context, weights):
+        # # Combine context and candidate into a full input
+        # full_input = ", ".join(context) + ", " + candidate
+        # print(full_input)
+        # input_ids = self.tokenizer(full_input, return_tensors="pt").input_ids
+        # with torch.no_grad():
+        #     logits = self.model(input_ids).logits
 
-    def LLM_prob(self, response, previous_responses, weights):
-        animal_probs = {}
-        for animal in self.unique_responses:
-            previous_responses.append(animal)
-            context_tokens = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
-            with torch.no_grad():
-                outputs = self.model(**context_tokens)
-                logits = outputs.logits
-            next_token_logits = logits[0, -1]
-            probs = F.softmax(next_token_logits, dim=-1)
-            animal_probs[animal] = probs.item()
+        # # Shift for next-token prediction
+        # shift_logits = logits[:, :-1, :]
+        # shift_labels = input_ids[:, 1:]
+
+        # # Log-softmax to get log-probs
+        # log_probs = F.log_softmax(shift_logits, dim=-1)
+        # selected_log_probs = log_probs.gather(2, shift_labels.unsqueeze(-1)).squeeze(-1)
+
+        # # Isolate candidate portion
+        # context_len = self.tokenizer(context, return_tensors="pt").input_ids.shape[1]
+        # candidate_len = input_ids.shape[1] - context_len
+        # candidate_log_probs = selected_log_probs[0, -candidate_len:]
+
+        # # Compute average NLL
+        # avg_nll = -candidate_log_probs.mean().item()
+        # return avg_nll
+        text = full_input = ", ".join(context) + ", " + candidate
+        inputs = self.tokenizer(text, return_tensors="pt")
+        input_ids = inputs["input_ids"]
         
-        total_prob = sum(list(animal_probs.values()))
-        relative_probs = {k: v / total_prob for k, v in animal_probs.items()}
-        return relative_probs[response]
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            logits = outputs.logits[:, :-1, :]
+            labels = input_ids[:, 1:]
+            log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
+            selected_log_probs = log_probs.gather(2, labels.unsqueeze(-1)).squeeze(-1)
+            avg_nll = -selected_log_probs.mean().item()
+            perplexity = torch.exp(-selected_log_probs.mean()).item()
+        
+        return avg_nll
 
     def get_nll(self, weights, seq):
         nll = 0

@@ -14,7 +14,6 @@ class Hills:
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
         self.response_to_category, self.num_categories = self.get_categories()
-
     def create_models(self):
         self.models = {
             subclass.__name__: subclass(self.data, self.unique_responses, self.embeddings)
@@ -41,8 +40,9 @@ class Hills:
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
-                key, value = line.strip().split('\t')
-                if key in self.unique_responses:
+                key, value = line.strip().split(',')
+                if key in [r.replace(" ", "") for r in self.unique_responses]:
+
                     frequencies[key] = float(value)
         return frequencies
     
@@ -75,7 +75,7 @@ class Hills:
         return examples_to_category, num_categories
 
     def only_freq(self, response, weights):
-        num = pow(self.freq[response], weights[0])
+        num = pow(self.freq[response.replace(" ", "")], weights[0])
         den = sum(pow(d2np(self.freq), weights[0]))
         if den == 0:
             return np.inf
@@ -111,12 +111,12 @@ class Hills:
         nll = -np.log(num / den)
         return nll
 
-class OneCueStaticGlobal(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            nll += self.only_freq(seq[i], weights)
-        return nll
+# class OneCueStaticGlobal(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             nll += self.only_freq(seq[i], weights)
+#         return nll
 
 # class OneCueStaticGlobalSoftmax(Hills):
 #     def get_nll(self, weights, seq):
@@ -125,12 +125,12 @@ class OneCueStaticGlobal(Hills):
 #             nll += self.only_freq_softmax(seq[i], weights)
 #         return nll
 
-class OneCueStaticLocal(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(1, len(seq)):
-            nll += self.only_sim(seq[i], seq[i - 1], weights)
-        return nll
+# class OneCueStaticLocal(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.only_sim(seq[i], seq[i - 1], weights)
+#         return nll
 
 # class OneCueStaticLocalSoftmax(Hills):
 #     def get_nll(self, weights, seq):
@@ -139,43 +139,43 @@ class OneCueStaticLocal(Hills):
 #             nll += self.only_sim_softmax(seq[i], seq[i - 1], weights)
 #         return nll
 
-class CombinedCueStatic(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(0, len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-        return nll
+# class CombinedCueStatic(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(0, len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+#         return nll
 
-class CombinedCueDynamicCat(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(0, len(seq)):
-            if i == 0 or not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
-                nll += self.only_freq(seq[i], weights)
-            else:
-                nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-        return nll
+# class CombinedCueDynamicCat(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(0, len(seq)):
+#             if i == 0 or not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+#         return nll
 
-class CombinedCueDynamicSimdrop(Hills):
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(0, len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                try:
-                    sim1 = self.sim_mat[seq[i - 2]][seq[i - 1]]
-                    sim2 = self.sim_mat[seq[i - 1]][seq[i]]
-                    sim3 = self.sim_mat[seq[i]][seq[i + 1]]
+# class CombinedCueDynamicSimdrop(Hills):
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(0, len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 try:
+#                     sim1 = self.sim_mat[seq[i - 2]][seq[i - 1]]
+#                     sim2 = self.sim_mat[seq[i - 1]][seq[i]]
+#                     sim3 = self.sim_mat[seq[i]][seq[i + 1]]
 
-                    if sim1 > sim2 < sim3:
-                        nll += self.only_freq(seq[i], weights)
-                    else:
-                        nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-                except:
-                    nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+#                     if sim1 > sim2 < sim3:
+#                         nll += self.only_freq(seq[i], weights)
+#                     else:
+#                         nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+#                 except:
+#                     nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
             
-        return nll
+#         return nll

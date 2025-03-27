@@ -59,7 +59,7 @@ class Morales:
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
-                key, value = line.strip().split('\t')
+                key, value = line.strip().split(',')
                 if key in self.unique_responses:
                     frequencies[key] = float(value)
         total = sum(list(frequencies.values()))

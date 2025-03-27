@@ -29,11 +29,11 @@ def run(config):
     #     models["hills"] = hills
     #     fit_results["hills"] = {}
     
-    # if config["heineman"]:
-    #     heineman = Heineman(data, unique_responses, embeddings)
-    #     heineman.create_models()
-    #     models["heineman"] = heineman
-    #     fit_results["heineman"] = {}
+    if config["heineman"]:
+        heineman = Heineman(data, unique_responses, embeddings)
+        heineman.create_models()
+        models["heineman"] = heineman
+        fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(data, unique_responses)
@@ -47,11 +47,11 @@ def run(config):
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
     
-    if config["ours1"]:
-        ours1 = Ours1(data, unique_responses)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+    # if config["ours1"]:
+    #     ours1 = Ours1(data, unique_responses)
+    #     ours1.create_models()
+    #     models["ours1"] = ours1
+    #     fit_results["ours1"] = {}
     
     # print(ours1.feature_names)
     
@@ -100,6 +100,7 @@ def run(config):
 
             if config["fitting"] == "group":
                 # TODO: remove the sequences with mammal, woollymammoth, unicorn, bacterium in it for Heineman to work
+                sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
                 fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
                 fit_results[model_class][modelname]["minNLL"] = fitted.fun
                 fit_results[model_class][modelname]["weights"] = fitted.x
