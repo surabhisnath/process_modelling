@@ -53,52 +53,85 @@ def get_embeddings(config, unique_responses):
 
     return dict(zip(unique_responses, embeddings))
 
-def fit(func, sequence_s, individual_or_group, name):
-    cnt = 0
+def fit(func, sequence_s, individual_or_group, name, weights_init=None):
     if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "PersistantAND" or name == "HammingDistanceSoftmax" or name == "Freq" or name == "CosineDistance" or name == "EuclideanDistance":
         num_weights = 1
-    elif name == "SubcategoryCue" or name == "FreqHammingDistancePersistantAND" or name == "AgentBasedModel":
+    elif name == "SubcategoryCue" or name == "FreqHammingDistancePersistantAND" or name == "AgentBasedModel" or name == "FreqHammingDistancePersistantXOR":
         num_weights = 3
-    elif "Weighted" in name:
-        num_weights = 73
+    elif name == "WeightedHammingDistance" in name:
+        num_weights = 74
+    elif name == "WeightedHammingDistance2" in name:
+        num_weights = 10
     else:
         num_weights = 2
-    weights_init = np.random.uniform(0.001, 10, size=num_weights)
+    
+    if weights_init is None:
+        weights_init = np.random.uniform(0.001, 10, size=num_weights)
+    # options = {
+    #         "display" : 'off',             
+    #         "uncertainty_handling": False,
+    #     }
 
     if individual_or_group == "individual":
-        # bounds=[(0.001, 10)] * num_weights
-        # return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds=bounds, options={'maxiter': 1})
+        bounds=[(0.001, 10)] * num_weights
+        return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds=bounds, options={'maxiter': 100})
         
         # BADS
-        lower_bounds = np.full(num_weights, 0.001)
-        upper_bounds = np.full(num_weights, 10.0)
-        def obj_fn(weights):
-            return func(weights, sequence_s)
-        optimizer = BADS(obj_fn, x0=weights_init, lb=lower_bounds, ub=upper_bounds)
-        return optimizer.optimize()
+        # lower_bounds = np.full(num_weights, 0.001)
+        # upper_bounds = np.full(num_weights, 10.0)
+        # def obj_fn(weights):
+        #     return func(weights, sequence_s)
+        # optimizer = BADS(obj_fn, weights_init, lower_bounds, upper_bounds, options=options)
+        # return optimizer.optimize()
     
     elif individual_or_group == "group":
+        if weights_init is None:
+            weights_init = np.concatenate(([6.72], np.full(0.5, num_weights - 1)))
+        cnt = 0
         def total_nll(weights):
+            nonlocal cnt
             print(cnt)
             cnt += 1
             return sum(func(weights, seq) for seq in sequence_s)
         
         # tracker = ProgressTracker()
+        bounds=[(0.001, 20)] + [(0, 1)] * (num_weights - 1)
         # bounds=[(0.001, 10)] * num_weights
-        # result = minimize(total_nll, weights_init,
-        #     method='Nelder-Mead',
-        #     # callback=tracker,
-        #     # bounds=bounds, 
-        #     options={'maxiter': 100}
-        # )
+
+        result = minimize(total_nll, weights_init,
+            # method='Nelder-Mead',
+            # callback=tracker,
+            bounds=bounds, 
+            options={'maxiter': 1}
+        )
         # tracker.close()
-        # return result
+        return result
 
         # BADS
-        lower_bounds = np.full(num_weights, 0.001)
-        upper_bounds = np.full(num_weights, 10.0)
-        optimizer = BADS(total_nll, x0=weights_init, lb=lower_bounds, ub=upper_bounds)
-        return optimizer.optimize()
+        # lower_bounds = np.full(num_weights, 0.001)
+        # upper_bounds = np.full(num_weights, 10.0)
+        # optimizer = BADS(total_nll, weights_init, lower_bounds, upper_bounds, options=options)
+        # return optimizer.optimize()
+    
+    elif individual_or_group == "hierarchical":
+        def update_group_params(beta_list):
+            beta_array = np.array(beta_list)
+            mu = np.mean(beta_array, axis=0)
+            Sigma = np.cov(beta_array.T)
+            return mu, Sigma
+        
+        mu = np.zeros(num_weights)
+        Sigma = np.eye(num_weights)
+        for iteration in range(10):
+            print(f"Iteration {iteration+1}")
+            # E-step
+            beta_list = []
+            for i in range(len(sequence_s)):
+                beta_i = fit(func, sequence_s[i], "individual", name, mu).x
+                beta_list.append(beta_i)
+            # M-step
+            mu, Sigma = update_group_params(beta_list)
+        return mu, Sigma, beta_list                        
 
 def simulate(config, func, weights, unique_responses, start, num_sequences, sequence_lengths):
     simulations = []
@@ -111,6 +144,7 @@ def simulate(config, func, weights, unique_responses, start, num_sequences, sequ
             if config["preventrepetition"]:
                 prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in list(set(unique_responses) - set(simulated_sequence))])
                 prob_dist /= prob_dist.sum()
+                # print(func, i, j, num_sequences, sequence_lengths[i], simulated_sequence, list(set(unique_responses) - set(simulated_sequence)), prob_dist)
                 next_response = np.random.choice(list(set(unique_responses) - set(simulated_sequence)), p=prob_dist)
             else:
                 prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in unique_responses])        

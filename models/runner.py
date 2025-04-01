@@ -22,12 +22,12 @@ def run(config):
     
     models = {}
     fit_results = {}
-    
-    if config["hills"]:
-        hills = Hills(data, unique_responses, embeddings)
-        hills.create_models()
-        models["hills"] = hills
-        fit_results["hills"] = {}
+    # if config["hills"]:
+    #     hills = Hills(data, unique_responses, embeddings)
+    #     hills.create_models()
+    #     models["hills"] = hills
+    #     fit_results["hills"] = {}
+
     
     # if config["heineman"]:
     #     heineman = Heineman(data, unique_responses, embeddings)
@@ -47,11 +47,11 @@ def run(config):
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
     
-    # if config["ours1"]:
-    #     ours1 = Ours1(data, unique_responses)
-    #     ours1.create_models()
-    #     models["ours1"] = ours1
-    #     fit_results["ours1"] = {}
+    if config["ours1"]:
+        ours1 = Ours1(data, unique_responses)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     # print(ours1.feature_names)
     
@@ -63,7 +63,6 @@ def run(config):
     # correlation2 = np.corrcoef([dict_1[k1][k2] for k1 in dict_1 for k2 in dict_1[k1]], [dict_3[k1][k2] for k1 in dict_3 for k2 in dict_3[k1]])[0, 1]
     # correlation3 = np.corrcoef([dict_1[k1][k2] for k1 in dict_1 for k2 in dict_1[k1]], [dict_4[k1][k2] for k1 in dict_4 for k2 in dict_4[k1]])[0, 1]
     # print(correlation1, correlation2, correlation3)
-    
     sequences = data.groupby("pid").agg(list)["response"].tolist()
     num_sequences = len(sequences)
     human_bleu = calculate_bleu(sequences[:num_sequences//2], sequences[num_sequences//2:])
@@ -113,14 +112,19 @@ def run(config):
                     fit_results[model_class][modelname]["weights"] = fitted.x
                 
                 if config["fitting"] == "hierarchical":
-                    sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
-                    fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
-                    fit_results[model_class][modelname]["minNLL"] = fitted.fun
-                    fit_results[model_class][modelname]["weights"] = fitted.x
+                    fitted = fit(models[model_class].models[modelname].get_nll, sequences, "hierarchical", modelname)
+                    print([x.item() for x in fitted])
 
                 end_time = time.time()    
                 elapsed_time = end_time - start_time
-                print(f"{modelname} completed in {elapsed_time:.2f} seconds\n")
+                print(f"{modelname} completed in {elapsed_time:.2f} seconds")
+
+                if config["fitting"] == "individual":
+                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
+                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
+                elif config["fitting"] == "group":
+                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
+                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
 
     if config["print"]:
         print("--------------------------------PRINTING FITS--------------------------------")
@@ -137,6 +141,7 @@ def run(config):
 
     if config["simulate"]:
         print("--------------------------------SIMULATING MODELS--------------------------------")
+        num_seq = 10
         simulations = {}
         for model_class in models:
             simulations[model_class] = {}
@@ -145,17 +150,17 @@ def run(config):
                 start = None
                 if model_class == "abbott":
                     unique_responses = models["abbott"].unique_responses
-                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = len(sequences), sequence_length = [len(seq) for seq in sequences])          
+                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = len(sequences), sequence_length = [len(seq) for i, seq in enumerate(sequences) if i < num_seq])          
                 else:
                     if "SubcategoryCue" in modelname:
                         unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
                     elif "HammingDistance" in modelname:
                         unique_responses = models[model_class].unique_responses
-                        start = "dog"
+                        # start = "dog"
                     if config["fitting"] == "individual":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [4.6526225,  5.16179763, 0.9199939], unique_responses, start, num_sequences = 10, sequence_lengths = [len(seq) for seq in sequences])
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, start, num_sequences = num_seq, sequence_lengths = [10] * num_seq)
                     elif config["fitting"] == "group":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, start, num_sequences = len(sequences), sequence_length = [len(seq) for seq in sequences])
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, start, num_sequences = num_seq, sequence_length = [len(seq) for i, seq in enumerate(sequences) if i < num_seq])
 
                 
                 print(model_class, modelname, "simulations..................")

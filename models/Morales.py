@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "u
 from utils import *
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
+np.random.seed(4)
 
 class Morales:
     def __init__(self, data, unique_responses, embeddings):

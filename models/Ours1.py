@@ -12,15 +12,38 @@ class Ours1:
         self.data = data
         self.unique_responses = unique_responses
         self.feature_names = self.get_feature_names()
+        #     Subgroup
+        # 0	Taxonomic Class (e.g., mammal, bird)
+        # 1	Diet (e.g., carnivore, herbivore)
+        # 2	Physical Traits (e.g., has fur, scales)
+        # 3	Abilities & Behavior (e.g., can climb, uses tools)
+        # 4	Temporal Activity (e.g., diurnal, crepuscular)
+        # 5	Habitat / Location
+        # 6	Reproduction / Life Cycle
+        # 7	Human Interaction & Symbolic Role
+        # 8	Ecological Role / Adaptation
+        self.feature_groups = [0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 4, 2, 5, 5, 5, 6, 6, 7, 7, 7, 7, 2, 2, 2, 2, 7, 7, 7, 7, 3, 2, 3, 3, 3, 3, 6, 2, 5, 5, 5, 5, 5, 5, 5, 2, 8, 8, 5, 3, 3, 4, 3, 8, 3, 3, 8, 5, 3, 6, 6, 3, 7, 2, 2, 2]
+        self.useful_feature_names = ['feature_Is mammal', 'feature_Is bird', 'feature_Is insect',
+            'feature_Is amphibian', 'feature_Is fish', 'feature_Is carnivore',
+            'feature_Has exoskeleton', 'feature_Has horns', 'feature_Has tail',
+            'feature_Lives in water', 'feature_Lives on land',
+            'feature_Is domesticated', 'feature_Has camouflage',
+            'feature_Can change color', 'feature_Is commonly kept as a pet',
+            'feature_Is used in farming', 'feature_Is used for food by humans',
+            'feature_Is found in zoos', 'feature_Is capable of regrowth',
+            'feature_Has specialized hunting techniques',
+            'feature_Is native to Europe', 'feature_Is found in oceans',
+            'feature_Has a crest', 'feature_Lives in a burrow',
+            'feature_Can tolerate extreme temperatures',
+            'feature_Produces pheromones for communication',
+            'feature_Lives symbiotically with other species',
+            'feature_Displays mating rituals',
+            'feature_Uses specific vocalizations to communicate',
+            'feature_Is a flagship species (conservation symbol)',
+            'feature_Has a segmented body']
+
         self.features = self.get_features()
         self.freq = self.get_frequencies()
-        # keys_to_remove = ["cat dog lion tiger parrot monkey human food cows milk eggs hamster",
-        #                   'sister', 'extinct', 'living', 'endangered', 'diversity',
-        #                   'monkey dog cat guinea pig rabbit horsecow duck goat chicken elephant giraffe meerkat',
-        #                   'herbivore', 'carnivore', 'omnivore', 'cow bull chicken dog cat shepherd',
-        #                   'dog cat monkey rat mouse hamster crocodile lion zebra giraffe elephant beaver hare rabbit parrot heron duck'
-        #                   ]
-        # self.features = {k: v for k, v in self.features.items() if k not in keys_to_remove}
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_similarity_matrix()
         self.sim_mat2 = self.get_similarity_matrix2()
@@ -39,7 +62,7 @@ class Ours1:
     
     def get_features(self):
         featuredict = pk.load(open(f"../scripts/vf_features.pk", "rb"))
-        return {k: np.array([1 if v.lower()[:4] == 'true' else 0 for f, v in values.items() if f in self.feature_names]) for k, values in featuredict.items()}
+        return {k: np.array([1 if v.lower()[:4] == 'true' else 0 for f, v in values.items() if f in self.useful_feature_names]) for k, values in featuredict.items()}
     
     def get_frequencies(self):
         file_path = 'datafreqlistlog.txt'
@@ -104,20 +127,20 @@ class Ours1:
                 sim_vector[resp2][resp1] = sim
         return sim_vector
 
-# class HammingDistance(Ours1):
-#     def only_ham(self, response, previous_response, weights):
-#         num = pow(self.sim_mat[previous_response][response], weights[0])
-#         den = sum(
-#             pow(d2np(self.sim_mat[previous_response]), weights[0])
-#         )  # if [a,b,c] is np array then pow([a,b,c],d) returns [a^d, b^d, c^d]
-#         nll = -np.log(num / den)
-#         return nll
+class HammingDistance(Ours1):
+    def only_ham(self, response, previous_response, weights):
+        num = pow(self.sim_mat[previous_response][response], weights[0])
+        den = sum(
+            pow(d2np(self.sim_mat[previous_response]), weights[0])
+        )  # if [a,b,c] is np array then pow([a,b,c],d) returns [a^d, b^d, c^d]
+        nll = -np.log(num / den)
+        return nll
     
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(1, len(seq)):
-#             nll += self.only_ham(seq[i], seq[i - 1], weights)
-#         return nll
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(1, len(seq)):
+            nll += self.only_ham(seq[i], seq[i - 1], weights)
+        return nll
 
 # UNCOMM
 # class PersistantAND(Ours1):
@@ -475,13 +498,106 @@ class FreqHammingDistancePersistantAND(Ours1):
             nll += self.freq_ham_persistantand(seq[i], seq[i - 1], seq[i - 2], weights)
         return nll
 
-# class WeightedHammingDistance(Ours1):
-#     def weighted_ham(self, response, previous_response, weights):
-#         num = np.abs(self.features[previous_response] - self.features[response]) @ weights
+# UNCOMM
+# class FreqHammingDistancePersistantXOR(Ours1):
+#     def freq_ham_persistantand(self, response, previous_response, previous_previous_response, weights):
+#         same_ = self.features[previous_previous_response] == self.features[previous_response]
+#         _same = self.features[previous_response] == self.features[response]
+#         num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1]) * pow(
+#             np.dot(same_, _same), weights[2]
+#         )
         
-#         den = 0
-#         for resp in self.unique_responses:
-#             den += np.abs(self.features[previous_response] - self.features[resp]) @ weights
+#         # den = 0
+#         # for resp in self.unique_responses:
+#         #     same_ = self.features[previous_previous_response] == self.features[previous_response]
+#         #     _same = self.features[previous_response] == self.features[resp]
+#         #     den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) * pow(
+#         #     np.dot(same_, _same), weights[2]
+#         # )
+            
+#         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
+#         _same_all = self.features[previous_response] == _same_all
+#         dot_product = np.dot(same_, _same_all.T)
+#         freq_powers = np.power(
+#             np.array([self.freq[resp] for resp in self.unique_responses]),
+#             weights[0]
+#         )
+#         sim_powers = np.power(
+#             np.array([self.sim_mat[previous_response][resp] for resp in self.unique_responses]),
+#             weights[1]
+#         )
+#         dot_powers = np.power(dot_product, weights[2])
+#         den = np.sum(freq_powers * sim_powers * dot_powers)
+
+#         nll = -np.log(num / den)
+#         if num == 0 or den == 0:
+#             return 0
+#         return nll
+    
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(2, len(seq)):
+#             nll += self.freq_ham_persistantand(seq[i], seq[i - 1], seq[i - 2], weights)
+#         return nll
+
+# class HammingDistance2(Ours1):
+#     def only_ham(self, response, previous_response, weights, epsilon=1e-8):
+#         prev_feat = self.features[previous_response]
+#         curr_feat = self.features[response]
+#         diff = prev_feat == curr_feat
+#         num = sum(diff) ** weights[0]
+
+#         all_feats = np.array([self.features[resp] for resp in self.unique_responses])
+#         all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
+#         den = np.sum(sum(all_diffs, axis=1) ** weights[0]) + epsilon
+
+#         nll = -np.log(num / den)
+#         return nll
+    
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(1, len(seq)):
+#             nll += self.only_ham(seq[i], seq[i - 1], weights)
+#         return nll
+
+class WeightedHammingDistance(Ours1):
+    def weighted_ham(self, response, previous_response, weights, epsilon=1e-8):
+        prev_feat = self.features[previous_response]
+        curr_feat = self.features[response]
+        diff = prev_feat == curr_feat
+
+        feature_weights = weights[1:]
+        # feature_weights = np.array([weights[i + 1] for i in self.feature_groups])
+
+        num = (diff @ feature_weights) ** weights[0]
+
+        all_feats = np.array([self.features[resp] for resp in self.unique_responses])
+        all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
+        den = np.sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
+
+        nll = -np.log(num / den)
+        return nll
+    
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(1, len(seq)):
+            nll += self.weighted_ham(seq[i], seq[i - 1], weights)
+        return nll
+    
+# class WeightedHammingDistance2(Ours1):
+#     def weighted_ham(self, response, previous_response, weights, epsilon=1e-8):
+#         prev_feat = self.features[previous_response]
+#         curr_feat = self.features[response]
+#         diff = prev_feat == curr_feat
+
+#         # feature_weights = weights[1:]
+#         feature_weights = np.array([weights[i + 1] for i in self.feature_groups])
+        
+#         num = (diff @ feature_weights) ** weights[0]
+
+#         all_feats = np.array([self.features[resp] for resp in self.unique_responses])
+#         all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
+#         den = np.sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
 
 #         nll = -np.log(num / den)
 #         return nll
@@ -490,19 +606,4 @@ class FreqHammingDistancePersistantAND(Ours1):
 #         nll = 0
 #         for i in range(1, len(seq)):
 #             nll += self.weighted_ham(seq[i], seq[i - 1], weights)
-#         return nll
-
-# class WeightedHammingDistance(Ours1):
-#     def get_nll(self, weights, seq):
-#         prev_features = np.array([self.features[seq[i]] for i in range(len(seq) - 1)])  # [N-1, D]
-#         next_features = np.array([self.features[seq[i + 1]] for i in range(len(seq) - 1)])  # [N-1, D]
-
-#         num = np.sum(np.abs(prev_features - next_features) * weights, axis=1)
-
-#         diffs = np.abs(prev_features[:, None, :] - self.all_features[None, :, :])  # [N-1, R, D]
-#         weighted_diffs = diffs * weights  # [N-1, R, D]
-#         den = np.sum(np.sum(weighted_diffs, axis=2), axis=1)  # [N-1]
-
-#         eps = 0
-#         nll = -np.sum(np.log(num / (den + eps)))  # epsilon for stability
 #         return nll
