@@ -23,17 +23,17 @@ def run(config):
     models = {}
     fit_results = {}
     
-    # if config["hills"]:
-    #     hills = Hills(data, unique_responses, embeddings)
-    #     hills.create_models()
-    #     models["hills"] = hills
-    #     fit_results["hills"] = {}
+    if config["hills"]:
+        hills = Hills(data, unique_responses, embeddings)
+        hills.create_models()
+        models["hills"] = hills
+        fit_results["hills"] = {}
     
-    if config["heineman"]:
-        heineman = Heineman(data, unique_responses, embeddings)
-        heineman.create_models()
-        models["heineman"] = heineman
-        fit_results["heineman"] = {}
+    # if config["heineman"]:
+    #     heineman = Heineman(data, unique_responses, embeddings)
+    #     heineman.create_models()
+    #     models["heineman"] = heineman
+    #     fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(data, unique_responses)
@@ -65,48 +65,62 @@ def run(config):
     # print(correlation1, correlation2, correlation3)
     
     sequences = data.groupby("pid").agg(list)["response"].tolist()
-    print("--------------------------------FITTING MODELS--------------------------------")
-    for model_class in models:
-        if model_class == "abbott":
-            continue
-        for modelname in models[model_class].models:
-            print(modelname)
-            start_time = time.time()
-            fit_results[model_class][modelname] = {}
-            if config["fitting"] == "individual":
-                minNLL_list = []
-                weights_list = []
-                for i, sequence in enumerate(sequences):
-                    flag = False
-                    if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & ("Subcategory" in modelname)):
-                        continue
-                    if "HammingDistance" in modelname:
-                        urset = set(models[model_class].unique_responses)
-                        for item in sequence:
-                            if item not in urset:
-                                flag = True
-                    if flag:
-                        continue
-                    fit_results[model_class][modelname][f"seq{i+1}"] = {}
-                    fitted = fit(models[model_class].models[modelname].get_nll, sequence, "individual", modelname)
-                    fit_results[model_class][modelname][f"seq{i+1}"]["minNLL"] = fitted.fun
-                    minNLL_list.append(fitted.fun)
-                    fit_results[model_class][modelname][f"seq{i+1}"]["weights"] = fitted.x
-                    weights_list.append(fitted.x)
-                fit_results[model_class][modelname]["mean_minNLL"] = np.mean(minNLL_list)
-                fit_results[model_class][modelname]["std_minNLL"] = np.std(minNLL_list)
-                fit_results[model_class][modelname]["mean_weights"] = np.mean(weights_list, axis = 0)
-                fit_results[model_class][modelname]["std_weights"] = np.std(weights_list, axis = 0)
+    num_sequences = len(sequences)
+    human_bleu = calculate_bleu(sequences[:num_sequences//2], sequences[num_sequences//2:])
+    print(human_bleu)
+    human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
+    corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
+    print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
 
-            if config["fitting"] == "group":
-                # TODO: remove the sequences with mammal, woollymammoth, unicorn, bacterium in it for Heineman to work
-                sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
-                fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
-                fit_results[model_class][modelname]["minNLL"] = fitted.fun
-                fit_results[model_class][modelname]["weights"] = fitted.x
-            end_time = time.time()    
-            elapsed_time = end_time - start_time
-            print(f"{modelname} completed in {elapsed_time:.2f} seconds\n")
+    if config["fit"]:
+        print("--------------------------------FITTING MODELS--------------------------------")
+        for model_class in models:
+            if model_class == "abbott":
+                continue
+            for modelname in models[model_class].models:
+                print(modelname)
+                start_time = time.time()
+                fit_results[model_class][modelname] = {}
+                if config["fitting"] == "individual":
+                    minNLL_list = []
+                    weights_list = []
+                    for i, sequence in enumerate(sequences):
+                        flag = False
+                        if (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence) & ("Subcategory" in modelname)):
+                            continue
+                        if "HammingDistance" in modelname:
+                            urset = set(models[model_class].unique_responses)
+                            for item in sequence:
+                                if item not in urset:
+                                    flag = True
+                        if flag:
+                            continue
+                        fit_results[model_class][modelname][f"seq{i+1}"] = {}
+                        fitted = fit(models[model_class].models[modelname].get_nll, sequence, "individual", modelname)
+                        fit_results[model_class][modelname][f"seq{i+1}"]["minNLL"] = fitted.fun
+                        minNLL_list.append(fitted.fun)
+                        fit_results[model_class][modelname][f"seq{i+1}"]["weights"] = fitted.x
+                        weights_list.append(fitted.x)
+                    fit_results[model_class][modelname]["mean_minNLL"] = np.mean(minNLL_list)
+                    fit_results[model_class][modelname]["std_minNLL"] = np.std(minNLL_list)
+                    fit_results[model_class][modelname]["mean_weights"] = np.mean(weights_list, axis = 0)
+                    fit_results[model_class][modelname]["std_weights"] = np.std(weights_list, axis = 0)
+
+                if config["fitting"] == "group":
+                    sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
+                    fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
+                    fit_results[model_class][modelname]["minNLL"] = fitted.fun
+                    fit_results[model_class][modelname]["weights"] = fitted.x
+                
+                if config["fitting"] == "hierarchical":
+                    sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
+                    fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
+                    fit_results[model_class][modelname]["minNLL"] = fitted.fun
+                    fit_results[model_class][modelname]["weights"] = fitted.x
+
+                end_time = time.time()    
+                elapsed_time = end_time - start_time
+                print(f"{modelname} completed in {elapsed_time:.2f} seconds\n")
 
     if config["print"]:
         print("--------------------------------PRINTING FITS--------------------------------")
@@ -127,10 +141,11 @@ def run(config):
         for model_class in models:
             simulations[model_class] = {}
             for modelname in models[model_class].models:
+                print(model_class, modelname)
                 start = None
                 if model_class == "abbott":
                     unique_responses = models["abbott"].unique_responses
-                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = 3, sequence_length = 10)          
+                    simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [0.05], unique_responses, num_sequences = len(sequences), sequence_length = [len(seq) for seq in sequences])          
                 else:
                     if "SubcategoryCue" in modelname:
                         unique_responses = list(set(unique_responses) - set(["mammal", "woollymammoth", "unicorn", "bacterium"]))
@@ -138,15 +153,19 @@ def run(config):
                         unique_responses = models[model_class].unique_responses
                         start = "dog"
                     if config["fitting"] == "individual":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["mean_weights"], unique_responses, start, num_sequences = 3, sequence_length = 10,)
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, [4.6526225,  5.16179763, 0.9199939], unique_responses, start, num_sequences = 10, sequence_lengths = [len(seq) for seq in sequences])
                     elif config["fitting"] == "group":
-                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, start, num_sequences = 3, sequence_length = 10)
+                        simulations[model_class][modelname] = simulate(config, models[model_class].models[modelname].get_nll, fit_results[model_class][modelname]["weights"], unique_responses, start, num_sequences = len(sequences), sequence_length = [len(seq) for seq in sequences])
 
-                if config["print"]:
-                    print(model_class, modelname, "simulations..................")
-                    print('\n'.join(['\t  '.join(map(str, row)) for row in simulations[model_class][modelname]]))
+                
+                print(model_class, modelname, "simulations..................")
+                print('\n'.join(['\t  '.join(map(str, row)) for row in simulations[model_class][modelname]]))
+                
                 if config["test"]:
-                    print(calculate_bleu(simulations[model_class][modelname], sequences))
+                    model_bleu = calculate_bleu(simulations[model_class][modelname], sequences)
+                    print(model_bleu)
+                    model_bleu = 0.25 * model_bleu["bleu1"] + 0.25 * model_bleu["bleu2"] + 0.25 * model_bleu["bleu3"] + 0.25 * model_bleu["bleu4"]
+                    print(model_bleu)
                     print(calculate_rouge([" ".join(seq) for seq in simulations[model_class][modelname]], [" ".join(seq) for seq in sequences]))
     
     # if config["test"]:
@@ -157,6 +176,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--dataset", type=str, default="hills", help="claire or hills")
     parser.add_argument("--representation", type=str, default="clip", help="representation to use for embedding responses: ours, beagle, clip, gtelarge")
+    
+    parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
+    parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
     parser.add_argument("--fitting", type=str, default="individual", help="how to fit betas: individual, group or hierarchical")
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")

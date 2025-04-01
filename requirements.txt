@@ -21,3 +21,4 @@ nltk
 openpyxl
 rouge-score
 vllm
+pybads

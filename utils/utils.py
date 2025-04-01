@@ -12,8 +12,8 @@ import warnings
 warnings.simplefilter("ignore")
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 from scipy.optimize import minimize
-
 from tqdm import tqdm
+from pybads import BADS
 
 class ProgressTracker:
     def __init__(self, total_iters=100):
@@ -54,6 +54,7 @@ def get_embeddings(config, unique_responses):
     return dict(zip(unique_responses, embeddings))
 
 def fit(func, sequence_s, individual_or_group, name):
+    cnt = 0
     if "One" in name or "RandomWalk" in name or name == "HammingDistance" or name == "PersistantAND" or name == "HammingDistanceSoftmax" or name == "Freq" or name == "CosineDistance" or name == "EuclideanDistance":
         num_weights = 1
     elif name == "SubcategoryCue" or name == "FreqHammingDistancePersistantAND" or name == "AgentBasedModel":
@@ -65,32 +66,48 @@ def fit(func, sequence_s, individual_or_group, name):
     weights_init = np.random.uniform(0.001, 10, size=num_weights)
 
     if individual_or_group == "individual":
-        bounds=[(0.001, 10)] * num_weights
-        return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds=bounds, options={'maxiter': 100})
+        # bounds=[(0.001, 10)] * num_weights
+        # return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds=bounds, options={'maxiter': 1})
+        
+        # BADS
+        lower_bounds = np.full(num_weights, 0.001)
+        upper_bounds = np.full(num_weights, 10.0)
+        def obj_fn(weights):
+            return func(weights, sequence_s)
+        optimizer = BADS(obj_fn, x0=weights_init, lb=lower_bounds, ub=upper_bounds)
+        return optimizer.optimize()
     
     elif individual_or_group == "group":
         def total_nll(weights):
+            print(cnt)
+            cnt += 1
             return sum(func(weights, seq) for seq in sequence_s)
-        # return minimize(total_nll, weights_init, method='Nelder-Mead')
-        tracker = ProgressTracker()
-        bounds=[(0.001, 10)] * num_weights
-        result = minimize(total_nll, weights_init,
-            method='Nelder-Mead',
-            # callback=tracker,
-            # bounds=bounds, 
-            options={'maxiter': 100}
-        )
-        tracker.close()
-        return result
+        
+        # tracker = ProgressTracker()
+        # bounds=[(0.001, 10)] * num_weights
+        # result = minimize(total_nll, weights_init,
+        #     method='Nelder-Mead',
+        #     # callback=tracker,
+        #     # bounds=bounds, 
+        #     options={'maxiter': 100}
+        # )
+        # tracker.close()
+        # return result
 
-def simulate(config, func, weights, unique_responses, start, num_sequences = 5, sequence_length = 10):
+        # BADS
+        lower_bounds = np.full(num_weights, 0.001)
+        upper_bounds = np.full(num_weights, 10.0)
+        optimizer = BADS(total_nll, x0=weights_init, lb=lower_bounds, ub=upper_bounds)
+        return optimizer.optimize()
+
+def simulate(config, func, weights, unique_responses, start, num_sequences, sequence_lengths):
     simulations = []
-    for i in range(num_sequences):
+    for i in tqdm(range(num_sequences)):
         if start is None:
             simulated_sequence = []
         else:
             simulated_sequence = [start]
-        for j in range(sequence_length):
+        for j in range(sequence_lengths[i]):
             if config["preventrepetition"]:
                 prob_dist = np.array([np.exp(-config["sensitivity"] * func(weights, simulated_sequence + [response])) for response in list(set(unique_responses) - set(simulated_sequence))])
                 prob_dist /= prob_dist.sum()
