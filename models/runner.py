@@ -12,6 +12,24 @@ from utils import *
 from metrics import *
 from tqdm import tqdm
 import time
+from sklearn.model_selection import train_test_split, KFold
+np.random.seed(42)
+
+def split_sequences(sequences, config):
+    np.random.shuffle(sequences)
+
+    if config['cv'] == 1:
+        train_seqs, test_seqs = train_test_split(sequences, test_size=0.2, shuffle=False)
+        return [(train_seqs, test_seqs)]
+    
+    elif config['cv'] > 1:
+        kf = KFold(n_splits=config['cv'], shuffle=False)
+        splits = []
+        for train_idx, test_idx in kf.split(sequences):
+            train_seqs = [sequences[i] for i in train_idx]
+            test_seqs = [sequences[i] for i in test_idx]
+            splits.append((train_seqs, test_seqs))
+        return splits
 
 def run(config):
     data = pd.read_csv("../csvs/" + config["dataset"] + ".csv")
@@ -71,6 +89,8 @@ def run(config):
     corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
     print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
 
+
+
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
         for model_class in models:
@@ -106,11 +126,20 @@ def run(config):
                     fit_results[model_class][modelname]["std_weights"] = np.std(weights_list, axis = 0)
 
                 if config["fitting"] == "group":
+                    
                     sequences = [sequence for sequence in sequences if (not (("mammal" in sequence or "woollymammoth" in sequence or "unicorn" in sequence or "bacterium" in sequence)) & ("Subcategory" in modelname))]
-                    fitted = fit(models[model_class].models[modelname].get_nll, sequences, "group", modelname)
-                    fit_results[model_class][modelname]["minNLL"] = fitted.fun
-                    fit_results[model_class][modelname]["weights"] = fitted.x
-                
+                    splits = split_sequences(sequences, config)     # perform CV
+
+                    test_nlls = np.zeros(len(splits))
+                    for split_ind, train_sequences, test_sequences in enumerate(splits):
+                        print(len(train_sequences), len(test_sequences))
+                        fitted = fit(models[model_class].models[modelname].get_nll, train_sequences, "group", modelname)
+                        fit_results[model_class][modelname]["minNLL"] = fitted.fun
+                        fit_results[model_class][modelname]["weights"] = fitted.x
+                        for test_seq in test_sequences:
+                            test_nlls[split_ind] += models[model_class].models[modelname].get_nll(fit_results[model_class][modelname]["weights"], test_seq)
+                    fit_results[model_class][modelname]["testNLL"] = np.mean(test_nlls)
+
                 if config["fitting"] == "hierarchical":
                     fitted = fit(models[model_class].models[modelname].get_nll, sequences, "hierarchical", modelname)
                     print([x.item() for x in fitted])
@@ -119,25 +148,29 @@ def run(config):
                 elapsed_time = end_time - start_time
                 print(f"{modelname} completed in {elapsed_time:.2f} seconds")
 
-                if config["fitting"] == "individual":
-                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
-                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
-                elif config["fitting"] == "group":
-                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
-                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
+                if config["print"]:
+                    if config["fitting"] == "individual":
+                        print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
+                        print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
+                    elif config["fitting"] == "group":
+                        print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
+                        print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
+                        print(model_class, modelname, f"mean testNLL over {config["cv"]} fold(s)", fit_results[model_class][modelname]["testNLL"])
+                
 
-    if config["print"]:
-        print("--------------------------------PRINTING FITS--------------------------------")
-        for model_class in models:
-            if model_class == "abbott":
-                continue
-            for modelname in models[model_class].models:
-                if config["fitting"] == "individual":
-                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
-                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
-                elif config["fitting"] == "group":
-                    print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
-                    print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
+    # if config["print"]:
+    #     print("--------------------------------PRINTING FITS--------------------------------")
+    #     for model_class in models:
+    #         if model_class == "abbott":
+    #             continue
+    #         for modelname in models[model_class].models:
+    #             if config["fitting"] == "individual":
+    #                 print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["mean_minNLL"], "+-", fit_results[model_class][modelname]["std_minNLL"])
+    #                 print(model_class, modelname, "weights", fit_results[model_class][modelname]["mean_weights"], "+-", fit_results[model_class][modelname]["std_weights"])
+    #             elif config["fitting"] == "group":
+    #                 print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
+    #                 print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
+    #                 print(model_class, modelname, f"mean testNLL over {config["cv"]} fold(s)", fit_results[model_class][modelname]["testNLL"])
 
     if config["simulate"]:
         print("--------------------------------SIMULATING MODELS--------------------------------")
@@ -185,6 +218,7 @@ if __name__ == "__main__":
     parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
     parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
     parser.add_argument("--fitting", type=str, default="individual", help="how to fit betas: individual, group or hierarchical")
+    parser.add_argument("--cv", type=int, default=1, help="cross-validation folds. 1 = train-test:80-20. >1 = cv folds")
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
