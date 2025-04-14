@@ -22,3 +22,5 @@ openpyxl
 rouge-score
 vllm
 pybads
+pymc
+arviz

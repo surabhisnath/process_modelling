@@ -7,8 +7,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "u
 from utils import *
 import requests
 import json
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from transformers import LlamaForCausalLM, LlamaTokenizer
+# from transformers import AutoTokenizer, AutoModelForCausalLM
+# from transformers import LlamaForCausalLM, LlamaTokenizer
 import torch
 import torch.nn.functional as F
 
@@ -23,14 +23,14 @@ class Heineman:
         self.response_to_category, self.num_categories = self.get_categories()
         self.cat_trans = self.get_category_transition_matrix()
         # self.fluency_prompt = f"""List animals in whatever order comes first to mind, begin with the most animal-like example. Do not repeat the animals and only list the animals. Your list should be seperated by newlines."""
-        self.prompt = "Generate a single next animal in this sequence."
+        # self.prompt = "Generate a single next animal in this sequence."
         
-        self.model_name = "meta-llama/Llama-3.1-8B-Instruct"
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        # self.tokenizer = LlamaTokenizer.from_pretrained(self.model_name)
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
-        # self.model = LlamaForCausalLM.from_pretrained(self.model_name)
-        self.model.eval()
+        # self.model_name = "meta-llama/Llama-3.1-8B-Instruct"
+        # self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        # # self.tokenizer = LlamaTokenizer.from_pretrained(self.model_name)
+        # self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        # # self.model = LlamaForCausalLM.from_pretrained(self.model_name)
+        # self.model.eval()
     
     def create_models(self):
         self.models = {

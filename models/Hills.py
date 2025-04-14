@@ -13,6 +13,8 @@ class Hills:
         self.embeddings = embeddings
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
+        self.unique_responses = list(self.freq.keys())
+
         self.response_to_category, self.num_categories = self.get_categories()
     def create_models(self):
         self.models = {
@@ -41,8 +43,9 @@ class Hills:
         with open(file_path, 'r') as file:
             for line in file:
                 key, value = line.strip().split(',')
-                if key in [r.replace(" ", "") for r in self.unique_responses]:
-
+                # if key in [r.replace(" ", "") for r in self.unique_responses]:
+                #     frequencies[key] = float(value)
+                if key in self.unique_responses:
                     frequencies[key] = float(value)
         return frequencies
     
@@ -112,6 +115,8 @@ class OneCueStaticGlobal(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(len(seq)):
+            if seq[i] not in self.unique_responses:
+                continue            # remove later making sure freq and sim have all animals
             nll += self.only_freq(seq[i], weights)
         return nll
 
@@ -126,6 +131,8 @@ class OneCueStaticLocal(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(1, len(seq)):
+            if seq[i] not in self.unique_responses or seq[i - 1] not in self.unique_responses:
+                continue            # remove later making sure freq and sim have all animals
             nll += self.only_sim(seq[i], seq[i - 1], weights)
         return nll
 
@@ -140,6 +147,8 @@ class CombinedCueStatic(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(0, len(seq)):
+            if seq[i] not in self.unique_responses or seq[i - 1] not in self.unique_responses:
+                continue            # remove later making sure freq and sim have all animals
             if i == 0:
                 nll += self.only_freq(seq[i], weights)
             else:
@@ -150,6 +159,8 @@ class CombinedCueDynamicCat(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(0, len(seq)):
+            if seq[i] not in self.unique_responses or seq[i - 1] not in self.unique_responses:
+                continue            # remove later making sure freq and sim have all animals
             if i == 0 or not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
                 nll += self.only_freq(seq[i], weights)
             else:
@@ -160,6 +171,8 @@ class CombinedCueDynamicSimdrop(Hills):
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(0, len(seq)):
+            if seq[i] not in self.unique_responses or seq[i - 1] not in self.unique_responses:
+                continue            # remove later making sure freq and sim have all animals
             if i == 0:
                 nll += self.only_freq(seq[i], weights)
             else:
