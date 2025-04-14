@@ -6,7 +6,7 @@ import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 
-class Hills:
+class Hills():
     def __init__(self, data, unique_responses, embeddings):
         self.data = data
         self.unique_responses = unique_responses
@@ -14,8 +14,8 @@ class Hills:
         self.sim_mat = self.get_similarity_matrix()
         self.freq = self.get_frequencies()
         self.unique_responses = list(self.freq.keys())
-
         self.response_to_category, self.num_categories = self.get_categories()
+    
     def create_models(self):
         self.models = {
             subclass.__name__: subclass(self.data, self.unique_responses, self.embeddings)
@@ -76,6 +76,7 @@ class Hills:
 
         assert all(item in examples_to_category for item in self.unique_responses)
         return examples_to_category, num_categories
+
 
     def only_freq(self, response, weights):
         num = pow(self.freq[response.replace(" ", "")], weights[0])

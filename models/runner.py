@@ -2,6 +2,7 @@ import pandas as pd
 import argparse
 import sys
 import os 
+from Model import *
 from Hills import *
 from Heineman import *
 from Abbott import *
@@ -33,11 +34,14 @@ def split_sequences(sequences, config):
 
 def run(config):
     data = pd.read_csv("../csvs/" + config["dataset"] + ".csv")
-    if config["dataset"] == "claire":
-        data = data[data["task"] == 1]
-    unique_responses = sorted([resp.lower() for resp in data["response"].unique()])  # 358 unique animals
-    embeddings = get_embeddings(config, unique_responses)
+    # if config["dataset"] == "claire":
+    #     data = data[data["task"] == 1]
+    # unique_responses = sorted([resp.lower() for resp in data["response"].unique()])  # 358 unique animals
+    # embeddings = get_embeddings(config, unique_responses)
     featuredict = pk.load(open(f"../scripts/vf_features.pk", "rb"))
+
+    model = Model(config, data)
+    return
 
     models = {}
     fit_results = {}
@@ -205,7 +209,7 @@ def run(config):
                     elif config["fitting"] == "group":
                         print(model_class, modelname, "minNLL", fit_results[model_class][modelname]["minNLL"])
                         print(model_class, modelname, "weights", fit_results[model_class][modelname]["weights"])
-                        print(model_class, modelname, f"mean testNLL over {config["cv"]} fold(s)", fit_results[model_class][modelname]["testNLL"])
+                        print(model_class, modelname, f"mean testNLL over {config['cv']} fold(s)", fit_results[model_class][modelname]["testNLL"])
                 
     # if config["print"]:
     #     print("--------------------------------PRINTING FITS--------------------------------")
@@ -276,7 +280,6 @@ if __name__ == "__main__":
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
-    # parser.add_argument("--nohills", action="store_true", default=False, help="don't implement hills models")
 
     parser.add_argument("--morales", action="store_true", default=True, help="implement morales model (default: True)")
     parser.add_argument("--nomorales", action="store_false", dest="morales", help="don't implement morales models")
