@@ -38,9 +38,9 @@ class Model:
 
         self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals        
         
-        self.freq, self.freq_rel = self.get_frequencies()
-        self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
-        # self.freq = self.get_frequencies_old()
+        # self.freq, self.freq_rel = self.get_frequencies()
+        # self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
+        self.freq = self.get_frequencies_old()
 
         self.embeddings = self.get_embeddings()
         self.sim_mat = self.get_embedding_sim_mat()
@@ -109,18 +109,17 @@ class Model:
 
         return freq_abs, freq_rel
 
-    # def get_frequencies_old(self):
-    #     file_path = 'datafreqlistlog.txt'
-    #     frequencies = {}
-    #     with open(file_path, 'r') as file:
-    #         for line in file:
-    #             key, value = line.strip().split(',')
-    #             key = self.corrections.get(key, key)  # Correcting the spelling
-    #             if key in self.unique_responses:
-    #                 frequencies[key] = float(value)
-    #     return frequencies
+    def get_frequencies_old(self):
+        file_path = 'datafreqlistlog.txt'
+        frequencies = {}
+        with open(file_path, 'r') as file:
+            for line in file:
+                key, value = line.strip().split(',')
+                key = self.corrections.get(key, key)  # Correcting the spelling
+                if key in self.unique_responses:
+                    frequencies[key] = float(value)
+        return frequencies
 
-    
     def get_embeddings(self): 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.config["representation"] == "clip":

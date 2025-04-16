@@ -8,6 +8,7 @@ from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 import torch
+import math
 
 class Ours1(Model):
     def __init__(self, config):
@@ -45,8 +46,8 @@ class Ours1(Model):
                 feat1 = self.features[resp1]
                 feat2 = self.features[resp2]
                 sim = np.mean(np.array(feat1) == np.array(feat2))
-                sim_matrix[resp1][resp2] = sim + 0.00001
-                sim_matrix[resp2][resp1] = sim + 0.00001
+                sim_matrix[resp1][resp2] = sim
+                sim_matrix[resp2][resp1] = sim
         return sim_matrix
 
         # responses = list(self.unique_responses)
@@ -72,7 +73,7 @@ class Ours1(Model):
 
     def only_freq(self, response, weights):
         num = pow(self.freq[response], weights[0])
-        den = sum(pow(d2np(self.freq), weights[0])) + 1e-4
+        den = sum(pow(d2np(self.freq), weights[0]))
         nll = -np.log(num / den)
         return nll
     
@@ -96,7 +97,6 @@ class Ours1(Model):
         return nll
 
 
-# UNCOMM
 class Random(Ours1):
     def __init__(self, config):
         super().__init__(config)
@@ -109,19 +109,19 @@ class Random(Ours1):
             nll += -np.log(1/len(self.unique_responses))
         return nll
 
-# UNCOMM
-# class HammingDistanceWRONG(Ours1):
+
+# class Freq(Ours1):
 #     def __init__(self, config):
 #         super().__init__(config)
 #         self.model_name = self.__class__.__name__
 #         self.num_weights = 1
-    
+
 #     def get_nll(self, weights, seq):
 #         nll = 0
-#         for i in range(1, len(seq)):
-#             nll += self.only_ham(seq[i], seq[i - 1], weights)
-#         self.hd_liks.append(nll)
+#         for i in range(len(seq)):
+#             nll += self.only_freq(seq[i], weights)
 #         return nll
+
     
 # class HammingDistance(Ours1):
 #     def __init__(self, config):
@@ -138,45 +138,57 @@ class Random(Ours1):
 #                 nll += self.only_ham(seq[i], seq[i - 1], weights)
 #         self.hd_liks.append(nll)
 #         return nll
-
-class PersistentXNORWRONG(Ours1):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 2
-
-    def only_persistentand(self, response, previous_response, previous_previous_response, weights):
-        same_ = self.features[previous_previous_response] == self.features[previous_response]
-        _same = self.features[previous_response] == self.features[response]
-        num = pow(np.dot(same_, _same), weights[0])
-
-        # den = 0
-        # for resp in self.unique_responses:
-        #     same_ = self.features[previous_previous_response] == self.features[previous_response]
-        #     _same = self.features[previous_response] == self.features[resp]
-        #     den += pow(np.dot(same_, _same), weights[0])
-        
-        _same_all = np.array([self.features[resp] for resp in self.unique_responses])
-        _same_all = self.features[previous_response] == _same_all
-        dot_product = np.dot(same_, _same_all.T)
-        dot_powers = np.power(dot_product, weights[0])
-        den = np.sum(dot_powers)
-
-        if num == 0 or den == 0:
-            return 0
-        nll = -np.log(num / den)
-        return nll
     
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(2, len(seq)):
-            temp =  self.only_persistentand(seq[i], seq[i - 1], seq[i - 2], weights)
-            nll += temp
-        # if np.isnan(nll) or np.isinf(nll):
-        #     return 1e10 
-        return nll
 
-# UNCOMM
+# class HammingDistance_2step(Ours1):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 1
+    
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i < 2:
+#                 nll += -np.log(1/len(self.unique_responses))
+#             else:
+#                 nll += self.only_ham(seq[i], seq[i - 2], weights)
+#         self.hd_liks.append(nll)
+#         return nll
+    
+
+# class HammingDistance_2steps(Ours1):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 2
+    
+#     def ham_2step(self, response, previous_response, previous_previous_response, weights):
+#         num = pow(self.sim_mat[previous_previous_response][response], weights[0]) * pow(
+#             self.sim_mat[previous_response][response], weights[1]
+#         )
+#         den = sum(
+#             pow(d2np(self.sim_mat[previous_previous_response]), weights[0]) * pow(d2np(self.sim_mat[previous_response]), weights[1])
+#         )
+
+#         if den == 0:
+#             return np.inf
+#         nll = -np.log(num / den)
+#         return nll
+    
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i == 0:
+#                 nll += -np.log(1/len(self.unique_responses))
+#             elif i == 1:
+#                 nll += self.only_ham(seq[i], seq[i - 1], weights)
+#             else:
+#                 nll += self.ham_2step(seq[i], seq[i - 1], seq[i - 2], weights)
+#         self.hd_liks.append(nll)
+#         return nll
+
+
 class PersistentXNOR(Ours1):
     def __init__(self, config):
         super().__init__(config)
@@ -188,20 +200,19 @@ class PersistentXNOR(Ours1):
         _same = (self.features[previous_response] == self.features[response]).astype(int)
         num = pow(np.dot(same_, _same), weights[0])
 
-        # den = 0
-        # for resp in self.unique_responses:
-        #     same_ = self.features[previous_previous_response] == self.features[previous_response]
-        #     _same = self.features[previous_response] == self.features[resp]
-        #     den += pow(np.dot(same_, _same), weights[0])
-        
+        den1 = 0
+        for resp in self.unique_responses:
+            _same = (self.features[previous_response] == self.features[resp]).astype(int)
+            den1 += pow(np.dot(same_, _same), weights[0])
+
         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
         _same_all = (self.features[previous_response] == _same_all).astype(int)
         dot_product = np.dot(same_, _same_all.T)
-        dot_powers = np.power(dot_product, weights[0])
-        den = np.sum(dot_powers)
+        dot_powers = pow(dot_product, weights[0])
+        den = sum(dot_powers)
+        
+        assert math.isclose(den1, den, rel_tol=1e-9)
 
-        # if num == 0 or den == 0:
-        #     return 0
         nll = -np.log(num / den)
         return nll
     
@@ -215,24 +226,22 @@ class PersistentXNOR(Ours1):
         return nll
 
 
-# UNCOMM
-# class FreqHammingDistance(Ours1):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 2
+class FreqHammingDistance(Ours1):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model_name = self.__class__.__name__
+        self.num_weights = 2
     
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += self.only_freq(seq[i], weights)
-#             else:
-#                 nll += self.freq_ham(seq[i], seq[i - 1], weights)
-#         return nll
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(len(seq)):
+            if i == 0:
+                nll += self.only_freq(seq[i], weights)
+            else:
+                nll += self.freq_ham(seq[i], seq[i - 1], weights)
+        return nll
     
 
-# UNCOMM
 class HammingDistancePersistentXNOR(Ours1):
     def __init__(self, config):
         super().__init__(config)
@@ -242,30 +251,20 @@ class HammingDistancePersistentXNOR(Ours1):
     def persistent_ham(self, response, previous_response, previous_previous_response, weights):
         same_ = (self.features[previous_previous_response] == self.features[previous_response]).astype(int)
         _same = (self.features[previous_response] == self.features[response]).astype(int)
+        
         num = pow(self.sim_mat[previous_response][response], weights[0]) * pow(
             np.dot(same_, _same), weights[1]
         )
 
-        # den = 0
-        # for resp in self.unique_responses:
-        #     same_ = self.features[previous_previous_response] == self.features[previous_response]
-        #     _same = self.features[previous_response] == self.features[resp]
-        #     den += pow(self.sim_mat[previous_response][resp], weights[0]) * pow(
-        #     np.dot(same_, _same), weights[1]
-        # )
-
         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
         _same_all = (self.features[previous_response] == _same_all).astype(int)
         dot_product = np.dot(same_, _same_all.T)
-        sim_powers = np.power(
-            np.array([self.sim_mat[previous_response][resp] for resp in self.unique_responses]),
-            weights[0]
-        )
-        dot_powers = np.power(dot_product, weights[1])
-        den = np.sum(sim_powers * dot_powers)
-
+        sim_powers = pow(d2np(self.sim_mat[previous_response]), weights[0])
+        dot_powers = pow(dot_product, weights[1])
+        den = sum(sim_powers * dot_powers)
 
         nll = -np.log(num / den)
+
         return nll
     
     def get_nll(self, weights, seq):
@@ -280,7 +279,6 @@ class HammingDistancePersistentXNOR(Ours1):
         return nll
 
 
-# UNCOMM
 class FreqPersistentXNOR(Ours1):
     def __init__(self, config):
         super().__init__(config)
@@ -296,13 +294,13 @@ class FreqPersistentXNOR(Ours1):
         
         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
         _same_all = (self.features[previous_response] == _same_all).astype(int)
-        dot_product = np.dot(same_, _same_all.T) 
-        freq_powers = np.power(
+        dot_product = np.dot(same_, _same_all.T)
+        freq_powers = pow(
             np.array([self.freq[resp] for resp in self.unique_responses]),
             weights[0]
         )
-        dot_powers = np.power(dot_product, weights[1])
-        den = np.sum(freq_powers * dot_powers)
+        dot_powers = pow(dot_product, weights[1])
+        den = sum(freq_powers * dot_powers)
 
         nll = -np.log(num / den)
         
@@ -321,7 +319,6 @@ class FreqPersistentXNOR(Ours1):
         return nll
 
 
-# UNCOMM
 class FreqHammingDistancePersistentXNOR(Ours1):
     def __init__(self, config):
         super().__init__(config)
@@ -334,28 +331,20 @@ class FreqHammingDistancePersistentXNOR(Ours1):
         num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1]) * pow(
             np.dot(same_, _same), weights[2]
         )
-        
-        # den = 0
-        # for resp in self.unique_responses:
-        #     same_ = self.features[previous_previous_response] == self.features[previous_response]
-        #     _same = self.features[previous_response] == self.features[resp]
-        #     den += pow(self.freq[resp], weights[0]) * pow(self.sim_mat[previous_response][resp], weights[1]) * pow(
-        #     np.dot(same_, _same), weights[2]
-        # )
             
         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
         _same_all = (self.features[previous_response] == _same_all).astype(int)
         dot_product = np.dot(same_, _same_all.T)
-        freq_powers = np.power(
+        freq_powers = pow(
             np.array([self.freq[resp] for resp in self.unique_responses]),
             weights[0]
         )
-        sim_powers = np.power(
+        sim_powers = pow(
             np.array([self.sim_mat[previous_response][resp] for resp in self.unique_responses]),
             weights[1]
         )
-        dot_powers = np.power(dot_product, weights[2])
-        den = np.sum(freq_powers * sim_powers * dot_powers)
+        dot_powers = pow(dot_product, weights[2])
+        den = sum(freq_powers * sim_powers * dot_powers)
 
         nll = -np.log(num / den)
         if num == 0 or den == 0:
@@ -375,29 +364,29 @@ class FreqHammingDistancePersistentXNOR(Ours1):
 
 
 # UNCOMM
-# class WeightedHammingDistance(Ours1):
-#     def weighted_ham(self, response, previous_response, weights, epsilon=1e-8):
-#         prev_feat = self.features[previous_response]
-#         curr_feat = self.features[response]
-#         diff = prev_feat == curr_feat
+class WeightedHammingDistance(Ours1):
+    def weighted_ham(self, response, previous_response, weights, epsilon=1e-8):
+        prev_feat = self.features[previous_response]
+        curr_feat = self.features[response]
+        diff = prev_feat == curr_feat
 
-#         feature_weights = weights[1:]
-#         # feature_weights = np.array([weights[i + 1] for i in self.feature_groups])
+        feature_weights = weights[1:]
+        # feature_weights = np.array([weights[i + 1] for i in self.feature_groups])
 
-#         num = (diff @ feature_weights) ** weights[0]
+        num = (diff @ feature_weights) ** weights[0]
 
-#         all_feats = np.array([self.features[resp] for resp in self.unique_responses])
-#         all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
-#         den = np.sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
+        all_feats = np.array([self.features[resp] for resp in self.unique_responses])
+        all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
+        den = sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
 
-#         nll = -np.log(num / den)
-#         return nll
+        nll = -np.log(num / den)
+        return nll
     
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(1, len(seq)):
-#             nll += self.weighted_ham(seq[i], seq[i - 1], weights)
-#         return nll
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(1, len(seq)):
+            nll += self.weighted_ham(seq[i], seq[i - 1], weights)
+        return nll
     
 # class WeightedHammingDistance2(Ours1):
 #     def weighted_ham(self, response, previous_response, weights, epsilon=1e-8):
@@ -412,7 +401,7 @@ class FreqHammingDistancePersistentXNOR(Ours1):
 
 #         all_feats = np.array([self.features[resp] for resp in self.unique_responses])
 #         all_diffs = prev_feat == all_feats  # shape: (num_responses, feature_dim)
-#         den = np.sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
+#         den = sum((all_diffs @ feature_weights) ** weights[0]) + epsilon
 
 #         nll = -np.log(num / den)
 #         return nll
@@ -440,24 +429,24 @@ class FreqHammingDistancePersistentXNOR(Ours1):
 #         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
 #         _same_all = prev_feat == _same_all
 #         dot_product = (same_ * _same_all) @ feature_weights
-#         freq_powers = np.power(
+#         freq_powers = pow(
 #             np.array([self.freq[resp] for resp in self.unique_responses]),
 #             weights[0]
 #         )
 
-#         sim_powers = np.power(
+#         sim_powers = pow(
 #             _same_all @ feature_weights,
 #             weights[1]
 #         )
 
-#         dot_powers = np.power(dot_product, weights[2])
-#         den = np.sum(freq_powers * sim_powers * dot_powers)
+#         dot_powers = pow(dot_product, weights[2])
+#         den = sum(freq_powers * sim_powers * dot_powers)
 
 #         nll = -np.log(num / den)
 #         return nll
     
 #     def get_nll(self, weights, seq):
 #         nll = 0
-#         for i in range(2, len(seq)):
+#         for i in range(len(seq)):
 #             nll += self.weighted_ham(seq[i], seq[i - 1], seq[i - 2], weights)
 #         return nll

@@ -99,50 +99,50 @@ class Heineman(Model):
         nll = -np.log(num / den)
         return nll
 
-class OnlySubcategoryCue(Heineman):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 1
+# class OnlySubcategoryCue(Heineman):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 1
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += -np.log(1/len(self.unique_responses))
-            else:
-                nll += self.only_cat(seq[i], seq[i - 1], weights)
-        return nll
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i == 0:
+#                 nll += -np.log(1/len(self.unique_responses))
+#             else:
+#                 nll += self.only_cat(seq[i], seq[i - 1], weights)
+#         return nll
 
-class FreqSubcategoryCue(Heineman):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 2
+# class FreqSubcategoryCue(Heineman):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 2
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                nll += self.freq_cat(seq[i], seq[i - 1], weights)
-        return nll
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             else:
+#                 nll += self.freq_cat(seq[i], seq[i - 1], weights)
+#         return nll
 
-class SimSubcategoryCue(Heineman):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 2
+# class SimSubcategoryCue(Heineman):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 2
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += -np.log(1/len(self.unique_responses))
-            else:
-                nll += self.sim_cat(seq[i], seq[i - 1], weights)
-        return nll
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i == 0:
+#                 nll += -np.log(1/len(self.unique_responses))
+#             else:
+#                 nll += self.sim_cat(seq[i], seq[i - 1], weights)
+#         return nll
 
 class SubcategoryCue(Heineman):
     def __init__(self, config):

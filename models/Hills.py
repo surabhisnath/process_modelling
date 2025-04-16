@@ -85,7 +85,7 @@ class CombinedCueStatic(Hills):
 
     def get_nll(self, weights, seq):
         nll = 0
-        for i in range(0, len(seq)):
+        for i in range(len(seq)):
             if i == 0:
                 nll += self.only_freq(seq[i], weights)
             else:
@@ -100,7 +100,7 @@ class CombinedCueDynamicCat(Hills):
 
     def get_nll(self, weights, seq):
         nll = 0
-        for i in range(0, len(seq)):
+        for i in range(len(seq)):
             if i == 0 or not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
                 nll += self.only_freq(seq[i], weights)
             else:
@@ -115,7 +115,7 @@ class CombinedCueDynamicSimdrop(Hills):
 
     def get_nll(self, weights, seq):
         nll = 0
-        for i in range(0, len(seq)):
+        for i in range(len(seq)):
             if i == 0:
                 nll += self.only_freq(seq[i], weights)
             else:

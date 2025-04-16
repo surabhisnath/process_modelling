@@ -17,7 +17,6 @@ def run(config):
     fit_results = {}
     
     # if config["hills"]:
-    #     print("HILLS")
     #     hills = Hills(config)
     #     hills.create_models()
     #     models["hills"] = hills
