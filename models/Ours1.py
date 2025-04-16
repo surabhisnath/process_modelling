@@ -200,18 +200,12 @@ class PersistentXNOR(Ours1):
         _same = (self.features[previous_response] == self.features[response]).astype(int)
         num = pow(np.dot(same_, _same), weights[0])
 
-        den1 = 0
-        for resp in self.unique_responses:
-            _same = (self.features[previous_response] == self.features[resp]).astype(int)
-            den1 += pow(np.dot(same_, _same), weights[0])
-
         _same_all = np.array([self.features[resp] for resp in self.unique_responses])
         _same_all = (self.features[previous_response] == _same_all).astype(int)
         dot_product = np.dot(same_, _same_all.T)
         dot_powers = pow(dot_product, weights[0])
         den = sum(dot_powers)
         
-        assert math.isclose(den1, den, rel_tol=1e-9)
 
         nll = -np.log(num / den)
         return nll
