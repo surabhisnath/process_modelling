@@ -3,19 +3,19 @@ import numpy as np
 import sys
 import os
 import pandas as pd
+from Model import Model
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 
-class Abbott:
-    def __init__(self, data, unique_responses):
-        self.data = data
-        self.unique_responses = unique_responses
+class Abbott(Model):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model_class = "abbott"
         self.weighted_trans_mat, self.uniform_trans_mat = self.get_transition_matrix()
-        self.freq = self.get_frequencies()
     
     def create_models(self):
         self.models = {
-            subclass.__name__: subclass(self.data, self.unique_responses)
+            subclass.__name__: subclass(self.config)
             for subclass in Abbott.__subclasses__()
         }
 
@@ -52,16 +52,6 @@ class Abbott:
 
         return weighted_trans_mat, uniform_trans_mat
     
-    def get_frequencies(self):
-        file_path = 'datafreqlistlog.txt'
-        frequencies = {}
-        with open(file_path, 'r') as file:
-            for line in file:
-                key, value = line.strip().split('\t')
-                if key in self.unique_responses:
-                    frequencies[key] = float(value)
-        return frequencies
-    
     def only_freq(self, response, weights):
         num = self.freq[response] * weights[0]
         den = sum(d2np(self.freq) * weights[0])
@@ -69,6 +59,9 @@ class Abbott:
             return np.inf
         nll = -np.log(num / den)
         return nll
+    
+    def fit(self, weights_init=None, bounds=None):
+        self.results[""]
 
 class RandomWalkJW(Abbott):
     def jumping_weighted(self, response, previous_response, weights):

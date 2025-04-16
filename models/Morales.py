@@ -3,6 +3,7 @@ from pylab import *
 import numpy as np
 import sys
 import os
+from Model import Model
 import pandas as pd
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
@@ -10,14 +11,11 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 np.random.seed(4)
 
-class Morales:
-    def __init__(self, data, unique_responses, embeddings):
-        self.data = data
-        self.unique_responses = unique_responses
-        self.embeddings = embeddings
+class Morales(Model):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model_class = "morales"
         self.tsne_coordinates = self.get_tsne_coordinates()
-        self.sim_mat = self.get_similarity_matrix()
-        self.freq = self.get_frequencies()
         self.radius = 10
     
     def create_models(self):
@@ -39,34 +37,6 @@ class Morales:
         plt.ylabel('TSNE-2')
         plt.savefig('tsne_plot.jpg', format='jpg', dpi=300)
         return tsne_coordinates
-
-    def get_similarity_matrix(self):
-        sim_matrix = {response: {} for response in self.unique_responses}
-
-        for i in range(len(self.unique_responses)):
-            for j in range(i, len(self.unique_responses)):
-                resp1 = self.unique_responses[i]
-                resp2 = self.unique_responses[j]
-                if i == j:
-                    sim = 1.0  # Similarity with itself is 1
-                else:
-                    sim = np.dot(self.embeddings[resp1], self.embeddings[resp2].T)
-                sim_matrix[resp1][resp2] = sim
-                sim_matrix[resp2][resp1] = sim
-        return sim_matrix
-
-    def get_frequencies(self):
-        file_path = 'datafreqlistlog.txt'
-        frequencies = {}
-        with open(file_path, 'r') as file:
-            for line in file:
-                key, value = line.strip().split(',')
-                if key in self.unique_responses:
-                    frequencies[key] = float(value)
-        total = sum(list(frequencies.values()))
-        if total > 0:
-            frequencies = {key: value / total for key, value in frequencies.items()}
-        return frequencies
 
     def only_freq(self, response, weights):
         num = pow(self.freq[response], weights[0])

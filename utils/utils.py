@@ -61,7 +61,6 @@ def make_TSNE(embeddings, responses, clusters, show_responses=False):
     # ax.grid(False)
     # ax.axis("off")
 
-
 class ProgressTracker:
     def __init__(self, total_iters=100):
         self.pbar = tqdm(total=total_iters)
