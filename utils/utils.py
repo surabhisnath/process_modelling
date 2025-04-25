@@ -23,8 +23,6 @@ import requests
 import math
 
 # Functions
-def d2np(some_dict):
-    return np.array(list(some_dict.values()))
 
 def make_TSNE(embeddings, responses, clusters, show_responses=False):
     """Plot TSNE

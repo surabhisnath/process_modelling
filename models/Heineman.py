@@ -48,7 +48,7 @@ class Heineman(Model):
 
     def only_freq(self, response, weights):
         num = pow(self.freq[response], weights[0])
-        den = sum(pow(d2np(self.freq), weights[0]))
+        den = sum(pow(self.d2np(self.freq), weights[0]))
         if den == 0:
             return np.inf
         nll = -np.log(num / den)

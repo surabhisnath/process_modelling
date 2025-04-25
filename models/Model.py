@@ -25,6 +25,7 @@ from numba import njit
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from metrics import *
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Model:
     def __init__(self, config):
@@ -37,20 +38,33 @@ class Model:
         self.data["response"] = self.data["response"].map(lambda x: self.corrections.get(x, x))                     # correcting spaces in spelling
 
         self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals        
-        
-        # self.freq, self.freq_rel = self.get_frequencies()
-        # self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
-        self.freq = self.get_frequencies_old()
+        self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
+
+        self.freq, self.freq_rel = self.get_frequencies()
+        self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
+        for k, v in self.freq.items():
+            if pd.isna(v):
+                print(k)
+        # self.freq = self.get_frequencies_old()
 
         self.embeddings = self.get_embeddings()
         self.sim_mat = self.get_embedding_sim_mat()
 
-        self.response_to_category, self.num_categories = self.get_categories()
+        # self.response_to_category, self.num_categories = self.get_categories()
         
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
     
+    def d2ts(self, some_dict):
+        return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
+
+    def np2ts(self, some_np):
+        return torch.tensor(some_np, dtype=torch.float32, device=device)
+
+    def d2np(self, some_dict):
+        return np.array([some_dict[resp] for resp in self.unique_responses])
+
     def get_frequencies(self):
         # https://stackoverflow.com/questions/74951626/python-nlp-google-ngram-api
         if os.path.exists("freq_abs.json"):
@@ -234,7 +248,7 @@ class Model:
             weights_init = np.random.uniform(0.001, 10, size=self.num_weights)
         
         if bounds is None:
-            bounds = [(-10, 10)] * self.num_weights
+            bounds = [(0, 10)] * self.num_weights
 
         if self.config["fitting"] == "individual":
             minNLL_list = []

@@ -16,11 +16,11 @@ def run(config):
     models = {}
     fit_results = {}
     
-    # if config["hills"]:
-    #     hills = Hills(config)
-    #     hills.create_models()
-    #     models["hills"] = hills
-    #     fit_results["hills"] = {}
+    if config["hills"]:
+        hills = Hills(config)
+        hills.create_models()
+        models["hills"] = hills
+        fit_results["hills"] = {}
 
     # if config["heineman"]:
     #     heineman = Heineman(config)
@@ -40,11 +40,11 @@ def run(config):
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
     
-    if config["ours1"]:
-        ours1 = Ours1(config)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+    # if config["ours1"]:
+    #     ours1 = Ours1(config)
+    #     ours1.create_models()
+    #     models["ours1"] = ours1
+    #     fit_results["ours1"] = {}
     
     # human_bleu = calculate_bleu(sequences[:num_sequences//2], sequences[num_sequences//2:])
     # print(human_bleu)

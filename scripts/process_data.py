@@ -14,14 +14,18 @@ def get_time_difference_in_seconds(start_ts, end_ts):
 
 
 csv = pd.DataFrame(columns = ["pid", "response", "RT"])
-for ind, f in enumerate(sorted(os.listdir("../data/divergent/"))):
-    with open(f"../data/divergent/{f}", "r") as f:
+data_dir = "../data/noconstraintsfruits_similaranimals/"
+for ind, f in enumerate(sorted(os.listdir(data_dir))):
+    with open(f"{data_dir}{f}", "r") as f:
         data = json.load(f)
-        responses = data["animals"]
+        # responses = data["animals"]
+        responses = data["responses"][1]
         num_resp = len(responses)
         pid = [ind + 1] * num_resp
-        start_times = data["animals_starttimes"][:num_resp]
-        end_times = data["animals_endtimes"][:num_resp]
+        # start_times = data["animals_starttimes"][:num_resp]
+        # end_times = data["animals_endtimes"][:num_resp]
+        start_times = data["responses_starttimes"][1][:num_resp]
+        end_times = data["responses_endtimes"][1][:num_resp]
         RTs = []
         for j in range(num_resp):
             RTs.append(get_time_difference_in_seconds(start_times[j], end_times[j]))
@@ -33,4 +37,4 @@ for ind, f in enumerate(sorted(os.listdir("../data/divergent/"))):
 
         csv = pd.concat([csv, df], ignore_index=True)
 
-csv.to_csv("../csvs/divergent.csv", index=False)
+csv.to_csv("../csvs/similar.csv", index=False)
