@@ -40,11 +40,11 @@ def run(config):
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
     
-    # if config["ours1"]:
-    #     ours1 = Ours1(config)
-    #     ours1.create_models()
-    #     models["ours1"] = ours1
-    #     fit_results["ours1"] = {}
+    if config["ours1"]:
+        ours1 = Ours1(config)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     # human_bleu = calculate_bleu(sequences[:num_sequences//2], sequences[num_sequences//2:])
     # print(human_bleu)

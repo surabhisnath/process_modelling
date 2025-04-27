@@ -36,6 +36,10 @@ class Model:
         with open("spelling_corrections.json", 'r') as f:
             self.corrections = json.load(f)
         self.data["response"] = self.data["response"].map(lambda x: self.corrections.get(x, x))                     # correcting spaces in spelling
+        try:
+            self.data = self.data[~(self.data["invalid"] == 1)]
+        except:
+            pass
 
         self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals        
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
@@ -206,8 +210,8 @@ class Model:
             return splits
     
     def optimize_individual(self, func, sequence_s, weights_init, bounds):
-        return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds = bounds, options={'maxiter': 100})
-        # return minimize(lambda weights: func(weights, sequence_s), weights_init, options={'maxiter': 100}, method='Nelder-Mead')
+        # return minimize(lambda weights: func(weights, sequence_s), weights_init, bounds = bounds, options={'maxiter': 100})
+        return minimize(lambda weights: func(weights, sequence_s), weights_init, options={'maxiter': 100}, method='Nelder-Mead')
     
     def optimize_group(self, func, sequence_s, weights_init, bounds):
         # cnt = 0
@@ -248,7 +252,7 @@ class Model:
             weights_init = np.random.uniform(0.001, 10, size=self.num_weights)
         
         if bounds is None:
-            bounds = [(0, 10)] * self.num_weights
+            bounds = [(-10, 10)] * self.num_weights
 
         if self.config["fitting"] == "individual":
             minNLL_list = []

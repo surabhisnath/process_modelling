@@ -313,7 +313,7 @@ except:
     features_dict = {}
 print("BEFORE", len(features_dict))
 
-data = pd.read_csv("../csvs/similar.csv")
+data = pd.read_csv("../csvs/claire.csv")
 data = data[~(data["invalid"] == 1)]
 unique_responses = data["response"].tolist()
 texts = [resp for resp in unique_responses if resp not in features_dict]
@@ -350,6 +350,6 @@ for response in tqdm(texts):
             print(i, output)
         features_dict[response][feature] = output
 
-    pk.dump(features_dict, open(f"{name}_similar.pk", "wb"))
+    pk.dump(features_dict, open(f"{name}.pk", "wb"))
 
 print("AFTER", len(features_dict))

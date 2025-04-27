@@ -27,9 +27,15 @@ class Hills_Freq(Hills, nn.Module):
         logits = self.weights[0] * self.d2ts(self.freq)
         return F.log_softmax(logits, dim=0)
     
-    def get_total_nll(self, sequence):
+    def get_individual_nll(self, sequence):
         log_probs = self.only_freq()
         return sum(F.nll_loss(log_probs.unsqueeze(0), torch.tensor([self.unique_response_to_index[resp]], device=device)) for resp in sequence)
+    
+    def get_group_nll(self, sequences)
+        nll = 0
+        for seq in sequences:
+            nll += self.get_individual_nll(seq)
+        return nll
 
 class Heineman_Subcategory(Heineman, nn.Module):
     def __init__(self, config):
@@ -58,11 +64,7 @@ class Heineman_Subcategory(Heineman, nn.Module):
     def get_group_nll(self, sequences):
         nll = 0
         for seq in sequences:
-            for i in range(len(seq)):
-                if i == 0:
-                    nll += F.nll_loss(self.only_freq().unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-                else:
-                    nll += F.nll_loss(self.freq_sim_cat(seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+            nll += self.get_individual_nll(seq)
         return nll
 
 class Ours1_HS(Ours1, nn.Module):
@@ -111,7 +113,6 @@ class Ours1_HS_Pers(Ours1, nn.Module):
         return F.log_softmax(logits, dim=0)
     
     def HS_Pers(self, previous_response, previous_previous_response):
-        # print(previous_previous_response, previous_response)
         logits = self.weights[0] * self.d2ts(self.sim_mat[previous_response]) + self.weights[1] * self.np2ts(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]])
         return F.log_softmax(logits, dim=0)
     
@@ -136,7 +137,7 @@ class Ours1_WeightedHS(Ours1, nn.Module):
     def __init__(self, config):
         Ours1.__init__(self, config)
         nn.Module.__init__(self)
-        self.num_weights = self.num_features + 1
+        self.num_weights = self.num_features
         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
     
     def uniform(self):
@@ -147,7 +148,7 @@ class Ours1_WeightedHS(Ours1, nn.Module):
         prev_feat = torch.tensor(self.features[previous_response], dtype=torch.int8, device=device)
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])
         all_diffs = (all_feats == prev_feat).float()  # shape: (num_responses, feature_dim)
-        logits = self.weights[0] * (all_diffs @ self.weights[1:])
+        logits = (all_diffs @ self.weights)
         return F.log_softmax(logits, dim=0)
 
     def get_individual_nll(self, seq):
@@ -162,11 +163,7 @@ class Ours1_WeightedHS(Ours1, nn.Module):
     def get_group_nll(self, sequences):
         nll = 0
         for seq in sequences:
-            for i in range(len(seq)):
-                if i == 0:
-                    nll += F.nll_loss(self.uniform().unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-                else:
-                    nll += F.nll_loss(self.weighted_HS(seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+            nll += self.get_individual_nll(seq)
         return nll
 
         # prev_feats = []
@@ -203,14 +200,14 @@ class Ours1_FreqWeightedHS(Ours1, nn.Module):
     def __init__(self, config):
         Ours1.__init__(self, config)
         nn.Module.__init__(self)
-        self.num_weights = self.num_features + 2
+        self.num_weights = self.num_features + 1
         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
 
     def freq_weighted_HS(self, previous_response):
         prev_feat = torch.tensor(self.features[previous_response], dtype=torch.int8, device=device)
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])
         all_diffs = (all_feats == prev_feat).float()  # shape: (num_responses, feature_dim)
-        logits = self.weights[0] * (all_diffs @ self.weights[2:]) + self.weights[1] * self.d2ts(self.freq)
+        logits = (all_diffs @ self.weights[1:]) + self.weights[0] * self.d2ts(self.freq)
         return F.log_softmax(logits, dim=0)
     
     def only_freq(self):
@@ -229,14 +226,9 @@ class Ours1_FreqWeightedHS(Ours1, nn.Module):
     def get_group_nll(self, sequences):
         nll = 0
         for seq in sequences:
-            for i in range(len(seq)):
-                if i == 0:
-                    nll += F.nll_loss(self.only_freq().unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-                else:
-                    nll += F.nll_loss(self.freq_weighted_HS(seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+            nll += self.get_individual_nll(seq)
         return nll
     
-
 def run(config):
     print("Started")
     model = Ours1_HS_Pers(config)
@@ -257,7 +249,6 @@ def run(config):
     print(f"Weights = {model.module.weights}")
     print(f"Final loss Train = {model.module.get_group_nll(train_sequences)}")
     print(f"Final loss Test = {model.module.get_group_nll(test_sequences)}")
-
 
 if __name__ == "__main__":
 

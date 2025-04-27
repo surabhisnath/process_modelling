@@ -52,7 +52,7 @@ class Ours1(Model):
                 sim = np.mean((np.array(feat1) == np.array(feat2)).astype(int))
                 sim_matrix[resp1][resp2] = sim
                 sim_matrix[resp2][resp1] = sim
-                self.not_change_mat[i, j] = (self.features[resp1] == self.features[resp2]).astype(int)
+                self.not_change_mat[i, j] = (self.features[resp1] & self.features[resp2]).astype(int)
         return sim_matrix
 
         # responses = list(self.unique_responses)
@@ -174,53 +174,53 @@ class HammingDistance(Ours1):
         return nll
     
 
-# class HammingDistance_2step(Ours1):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 1
+class HammingDistance_2step(Ours1):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model_name = self.__class__.__name__
+        self.num_weights = 1
     
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i < 2:
-#                 nll += -np.log(1/len(self.unique_responses))
-#             else:
-#                 nll += self.only_ham(seq[i], seq[i - 2], weights)
-#         self.hd_liks.append(nll)
-#         return nll
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(len(seq)):
+            if i < 2:
+                nll += -np.log(1/len(self.unique_responses))
+            else:
+                nll += self.only_ham(seq[i], seq[i - 2], weights)
+        self.hd_liks.append(nll)
+        return nll
     
 
-# class HammingDistance_2steps(Ours1):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 2
+class HammingDistance_2steps(Ours1):
+    def __init__(self, config):
+        super().__init__(config)
+        self.model_name = self.__class__.__name__
+        self.num_weights = 2
     
-#     def ham_2step(self, response, previous_response, previous_previous_response, weights):
-#         num = pow(self.sim_mat[previous_previous_response][response], weights[0]) * pow(
-#             self.sim_mat[previous_response][response], weights[1]
-#         )
-#         den = sum(
-#             pow(self.d2np(self.sim_mat[previous_previous_response]), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1])
-#         )
+    def ham_2step(self, response, previous_response, previous_previous_response, weights):
+        num = pow(self.sim_mat[previous_previous_response][response], weights[0]) * pow(
+            self.sim_mat[previous_response][response], weights[1]
+        )
+        den = sum(
+            pow(self.d2np(self.sim_mat[previous_previous_response]), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1])
+        )
 
-#         if den == 0:
-#             return np.inf
-#         nll = -np.log(num / den)
-#         return nll
+        if den == 0:
+            return np.inf
+        nll = -np.log(num / den)
+        return nll
     
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += -np.log(1/len(self.unique_responses))
-#             elif i == 1:
-#                 nll += self.only_ham(seq[i], seq[i - 1], weights)
-#             else:
-#                 nll += self.ham_2step(seq[i], seq[i - 1], seq[i - 2], weights)
-#         self.hd_liks.append(nll)
-#         return nll
+    def get_nll(self, weights, seq):
+        nll = 0
+        for i in range(len(seq)):
+            if i == 0:
+                nll += -np.log(1/len(self.unique_responses))
+            elif i == 1:
+                nll += self.only_ham(seq[i], seq[i - 1], weights)
+            else:
+                nll += self.ham_2step(seq[i], seq[i - 1], seq[i - 2], weights)
+        self.hd_liks.append(nll)
+        return nll
 
 
 class PersistentXNOR(Ours1):
@@ -432,7 +432,7 @@ class FreqHammingDistancePersistentXNOR(Ours1):
         )
         dot_powers = pow(
             self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]], 
-            weights[1]
+            weights[2]
         )
 
         den = sum(freq_powers * sim_powers * dot_powers)
