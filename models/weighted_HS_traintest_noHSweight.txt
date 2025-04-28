@@ -1,0 +1,82 @@
+cuda:0
+CUDA available: True
+GPU count: 4
+{'dataset': 'hills', 'representation': 'clip', 'fit': True, 'plot': True, 'fitting': 'individual', 'cv': 1, 'hills': True, 'morales': True, 'heineman': True, 'abbott': True, 'ours1': True, 'ours2': True, 'print': True, 'simulate': True, 'preventrepetition': True, 'sensitivity': 4, 'test': True}
+Started
+Fitting....
+feature_Is mammal			nan
+feature_Is bird			nan
+feature_Is insect			nan
+feature_Is reptile			nan
+feature_Is amphibian			nan
+feature_Is fish			nan
+feature_Is carnivore			nan
+feature_Is herbivore			nan
+feature_Has fur			nan
+feature_Has scales			nan
+feature_Has exoskeleton			nan
+feature_Has claws			nan
+feature_Has whiskers			nan
+feature_Has horns			nan
+feature_Has tail			nan
+feature_Can climb			nan
+feature_Can dig			nan
+feature_Can jump			nan
+feature_Is diurnal			nan
+feature_Has more than four limbs			nan
+feature_Lives in water			nan
+feature_Lives in trees			nan
+feature_Lives on land			nan
+feature_Lays eggs			nan
+feature_Gives birth			nan
+feature_Is domesticated			nan
+feature_Builds nests			nan
+feature_Is migratory			nan
+feature_Uses tools			nan
+feature_Communicates vocally			nan
+feature_Has camouflage			nan
+feature_Has spots			nan
+feature_Can change color			nan
+feature_Is commonly kept as a pet			nan
+feature_Is used in farming			nan
+feature_Is used for food by humans			nan
+feature_Is found in zoos			nan
+feature_Is capable of mimicry			nan
+feature_Is warm-blooded			nan
+feature_Has a long lifespan			nan
+feature_Is capable of regrowth			nan
+feature_Has specialized hunting techniques			nan
+feature_Is known for speed			nan
+feature_Is placental			nan
+feature_Has webbed feet			nan
+feature_Is native to Africa			nan
+feature_Is native to North America			nan
+feature_Is native to Europe			nan
+feature_Is found in forests			nan
+feature_Is found in oceans			nan
+feature_Is found in grasslands			nan
+feature_Is found in mountains			nan
+feature_Has a crest			nan
+feature_Is a predator			nan
+feature_Is prey for larger animals			nan
+feature_Lives in a burrow			nan
+feature_Can tolerate extreme temperatures			nan
+feature_Migrates seasonally			nan
+feature_Is active during dawn or dusk (crepuscular)			nan
+feature_Produces pheromones for communication			nan
+feature_Lives symbiotically with other species			nan
+feature_Is bi-parental (both parents care for offspring)			nan
+feature_Displays mating rituals			nan
+feature_Is a keystone species in its ecosystem			nan
+feature_Uses burrows or dens for shelter			nan
+feature_Can regenerate body parts			nan
+feature_Has unique reproductive strategies (e.g., asexual reproduction)			nan
+feature_Has distinct seasonal breeding cycles			nan
+feature_Uses specific vocalizations to communicate			nan
+feature_Is a flagship species (conservation symbol)			nan
+feature_Displays warning coloration			nan
+feature_Has compound eyes			nan
+feature_Has a segmented body			nan
+Train NLLs = [tensor(nan, device='cuda:0', grad_fn=<AddBackward0>)]
+Test NLLs = [tensor(nan, device='cuda:0', grad_fn=<AddBackward0>)]
+Finished

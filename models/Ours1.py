@@ -17,6 +17,7 @@ class Ours1(Model):
         super().__init__(config)
         self.model_class = "ours1"
         self.feature_names = self.get_feature_names()
+        print(self.feature_names)
         self.features = self.get_features()
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
@@ -52,7 +53,7 @@ class Ours1(Model):
                 sim = np.mean((np.array(feat1) == np.array(feat2)).astype(int))
                 sim_matrix[resp1][resp2] = sim
                 sim_matrix[resp2][resp1] = sim
-                self.not_change_mat[i, j] = (self.features[resp1] & self.features[resp2]).astype(int)
+                self.not_change_mat[i, j] = (self.features[resp1] == self.features[resp2]).astype(int)
         return sim_matrix
 
         # responses = list(self.unique_responses)
@@ -83,13 +84,13 @@ class Ours1(Model):
     #     return pers_matrix
 
     def get_feature_pers_mat(self):
-        # pers_matrix = {(r1, r2): {} for r1, r2 in product(self.unique_responses, repeat=2)}
-        # for r1, r2 in tqdm(product(self.unique_responses, repeat=2)):
-        #     notchange1 = self.not_change_mat[(r1, r2)]
-        #     for r3 in self.unique_responses:
-        #         notchange2 = self.not_change_mat[(r2, r3)]
-        #         pers_matrix[(r1, r2)][r3] = np.dot(notchange1, notchange2)
-        # print(pers_matrix)
+        pers_matrix = {(r1, r2): {} for r1, r2 in product(self.unique_responses, repeat=2)}
+        for r1, r2 in tqdm(product(self.unique_responses, repeat=2)):
+            notchange1 = self.not_change_mat[(r1, r2)]
+            for r3 in self.unique_responses:
+                notchange2 = self.not_change_mat[(r2, r3)]
+                pers_matrix[(r1, r2)][r3] = np.dot(notchange1, notchange2)
+        print(pers_matrix)
 
         return np.einsum('ijm,jkm->ijk', self.not_change_mat, self.not_change_mat.transpose(1, 0, 2))
 
@@ -180,6 +181,12 @@ class HammingDistance_2step(Ours1):
         self.model_name = self.__class__.__name__
         self.num_weights = 1
     
+    def get_past_sequence(self, sequence):
+        if len(sequence) < 2:
+            return []
+        else:
+            return [sequence[-2], sequence[-1]]
+    
     def get_nll(self, weights, seq):
         nll = 0
         for i in range(len(seq)):
@@ -196,6 +203,14 @@ class HammingDistance_2steps(Ours1):
         super().__init__(config)
         self.model_name = self.__class__.__name__
         self.num_weights = 2
+    
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        elif len(sequence) == 1:
+            return [sequence[-1]]
+        else:
+            return [sequence[-2], sequence[-1]]
     
     def ham_2step(self, response, previous_response, previous_previous_response, weights):
         num = pow(self.sim_mat[previous_previous_response][response], weights[0]) * pow(
@@ -243,6 +258,14 @@ class PersistentXNOR(Ours1):
 
     #     nll = -np.log(num / den)
     #     return nll
+
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        elif len(sequence) == 1:
+            return [sequence[-1]]
+        else:
+            return [sequence[-2], sequence[-1]]
 
     def only_persistent(self, response, previous_response, previous_previous_response, weights):
         num = pow(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response], self.resp_to_idx[response]], weights[0])
@@ -300,6 +323,13 @@ class HammingDistancePersistentXNOR(Ours1):
     #     nll = -np.log(num / den)
 
     #     return nll
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        elif len(sequence) == 1:
+            return [sequence[-1]]
+        else:
+            return [sequence[-2], sequence[-1]]
 
     def persistent_ham(self, response, previous_response, previous_previous_response, weights):
         num = pow(self.sim_mat[previous_response][response], weights[0]) * pow(
@@ -354,6 +384,14 @@ class FreqPersistentXNOR(Ours1):
     #         return 0
         
     #     return nll
+
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        elif len(sequence) == 1:
+            return [sequence[-1]]
+        else:
+            return [sequence[-2], sequence[-1]]
 
     def freq_persistent(self, response, previous_response, previous_previous_response, weights):
         num = pow(self.freq[response], weights[0]) * pow(
@@ -416,6 +454,14 @@ class FreqHammingDistancePersistentXNOR(Ours1):
     #     if num == 0 or den == 0:
     #         return 0
     #     return nll
+    
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        elif len(sequence) == 1:
+            return [sequence[-1]]
+        else:
+            return [sequence[-2], sequence[-1]]
 
     def freq_ham_persistentxnor(self, response, previous_response, previous_previous_response, weights):
         num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1]) * pow(

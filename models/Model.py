@@ -59,6 +59,13 @@ class Model:
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
+
+        human_bleu = calculate_bleu(self.sequences[:self.num_sequences//2], self.sequences[self.num_sequences//2:])
+        print(human_bleu)
+        human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
+        corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
+        print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
+
     
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
@@ -380,7 +387,14 @@ class Model:
             # print("sampled")
             # posterior = az.extract(trace)
             # print("extracted")
-            # print(posterior)  
+            # print(posterior)
+
+    def get_past_sequence(self, sequence):
+        if len(sequence) == 0:
+            return []
+        else:
+            return [sequence[-1]]
+
 
     def simulate(self):                                                               
         simulations = []
@@ -389,7 +403,7 @@ class Model:
                 simulated_sequence = []
                 for j in range(self.sequence_lengths[i]):
                     candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results[f"seq{i+1}"]["weights"], ([simulated_sequence[-1]] + [response]) if simulated_sequence else [response])) for response in candidates])
+                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results[f"seq{i+1}"]["weights"], (self.get_past_sequence(simulated_sequence) + [response]))) for response in candidates])
                     prob_dist /= prob_dist.sum()
                     next_response = np.random.choice(candidates, p=prob_dist)
                     simulated_sequence.append(next_response)
@@ -401,7 +415,7 @@ class Model:
                 print(self.sequence_lengths[i], type(self.sequence_lengths[i]))
                 for j in range(self.sequence_lengths[i]):
                     candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results["mean_weights"], ([simulated_sequence[-1]] + [response]) if simulated_sequence else [response])) for response in candidates])
+                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results["mean_weights"], (self.get_past_sequence(simulated_sequence) + [response]))) for response in candidates])
                     prob_dist /= prob_dist.sum()
                     next_response = np.random.choice(candidates, p=prob_dist)
                     simulated_sequence.append(next_response)

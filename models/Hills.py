@@ -12,6 +12,8 @@ class Hills(Model):
     def __init__(self, config):
         super().__init__(config)
         self.model_class = self.__class__.__name__
+        self.resp_to_idx = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
+        # self.pers_mat = self.get_embedding_pers_mat()
 
     def create_models(self):
         self.models = {
@@ -135,6 +137,34 @@ class CombinedCueStatic(Hills):
             else:
                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
         return nll
+
+# class CombinedCueStaticPers(Hills):
+#     def __init__(self, config):
+#         super().__init__(config)
+#         self.model_name = self.__class__.__name__
+#         self.num_weights = 3
+    
+#     def freq_sim_pers(self, response, previous_response, previous_previous_response, weights):
+#         num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1]) * pow(
+#             self.pers_mat[self.resp_to_idx[previous_previous_response]][self.resp_to_idx[previous_response]][self.resp_to_idx[response]], weights[2]
+#         )
+#         den = sum(
+#             pow(self.d2np(self.freq), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1]) * pow(self.pers_mat[self.resp_to_idx[previous_previous_response]][self.resp_to_idx[previous_response]], weights[2])
+#         )
+
+#         nll = -np.log(num / den)
+#         return nll
+
+#     def get_nll(self, weights, seq):
+#         nll = 0
+#         for i in range(len(seq)):
+#             if i == 0:
+#                 nll += self.only_freq(seq[i], weights)
+#             elif i == 1:
+#                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
+#             else:
+#                 nll +- self.freq_sim_pers(seq[i], seq[i - 1], seq[i - 2], weights)
+#         return nll
 
 class CombinedCueStatic_2steps(Hills):
     def __init__(self, config):

@@ -31,7 +31,7 @@ class Hills_Freq(Hills, nn.Module):
         log_probs = self.only_freq()
         return sum(F.nll_loss(log_probs.unsqueeze(0), torch.tensor([self.unique_response_to_index[resp]], device=device)) for resp in sequence)
     
-    def get_group_nll(self, sequences)
+    def get_group_nll(self, sequences):
         nll = 0
         for seq in sequences:
             nll += self.get_individual_nll(seq)
@@ -202,7 +202,8 @@ class Ours1_FreqWeightedHS(Ours1, nn.Module):
         nn.Module.__init__(self)
         self.num_weights = self.num_features + 1
         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
-
+        print(self.feature_names)
+        
     def freq_weighted_HS(self, previous_response):
         prev_feat = torch.tensor(self.features[previous_response], dtype=torch.int8, device=device)
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])
@@ -231,24 +232,32 @@ class Ours1_FreqWeightedHS(Ours1, nn.Module):
     
 def run(config):
     print("Started")
-    model = Ours1_HS_Pers(config)
+    model = Ours1_FreqWeightedHS(config)
     model = nn.DataParallel(model, device_ids=[0, 1, 2, 3]).to('cuda:0')
-    optimizer = torch.optim.Adam(model.module.parameters(), lr=1.0)
+    optimizer = torch.optim.LBFGS(model.module.parameters(), lr=1.0, max_iter=50)
 
-    (train_sequences, test_sequences) = model.module.split_sequences()[0]     # perform CV
+    splits = model.module.split_sequences()     # perform CV
 
-    def closure():
-        optimizer.zero_grad()
-        loss = model.module.get_group_nll(train_sequences)
-        loss.backward()
-        return loss
+    train_nlls = []
+    test_nlls = []
 
-    print("Fitting....")
-    optimizer.step(closure)
+    for i, (train_sequences, test_sequences) in enumerate(splits):
+        def closure():
+            optimizer.zero_grad()
+            loss = model.module.get_group_nll(train_sequences)
+            loss.backward()
+            return loss
 
-    print(f"Weights = {model.module.weights}")
-    print(f"Final loss Train = {model.module.get_group_nll(train_sequences)}")
-    print(f"Final loss Test = {model.module.get_group_nll(test_sequences)}")
+        print("Fitting....")
+        optimizer.step(closure)
+
+        print(f"Weights fold {i+1} = {model.module.weights}")
+        # print('\n'.join(f"{k}\t\t\t{v}" for k, v in dict(zip(model.module.feature_names, model.module.weights.detach().cpu().numpy())).items()))
+        train_nlls.append(model.module.get_group_nll(train_sequences))
+        test_nlls.append(model.module.get_group_nll(test_sequences))
+    print(f"Train NLLs = {train_nlls}")
+    print(f"Test NLLs = {test_nlls}")
+    print("Finished")
 
 if __name__ == "__main__":
 

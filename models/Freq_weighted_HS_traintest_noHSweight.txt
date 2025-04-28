@@ -1,0 +1,26 @@
+cuda:0
+CUDA available: True
+GPU count: 4
+{'dataset': 'hills', 'representation': 'clip', 'fit': True, 'plot': True, 'fitting': 'individual', 'cv': 1, 'hills': True, 'morales': True, 'heineman': True, 'abbott': True, 'ours1': True, 'ours2': True, 'print': True, 'simulate': True, 'preventrepetition': True, 'sensitivity': 4, 'test': True}
+Started
+Fitting....
+Weights fold 1 = Parameter containing:
+tensor([-6.6799e+18,  1.2559e+21, -9.2807e+19,  4.3905e+20, -9.4023e+20,
+        -5.7317e+20, -1.3097e+21, -4.4894e+20, -3.8643e+20,  1.2615e+21,
+        -2.1970e+21,  6.5536e+20,  2.2070e+20, -1.5854e+21, -6.6467e+20,
+        -1.5093e+21, -1.8200e+21, -5.7612e+20, -2.1715e+21, -4.4133e+20,
+        -2.8026e+20, -2.0959e+20, -1.0632e+21, -1.4660e+20,  7.1696e+20,
+        -8.5500e+20,  1.2318e+21, -8.4254e+20,  2.8285e+20, -1.0606e+21,
+        -1.1395e+21, -1.3884e+20, -1.4241e+20, -1.2471e+19, -2.5418e+20,
+        -2.6479e+20,  1.3441e+20,  2.8486e+21,  7.5312e+20, -1.2768e+21,
+        -1.0292e+21, -7.7699e+20,  1.7713e+21, -4.3987e+20,  2.4894e+20,
+        -7.2091e+20, -7.0831e+19, -2.8951e+20,  4.7990e+19, -1.1232e+21,
+         1.0406e+21, -7.5247e+20, -5.4885e+20, -2.7748e+20, -3.4053e+20,
+         3.1024e+20, -7.6214e+19,  5.3249e+20, -9.3001e+20, -2.4085e+21,
+         8.5786e+20, -1.1001e+21, -5.7064e+20, -5.5381e+19, -5.0615e+20,
+         2.6391e+20, -1.2787e+21, -1.4444e+20,  7.3983e+20, -1.1283e+21,
+         1.0377e+21, -9.6143e+20,  2.0639e+21,  1.3071e+21], device='cuda:0',
+       requires_grad=True)
+Train NLLs = [tensor(4.0070e+25, device='cuda:0', grad_fn=<AddBackward0>)]
+Test NLLs = [tensor(1.0396e+25, device='cuda:0', grad_fn=<AddBackward0>)]
+Finished

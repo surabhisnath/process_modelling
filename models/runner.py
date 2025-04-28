@@ -16,11 +16,11 @@ def run(config):
     models = {}
     fit_results = {}
     
-    if config["hills"]:
-        hills = Hills(config)
-        hills.create_models()
-        models["hills"] = hills
-        fit_results["hills"] = {}
+    # if config["hills"]:
+    #     hills = Hills(config)
+    #     hills.create_models()
+    #     models["hills"] = hills
+    #     fit_results["hills"] = {}
 
     # if config["heineman"]:
     #     heineman = Heineman(config)
@@ -46,12 +46,6 @@ def run(config):
         models["ours1"] = ours1
         fit_results["ours1"] = {}
     
-    # human_bleu = calculate_bleu(sequences[:num_sequences//2], sequences[num_sequences//2:])
-    # print(human_bleu)
-    # human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
-    # corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
-    # print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
-
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
         for model_class in models:
