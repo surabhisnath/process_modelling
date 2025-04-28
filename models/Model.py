@@ -60,6 +60,8 @@ class Model:
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
 
+        self.start = 2
+        
         human_bleu = calculate_bleu(self.sequences[:self.num_sequences//2], self.sequences[self.num_sequences//2:])
         print(human_bleu)
         human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
@@ -174,7 +176,7 @@ class Model:
         return sim_matrix
 
     def get_categories(self):
-        category_info_path = "../category-fluency/Final_Categories_and_Exemplars.xlsx"
+        category_info_path = "files/Final_Categories_and_Exemplars.xlsx"
         category_name_to_num = (pd.read_excel(category_info_path).reset_index().set_index("Category").to_dict())["index"]
 
         examples = pd.read_excel(
