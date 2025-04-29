@@ -67,8 +67,7 @@ class Model:
         human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
         corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
         print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
-
-    
+   
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
 

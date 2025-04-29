@@ -13,6 +13,7 @@ from itertools import product
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from joblib import Parallel, delayed
 
 class Ours1(Model):
     def __init__(self, config):
@@ -25,7 +26,6 @@ class Ours1(Model):
         self.pers_mat = self.get_feature_pers_mat()
         self.all_features = np.array([self.features[r] for r in self.unique_responses])  # shape: [R, D]
         self.resp_to_idx = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
-        self.num_weights = 3
 
     def create_models(self):
         self.models = {
@@ -64,38 +64,54 @@ class Ours1(Model):
         # print(pers_matrix)
 
         return np.einsum('ijm,jkm->ijk', self.not_change_mat, self.not_change_mat.transpose(1, 0, 2))
-
-    # def uniform(self):
-    #     logits = torch.ones(len(self.unique_responses), dtype=torch.float32, device=device)
+    
+    # def nll(self, weights, previous_response=None, previous_previous_response=None):
+    #     logits = weights[0] * self.d2ts(self.freq) + \
+    #              weights[1] * self.d2ts(self.sim_mat[previous_response]) + \
+    #              weights[2] * self.np2ts(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]])
     #     return F.log_softmax(logits, dim=0)
     
-    # def freq(self):
-    #     logits = self.weights[0] * self.d2ts(self.freq)
-    #     return F.log_softmax(logits, dim=0)
-    
-    # def HS(self, previous_response):
-    #     logits = self.weights[0] * self.d2ts(self.sim_mat[previous_response])
-    #     return F.log_softmax(logits, dim=0)
-    
-    # def Pers(self, previous_response, previous_previous_response):
-    #     logits = self.weights[0] * self.np2ts(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]])
-    #     return F.log_softmax(logits, dim=0)
-    
-    # def HS_Pers(self, previous_response, previous_previous_response):
-    #     logits = self.weights[0] * self.d2ts(self.sim_mat[previous_response]) + self.weights[1] * self.np2ts(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]])
-    #     return F.log_softmax(logits, dim=0)
-    
-    def nll(self, weights, previous_response=None, previous_previous_response=None):
-        logits = weights[0] * self.d2ts(self.freq) + \
-                 weights[1] * self.d2ts(self.sim_mat[previous_response]) + \
-                 weights[2] * self.np2ts(self.pers_mat[self.resp_to_idx[previous_previous_response], self.resp_to_idx[previous_response]])
-        return F.log_softmax(logits, dim=0)
-    
-    def get_group_nll(self, sequences):
+    def nll(self, weights, seq):
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = 0
-        for seq in sequences:
-            nll += self.get_individual_nll(seq)
-        return nll
+        sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)  # shape: (T, V)
+        
+        previous_responses = [self.resp_to_idx[r] for r in seq[1:-1]]
+        previous_previous_responses = [self.resp_to_idx[r] for r in seq[:-2]]
+        pers_terms = self.pers_mat[previous_previous_responses, previous_responses]                            # shape: (T, V)
+        
+        logits = (
+            weights[0] * self.d2ts(self.freq).unsqueeze(0) +                     # shape: (1, V)
+            weights[1] * sim_terms +                                             # shape: (T, V)
+            weights[2] * self.np2ts(pers_terms)                                  # shape: (T, V)
+        )                                                                        # shape: (T, V)
+        
+        log_probs = F.log_softmax(logits, dim=1)                                 # shape: (T, V)
+        nll += F.nll_loss(log_probs, targets[2:], reduction='sum')
+    
+    # def get_nll(self, weights, seq):
+    #     nll = 0
+
+    #     for i in range(self.start, len(seq)):
+    #         if i == 0:
+    #             nll += F.nll_loss(self.nll([weights[0], 0, 0]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+    #         elif i == 1:
+    #             nll += F.nll_loss(self.nll([weights[0], weights[1], 0], seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+    #         else:
+    #             nll += F.nll_loss(self.nll(weights, seq[i-1], seq[i-2]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
+    #     return nll
+    
+    def get_seqs_nll(self, sequences, weights):
+        nlls = Parallel(n_jobs=-1)(
+            delayed(self.get_nll)(weights, seq) for seq in sequences
+        )
+        return sum(nlls)
+
+    # def get_seqs_nll(self, sequences):      # group
+    #     nll = 0
+    #     for seq in sequences:
+    #         nll += self.get_nll(seq)
+    #     return nll
 
 class Random(Ours1):
     def __init__(self, config):
@@ -104,17 +120,7 @@ class Random(Ours1):
         self.num_weights = 0
         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
     
-    def get_nll(self, weights, seq):
-        
-        nll = 0
-        for i in range(self.start, len(seq)):
-            if i == 0:
-                nll += F.nll_loss(self.nll([weights[0], 0, 0]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-            elif i == 1:
-                nll += F.nll_loss(self.nll([weights[0], weights[1], 0], seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-            else:
-                nll += F.nll_loss(self.nll(weights, seq[i-1], seq[i-2]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-        return nll
+    
 
 class Freq(Ours1, nn.Module):
     def __init__(self, config):
@@ -124,7 +130,7 @@ class Freq(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
     
     def get_individual_nll(self, sequence):
-        log_probs = self.only_freq()
+        log_probs = self.only_freq() 
         return sum(F.nll_loss(log_probs.unsqueeze(0), torch.tensor([self.unique_response_to_index[resp]], device=device)) for resp in sequence)
 
 class HS(Ours1, nn.Module):
