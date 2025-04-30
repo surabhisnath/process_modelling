@@ -1,6 +1,7 @@
 import os
+
+from sympy import sequence
 import numpy as np
-np.random.seed(4)
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
@@ -26,6 +27,16 @@ import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from metrics import *
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+import torch
+import torch.nn as nn
+
+SEED = 42
+np.random.seed(SEED)
+torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 
 class Model:
     def __init__(self, config):
@@ -33,7 +44,7 @@ class Model:
 
         self.data = pd.read_csv("../csvs/" + self.config["dataset"] + ".csv")
         self.data = self.data[~self.data["response"].isin(["mammal", "bacterium", "unicorn", "woollymammoth"])]     # filtering NA responses
-        with open("spelling_corrections.json", 'r') as f:
+        with open("../files/spelling_corrections.json", 'r') as f:
             self.corrections = json.load(f)
         self.data["response"] = self.data["response"].map(lambda x: self.corrections.get(x, x))                     # correcting spaces in spelling
         try:
@@ -41,7 +52,31 @@ class Model:
         except:
             pass
 
-        self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals        
+        # self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        self.unique_responses = set()
+        csv_dir = "../csvs/"
+
+        for file in os.listdir(csv_dir):
+            if file.endswith(".csv"):
+                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])
+                
+                # Filter invalid rows if "invalid" exists
+                if "invalid" in df.columns:
+                    df = df[df["invalid"] != 1]
+
+                # Apply corrections and lowercase in one go
+                corrected_responses = (
+                    df["response"]
+                    .map(lambda x: self.corrections.get(x, x))
+                    .str.lower()
+                    .dropna()
+                    .unique()
+                )
+
+                self.unique_responses.update(corrected_responses)
+
+        self.unique_responses = list(self.unique_responses)
+
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         self.freq, self.freq_rel = self.get_frequencies()
@@ -60,13 +95,8 @@ class Model:
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
 
+
         self.start = 2
-        
-        human_bleu = calculate_bleu(self.sequences[:self.num_sequences//2], self.sequences[self.num_sequences//2:])
-        print(human_bleu)
-        human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
-        corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
-        print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
    
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
@@ -79,10 +109,10 @@ class Model:
 
     def get_frequencies(self):
         # https://stackoverflow.com/questions/74951626/python-nlp-google-ngram-api
-        if os.path.exists("freq_abs.json"):
-            with open("freq_abs.json", "r") as f:
+        if os.path.exists("../files/freq_abs.json"):
+            with open("../files/freq_abs.json", "r") as f:
                 freq_abs = json.load(f)
-            with open("freq_rel.json", "r") as f:
+            with open("../files/freq_rel.json", "r") as f:
                 freq_rel = json.load(f)
             freq_abs = {k: v for k, v in freq_abs.items() if k in self.unique_responses}
             freq_rel = {k: v for k, v in freq_rel.items() if k in self.unique_responses}
@@ -128,15 +158,15 @@ class Model:
             else:
                 print("ERROR!!!!")
 
-        with open("freq_abs.json", "w") as f:
+        with open("../files/freq_abs.json", "w") as f:
             json.dump(freq_abs, f, indent=2)
-        with open("freq_rel.json", "w") as f:
+        with open("../files/freq_rel.json", "w") as f:
             json.dump(freq_rel, f, indent=2)
 
         return freq_abs, freq_rel
 
     def get_frequencies_old(self):
-        file_path = 'datafreqlistlog.txt'
+        file_path = '../files/datafreqlistlog.txt'
         frequencies = {}
         with open(file_path, 'r') as file:
             for line in file:
@@ -175,7 +205,7 @@ class Model:
         return sim_matrix
 
     def get_categories(self):
-        category_info_path = "files/Final_Categories_and_Exemplars.xlsx"
+        category_info_path = "../files/Final_Categories_and_Exemplars.xlsx"
         category_name_to_num = (pd.read_excel(category_info_path).reset_index().set_index("Category").to_dict())["index"]
 
         examples = pd.read_excel(
@@ -254,13 +284,12 @@ class Model:
             plt.close()
 
     def fit(self, weights_init=None, bounds=None):
-        self.results = {}
 
-        if weights_init is None:
-            weights_init = np.random.uniform(0.001, 10, size=self.num_weights)
-        
-        if bounds is None:
-            bounds = [(-10, 10)] * self.num_weights
+        model = nn.DataParallel(self, device_ids=[0, 1, 2]).to('cuda:0')
+        if model.module.num_weights > 0:
+            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=0.1, max_iter=1000, tolerance_grad=1e-6, tolerance_change=1e-6)
+
+        self.results = {}
 
         if self.config["fitting"] == "individual":
             minNLL_list = []
@@ -290,112 +319,79 @@ class Model:
         
         elif self.config["fitting"] == "group":
             splits = self.split_sequences()     # perform CV
-            minNLL_list = []
             weights_list = []
+            train_nlls = np.zeros(len(splits))
             test_nlls = np.zeros(len(splits))
             for split_ind, (train_sequences, test_sequences) in enumerate(splits):
-                fitted = self.optimize_group(self.getnll, train_sequences, weights_init, bounds)
-                minNLL_list.append(fitted.fun)
-                weights_list.append(fitted.x)
-                for test_seq in test_sequences:
-                    test_nlls[split_ind] += self.get_nll(fitted.x, test_seq)
-            self.results["mean_minNLL"] = np.mean(minNLL_list)
-            self.results["mean_weights"] = np.mean(weights_list, axis = 0)
+                lbfgs_iters = 0
+                loss_history = []
+                param_history = []
+                def closure():
+                    nonlocal lbfgs_iters
+                    lbfgs_iters += 1
+                    optimizer.zero_grad()
+                    loss = model.module.get_seqs_nll(train_sequences)
+                    loss.backward()
+                    loss_history.append(loss.item())
+                    param_history.append(model.module.weights.detach().cpu().clone().numpy())
+                    return loss
+
+                print("Fitting....")
+                if model.module.num_weights > 0:
+                    optimizer.step(closure)
+                    print(f"LBFGS iterations run: {lbfgs_iters}")
+                    weights_list.append(model.module.weights.detach().clone())
+
+                    plot_dir = "../plots/"
+                    plt.figure()
+                    plt.plot(loss_history, label='Loss')
+                    plt.xlabel("LBFGS internal iteration")
+                    plt.ylabel("Loss")
+                    plt.title("Loss during LBFGS optimization")
+                    plt.legend()
+                    plt.grid(True)
+                    plt.savefig(os.path.join(plot_dir, f"trainloss_{self.__class__.__name__}.png"))
+                    plt.close()
+
+                    param_history = np.stack(param_history)
+
+                    # Plot each parameter separately
+                    plt.figure()
+                    for i in range(param_history.shape[1]):
+                        plt.plot(param_history[:, i], label=f'weight[{i}]')
+                    plt.xlabel("LBFGS internal iteration")
+                    plt.ylabel("Weight Value")
+                    plt.title("Parameter values during LBFGS optimization")
+                    plt.legend()
+                    plt.grid(True)
+                    plt.savefig(os.path.join(plot_dir, f"params_{self.__class__.__name__}.png"))
+                    plt.close()
+
+                with torch.no_grad():
+                    print(model.module.__class__.__name__)
+                    print(model.module.allweights)
+                    train_nlls[split_ind] = model.module.get_seqs_nll(train_sequences).item()
+                    test_nlls[split_ind] = model.module.get_seqs_nll(test_sequences).item()
+                
+
+            self.results["mean_trainNLL"] = np.mean(train_nlls)
             self.results["mean_testNLL"] = np.mean(test_nlls)
 
-            if self.config["print"]:
-                print("minNLL", self.results["mean_minNLL"])
-                print("weights", self.results["mean_weights"])
-                print(f"mean testNLL over {self.config['cv']} fold(s)", self.results["mean_testNLL"])
-
-        # elif self.config["fitting"] == "hierarchical":
-            # def update_group_params(beta_list):
-            #     beta_array = np.array(beta_list)
-            #     mu = np.mean(beta_array, axis=0)
-            #     Sigma = np.cov(beta_array.T)
-            #     return mu, Sigma
+            if model.module.num_weights > 0:
+                self.results["mean_weights"] = torch.mean(torch.stack(weights_list), dim=0)
             
-            # mu = np.zeros(self.num_weights)
-            # Sigma = np.eye(self.num_weights)
-            # for iteration in range(10):
-            #     print(f"Iteration {iteration+1}")
-            #     # E-step
-            #     beta_list = []
-            #     for i in range(len(sequence_s)):
-            #         beta_i = fit(func, sequence_s[i], "individual", name, mu).x
-            #         beta_list.append(beta_i)
-            #     # M-step
-            #     mu, Sigma = update_group_params(beta_list)
-            # return mu, Sigma, beta_list
 
-            # N = len(sequence_s)
-            # device = "cpu"  # or "cuda" if applicable
-
-            # mu = torch.zeros(self.num_weights, device=device)
-            # sigma2 = torch.ones(self.num_weights, device=device)
-            # betas = [torch.zeros(self.num_weights, device=device) for _ in range(N)]
-            # posterior_vars = [torch.ones(self.num_weights, device=device) for _ in range(N)]
-
-            # for it in range(100):
-            #     print(f"EM Iteration {it + 1}")
-
-            #     # E-step
-            #     for i in range(N):
-            #         # MAP estimation
-            #         weights = mu.clone().detach().requires_grad_(True)
-
-            #         def objective():
-            #             prior_term = 0.5 * torch.sum((weights - mu)**2 / sigma2)
-            #             likelihood = func(weights, sequence_s[i])
-            #             return likelihood + prior_term
-
-            #         optimizer = LBFGS([weights], max_iter=20, line_search_fn="strong_wolfe")
-
-            #         def closure():
-            #             optimizer.zero_grad()
-            #             loss = objective()
-            #             loss.backward()
-            #             return loss
-
-            #         optimizer.step(closure)
-            #         betas[i] = weights.detach()
-
-            #         # Compute diagonal Hessian (Laplace approximation of posterior variance)
-            #         def penalized_obj(w):
-            #             return func(w, sequence_s[i]) + 0.5 * torch.sum((w - mu)**2 / sigma2)
-
-            #         hess_diag = compute_diag_hessian(penalized_obj, weights.detach())
-            #         posterior_vars[i] = 1.0 / (hess_diag + 1e-6)  # avoid division by 0
-
-            #     # M-step
-            #     beta_stack = torch.stack(betas)
-            #     mu = beta_stack.mean(dim=0)
-            #     sigma2 = (torch.stack([betas[i]**2 + posterior_vars[i] for i in range(N)]).mean(dim=0)) - mu**2
-            #     # sigma2 = torch.clamp(sigma2, min=1e-6)  # ensure positivity
-
-            # print(mu, sigma2, betas)
-
-            # hmodel = build_pymc_model(func, sequence_s[:5], self.num_weights)
-            # print("done")
-            # start_time = time.time()
-            # with hmodel:
-            #     # trace = pm.sample(10, tune=10, chains=1, cores=1, target_accept=0.8)
-            #     approx = pm.fit(n=20000, method="advi")
-            #     trace = approx.sample(1000)
-            # end_time = time.time()    
-            # elapsed_time = end_time - start_time
-            # print(f"sampling completed in {elapsed_time:.2f} seconds")
-            # print("sampled")
-            # posterior = az.extract(trace)
-            # print("extracted")
-            # print(posterior)
+            if self.config["print"]:
+                print(f"mean trainNLL over {self.config['cv']} fold(s)", self.results["mean_trainNLL"])
+                print(f"mean testNLL over {self.config['cv']} fold(s)", self.results["mean_testNLL"])
+                if model.module.num_weights > 0:
+                    print(f"mean weights over {self.config['cv']} fold(s)", self.results["mean_weights"])
 
     def get_past_sequence(self, sequence):
         if len(sequence) == 0:
             return []
         else:
             return [sequence[-1]]
-
 
     def simulate(self):                                                               
         simulations = []

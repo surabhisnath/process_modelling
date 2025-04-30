@@ -3,11 +3,11 @@ import argparse
 import sys
 import os 
 from Model import Model
-from Hills import Hills
-from Heineman import Heineman
-from Abbott import Abbott
-from Morales import Morales
-from Ours1 import Ours1
+# from Hills import Hills
+# from Heineman import Heineman
+# from Abbott import Abbott
+# from Morales import Morales
+from Ours1_Pytorch import Ours1
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 import time
@@ -15,6 +15,13 @@ import time
 def run(config):
     models = {}
     fit_results = {}
+
+    # model = Model(config)
+    # human_bleu = calculate_bleu(model.sequences[:model.num_sequences//2], model.sequences[model.num_sequences//2:])
+    # print(human_bleu)
+    # human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
+    # corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
+    # print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
     
     # if config["hills"]:
     #     hills = Hills(config)
@@ -50,9 +57,11 @@ def run(config):
         print("--------------------------------FITTING MODELS--------------------------------")
         for model_class in models:
             for model_name in models[model_class].models:
-                print(model_name)
+                print(model_class, model_name)
                 start_time = time.time()
+                
                 models[model_class].models[model_name].fit()
+
                 end_time = time.time()    
                 elapsed_time = end_time - start_time
                 print(f"{model_name} completed in {elapsed_time:.2f} seconds")
