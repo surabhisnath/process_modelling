@@ -52,7 +52,7 @@ class Model:
         except:
             pass
 
-        # self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         self.unique_responses = set()
         csv_dir = "../csvs/"
 
@@ -369,7 +369,10 @@ class Model:
 
                 with torch.no_grad():
                     print(model.module.__class__.__name__)
-                    print(model.module.allweights)
+                    try:
+                        print(model.module.allweights)
+                    except:
+                        print(model.module.weights)
                     train_nlls[split_ind] = model.module.get_seqs_nll(train_sequences).item()
                     test_nlls[split_ind] = model.module.get_seqs_nll(test_sequences).item()
                 

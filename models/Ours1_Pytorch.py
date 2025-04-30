@@ -75,7 +75,6 @@ class Ours1(Model):
             self.allweights[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
             self.allweights[2] * self.np2ts(pers_terms)                                                                 # shape: (len_seq - 2, num_resp)
         )                                                                                                               # shape: (len_seq - 2, num_resp)
-        
         log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
@@ -159,49 +158,42 @@ class Freq_HS_Pers(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
-# class WeightedHS(Ours1, nn.Module):
-#     def __init__(self, config):
-#         Ours1.__init__(self, config)
-#         nn.Module.__init__(self)
-#         self.num_weights = self.num_features
-#         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
+class WeightedHS(Ours1, nn.Module):
+    def __init__(self, config):
+        Ours1.__init__(self, config)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_features
+        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+
+    def get_nll(self, seq):
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+                                                                                                                                            # weights: (D,)
+        logits = torch.einsum("lnd,d->ln", all_diffs, self.weights)                                                                         # Shape: (L, N)
+        log_probs = F.log_softmax(logits, dim=1)
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
     
-#     def weighted_HS(self, previous_response):
-#         prev_feat = torch.tensor(self.features[previous_response], dtype=torch.int8, device=device)
-#         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])
-#         all_diffs = (all_feats == prev_feat).float()  # shape: (num_responses, feature_dim)
-#         logits = (all_diffs @ self.weights)
-#         return F.log_softmax(logits, dim=0)
+class FreqWeightedHS(Ours1, nn.Module):
+    def __init__(self, config):
+        Ours1.__init__(self, config)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_features + 1
+        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
-#     def get_individual_nll(self, seq):
-#         nll = 0
-#         for i in range(self.start, len(seq)):
-#             if i == 0:
-#                 nll += F.nll_loss(self.uniform().unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-#             else:
-#                 nll += F.nll_loss(self.weighted_HS(seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-#         return nll
+    def get_nll(self, seq):
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+                                                                                                                                            # weights: (D,)
+        logits = self.weights[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, self.weights[1:])                                                                         # Shape: (L, N)
+        log_probs = F.log_softmax(logits, dim=1)
 
-# class FreqWeightedHS(Ours1, nn.Module):
-#     def __init__(self, config):
-#         Ours1.__init__(self, config)
-#         nn.Module.__init__(self)
-#         self.num_weights = self.num_features + 1
-#         self.weights = nn.Parameter(torch.tensor([1.0] * self.num_weights, device=device))
-#         print(self.feature_names)
-        
-#     def freq_weighted_HS(self, previous_response):
-#         prev_feat = torch.tensor(self.features[previous_response], dtype=torch.int8, device=device)
-#         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])
-#         all_diffs = (all_feats == prev_feat).float()  # shape: (num_responses, feature_dim)
-#         logits = (all_diffs @ self.weights[1:]) + self.weights[0] * self.d2ts(self.freq)
-#         return F.log_softmax(logits, dim=0)
-
-#     def get_individual_nll(self, seq):
-#         nll = 0
-#         for i in range(self.start, len(seq)):
-#             if i == 0:
-#                 nll += F.nll_loss(self.only_freq().unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-#             else:
-#                 nll += F.nll_loss(self.freq_weighted_HS(seq[i-1]).unsqueeze(0), torch.tensor([self.unique_response_to_index[seq[i]]], device=device))
-#         return nll  
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
