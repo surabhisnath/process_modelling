@@ -37,6 +37,7 @@ torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+random_nlls = []
 
 class Model:
     def __init__(self, config):
@@ -94,10 +95,8 @@ class Model:
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
-
-
         self.start = 2
-   
+         
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
 
@@ -261,61 +260,90 @@ class Model:
         result = minimize(total_nll, weights_init, bounds=bounds, options={'maxiter': 100})
         return result
 
-    def plot(self):
+    def plot(self, model_name):
         plt.figure()
         plt.hist(self.results["minNLL_list"], bins=30, color='skyblue', edgecolor='black')
-        plt.title(f"Min NLL Distribution for {self.model_class} - {self.model_name}")
+        plt.title(f"Min NLL Distribution for {self.model_class} - {model_name}")
         plt.xlabel("Min NLL")
         plt.ylabel("Frequency")
         plt.grid(True, linestyle='--', alpha=0.6)
         plt.tight_layout()
-        plt.savefig(f"plots/minNLL_{self.model_class}_{self.model_name}.png", dpi=300)
+        plt.savefig(f"../plots/minNLL_{self.model_class}_{model_name}.png", dpi=300)
         plt.close()
 
         for i in range(self.num_weights):
             plt.figure()
-            plt.hist([w[i] for w in self.results["weights_list"]], bins=30, color='skyblue', edgecolor='black')
-            plt.title(f"Weight{i+1} Distribution for {self.model_class} - {self.model_name}")
+            plt.hist(self.results["weights_list"].cpu().numpy()[:, i], bins=30, color='skyblue', edgecolor='black')
+            plt.title(f"Weight{i+1} Distribution for {self.model_class} - {model_name}")
             plt.xlabel(f"Weight{i+1}")
             plt.ylabel("Frequency")
             plt.grid(True, linestyle='--', alpha=0.6)
             plt.tight_layout()
-            plt.savefig(f"plots/weight{i+1}_{self.model_class}_{self.model_name}.png", dpi=300)
+            plt.savefig(f"../plots/weight{i+1}_{self.model_class}_{model_name}.png", dpi=300)
             plt.close()
 
     def fit(self, weights_init=None, bounds=None):
 
         model = nn.DataParallel(self, device_ids=[0, 1, 2]).to('cuda:0')
         if model.module.num_weights > 0:
-            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=0.1, max_iter=1000, tolerance_grad=1e-6, tolerance_change=1e-6)
+            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=0.1, max_iter=1000, tolerance_grad=1e-3, tolerance_change=1e-3)
 
         self.results = {}
 
         if self.config["fitting"] == "individual":
             minNLL_list = []
             weights_list = []
-            for i, sequence in enumerate(self.sequences):
+            
+            for i, seq in enumerate(self.sequences):
                 self.results[f"seq{i+1}"] = {}
-                fitted = self.optimize_individual(self.get_nll, sequence, weights_init, bounds)
-                self.results[f"seq{i+1}"]["minNLL"] = fitted.fun
-                minNLL_list.append(fitted.fun)
-                self.results[f"seq{i+1}"]["weights"] = fitted.x
-                weights_list.append(fitted.x)
 
+                lbfgs_iters = 0
+                loss_history = []
+                param_history = []
+                def closure():
+                    nonlocal lbfgs_iters
+                    lbfgs_iters += 1
+                    optimizer.zero_grad()
+                    loss = model.module.get_nll(seq)
+                    loss.backward()
+                    loss_history.append(loss.item())
+                    param_history.append(model.module.weights.detach().cpu().clone().numpy())
+                    return loss
+
+                if model.module.num_weights > 0:
+                    optimizer.step(closure)
+                    # print(f"LBFGS iterations run: {lbfgs_iters}")
+                    fittedweights = model.module.weights.detach().clone()
+                    weights_list.append(fittedweights)
+                    self.results[f"seq{i+1}"]["weights"] = fittedweights
+                
+                with torch.no_grad():
+                    fittednll = model.module.get_nll(seq).item() 
+                    if model.module.__class__.__name__ == "Random":
+                        random_nlls.append(fittednll)
+                        minNLL_list.append(fittednll)
+                    else:
+                        minNLL_list.append(fittednll - random_nlls[i])
+                    
+                    self.results[f"seq{i+1}"]["minNLL"] = fittednll
+                
             self.results["minNLL_list"] = minNLL_list
             self.results["mean_minNLL"] = np.mean(minNLL_list)
             self.results["std_minNLL"] = np.std(minNLL_list)
 
-            self.results["weights_list"] = weights_list
-            self.results["mean_weights"] = np.mean(weights_list, axis = 0)
-            self.results["std_weights"] = np.std(weights_list, axis = 0)
+            if model.module.num_weights > 0:
+                stacked = torch.stack(weights_list, dim=0)  # shape: [n_samples, n_weights]
+                self.results["weights_list"] = stacked
+                self.results["mean_weights"] = stacked.mean(dim=0).tolist()
+                self.results["std_weights"] = stacked.std(dim=0, unbiased=False).tolist()  # match NumPy's ddof=0 behavior
 
             if self.config["print"]:
                 print("minNLL", self.results["mean_minNLL"], "+-", self.results["std_minNLL"])
-                print("weights", self.results["mean_weights"], "+-", self.results["std_weights"])
+                if model.module.num_weights > 0:
+                    print("weights", self.results["mean_weights"], "+-", self.results["std_weights"])
             
             if self.config["plot"]:
-                self.plot()
+                self.plot(model.module.__class__.__name__)
         
         elif self.config["fitting"] == "group":
             splits = self.split_sequences()     # perform CV
@@ -336,7 +364,6 @@ class Model:
                     param_history.append(model.module.weights.detach().cpu().clone().numpy())
                     return loss
 
-                print("Fitting....")
                 if model.module.num_weights > 0:
                     optimizer.step(closure)
                     print(f"LBFGS iterations run: {lbfgs_iters}")
@@ -355,7 +382,6 @@ class Model:
 
                     param_history = np.stack(param_history)
 
-                    # Plot each parameter separately
                     plt.figure()
                     for i in range(param_history.shape[1]):
                         plt.plot(param_history[:, i], label=f'weight[{i}]')
@@ -369,10 +395,10 @@ class Model:
 
                 with torch.no_grad():
                     print(model.module.__class__.__name__)
-                    try:
-                        print(model.module.allweights)
-                    except:
-                        print(model.module.weights)
+                    # try:
+                    #     print(model.module.allweights)
+                    # except:
+                    #     print(model.module.weights)
                     train_nlls[split_ind] = model.module.get_seqs_nll(train_sequences).item()
                     test_nlls[split_ind] = model.module.get_seqs_nll(test_sequences).item()
                 

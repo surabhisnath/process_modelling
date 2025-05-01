@@ -8,16 +8,18 @@ from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 import torch
-import math
-from itertools import product
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from joblib import Parallel, delayed
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
+print("CUDA available:", torch.cuda.is_available())
+print("GPU count:", torch.cuda.device_count())
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 class Ours1(Model):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         self.model_class = "ours1"
         self.features, self.feature_names = self.get_features()
         self.num_features = len(self.feature_names)
@@ -26,12 +28,14 @@ class Ours1(Model):
         self.all_features = np.array([self.features[r] for r in self.unique_responses])  # shape: [R, D]
         self.resp_to_idx = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
         self.num_total_weights = 3
+        self.onlyforgroup = False
 
     def create_models(self):
-        self.models = {
-            subclass.__name__: subclass(self.config)
-            for subclass in Ours1.__subclasses__()
-        }
+        if self.config["fitting"] == "individual":
+            # self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__() if not subclass.onlyforgroup}
+            self.models = {subclass.__name__: instance for subclass in Ours1.__subclasses__() if not getattr(instance := subclass(self), 'onlyforgroup', False)}
+        elif self.config["fitting"] == "group":
+            self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__()}
     
     def get_features(self):
         featuredict = pk.load(open(f"../files/vf_features.pk", "rb"))
@@ -89,15 +93,15 @@ class Ours1(Model):
         return nll
 
 class Random(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 0
         self.weight_indices = torch.tensor([], device=device)
 
 class Freq(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
         self.weight_indices = torch.tensor([0], device=device)
@@ -105,8 +109,8 @@ class Freq(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class HS(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
         self.weight_indices = torch.tensor([1], device=device)
@@ -114,8 +118,8 @@ class HS(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class Pers(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
         self.weight_indices = torch.tensor([2], device=device)
@@ -123,8 +127,8 @@ class Pers(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([2.0] * self.num_weights, device=device))
 
 class Freq_HS(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 1], device=device)
@@ -132,8 +136,8 @@ class Freq_HS(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class HS_Pers(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
         self.weight_indices = torch.tensor([1, 2], device=device)
@@ -141,8 +145,8 @@ class HS_Pers(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class Freq_Pers(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 2], device=device)
@@ -150,8 +154,8 @@ class Freq_Pers(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class Freq_HS_Pers(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 3
         self.weight_indices = torch.tensor([0, 1, 2], device=device)
@@ -159,11 +163,12 @@ class Freq_HS_Pers(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
 
 class WeightedHS(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = self.num_features
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.onlyforgroup = True
 
     def get_nll(self, seq):
         nll = 0
@@ -179,11 +184,12 @@ class WeightedHS(Ours1, nn.Module):
         return nll
     
 class FreqWeightedHS(Ours1, nn.Module):
-    def __init__(self, config):
-        Ours1.__init__(self, config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = self.num_features + 1
         self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.onlyforgroup = True
 
     def get_nll(self, seq):
         nll = 0

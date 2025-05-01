@@ -3,34 +3,40 @@ import argparse
 import sys
 import os 
 from Model import Model
-# from Hills import Hills
-# from Heineman import Heineman
+from Ours1_Pytorch import Ours1
+# from Hills_Pytorch import Hills
+# from Heineman_Pytorch import Heineman
 # from Abbott import Abbott
 # from Morales import Morales
-from Ours1_Pytorch import Ours1
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
-from utils import *
+from metrics import *
 import time
 
 def run(config):
     models = {}
     fit_results = {}
 
-    # model = Model(config)
-    # human_bleu = calculate_bleu(model.sequences[:model.num_sequences//2], model.sequences[model.num_sequences//2:])
-    # print(human_bleu)
-    # human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
-    # corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
-    # print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
+    modelobj = Model(config)
+    human_bleu = calculate_bleu(modelobj.sequences[:modelobj.num_sequences//2], modelobj.sequences[modelobj.num_sequences//2:])
+    print(human_bleu)
+    human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
+    corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
+    print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
+        
+    if config["ours1"]:
+        ours1 = Ours1(modelobj)
+        ours1.create_models()
+        models["ours1"] = ours1
+        fit_results["ours1"] = {}
     
     # if config["hills"]:
-    #     hills = Hills(config)
+    #     hills = Hills(modelobj)
     #     hills.create_models()
     #     models["hills"] = hills
     #     fit_results["hills"] = {}
-
-    # if config["heineman"]:
-    #     heineman = Heineman(config)
+    
+    # if config["heineman"] and config["dataset"] == "hills":
+    #     heineman = Heineman(modelobj)
     #     heineman.create_models()
     #     models["heineman"] = heineman
     #     fit_results["heineman"] = {}
@@ -46,12 +52,7 @@ def run(config):
     #     morales.create_models()
     #     models["morales"] = morales
     #     fit_results["morales"] = {}
-    
-    if config["ours1"]:
-        ours1 = Ours1(config)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+
     
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
