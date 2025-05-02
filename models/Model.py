@@ -26,7 +26,7 @@ from numba import njit
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from metrics import *
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch
 import torch.nn as nn
 
@@ -69,22 +69,25 @@ class Model:
         #         )
         #         self.unique_responses.update(corrected_responses)
         # self.unique_responses = list(self.unique_responses)
-
         self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
-        # self.freq, self.freq_rel = self.get_frequencies()
-        # self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
-        # for k, v in self.freq.items():
-        #     if pd.isna(v):
-        #         print(k)
-        self.freq = self.get_frequencies_old()
-
+        if config["useapifreq"]: 
+            self.freq, self.freq_rel = self.get_frequencies()
+            self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
+            for k, v in self.freq.items():
+                if pd.isna(v):
+                    print(k)
+        elif config["dataset"] == "hills":      # ie --usehillsfreq
+            self.freq = self.get_frequencies_hills()
+        
         self.embeddings = self.get_embeddings()
         self.sim_mat = self.get_embedding_sim_mat()
 
-        # if self.config["dataset"] == "hills":
-        #     self.response_to_category, self.num_categories = self.get_categories()
+        self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        if self.config["dataset"] == "hills":
+            self.response_to_category, self.num_categories = self.get_categories()
         
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
@@ -152,6 +155,8 @@ class Model:
             else:
                 print("ERROR!!!!")
 
+        freq_abs = dict(sorted(freq_abs.items(), key=lambda item: item[1], reverse=True))
+        freq_rel = dict(sorted(freq_rel.items(), key=lambda item: item[1], reverse=True))
         with open("../files/freq_abs.json", "w") as f:
             json.dump(freq_abs, f, indent=2)
         with open("../files/freq_rel.json", "w") as f:
@@ -159,7 +164,7 @@ class Model:
 
         return freq_abs, freq_rel
 
-    def get_frequencies_old(self):
+    def get_frequencies_hills(self):
         file_path = '../files/datafreqlistlog.txt'
         frequencies = {}
         with open(file_path, 'r') as file:

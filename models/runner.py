@@ -9,14 +9,16 @@ from Hills_Pytorch import Hills
 # from Abbott import Abbott
 # from Morales import Morales
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
+from utils import *
 from metrics import *
 import time
 import torch
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
+
 
 def run(config):
     models = {}
@@ -108,6 +110,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
+
+    parser.add_argument("--useapifreq", action="store_true", default=True, help="use API frequency (default: True)")
+    parser.add_argument("--usehillsfreq", action="store_false", dest="useapifreq", help="use hills frequency")
+    # parser.add_argument("--usehillsfreq", type=str2bool, default=False, help="use hills frequency (default: False)")
 
     parser.add_argument("--morales", action="store_true", default=True, help="implement morales model (default: True)")
     parser.add_argument("--nomorales", action="store_false", dest="morales", help="don't implement morales models")

@@ -11,7 +11,7 @@ import torch
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Hills(Model):
     def __init__(self, parent):
