@@ -53,24 +53,24 @@ class Model:
         except:
             pass
 
-        self.unique_responses = set()
-        csv_dir = "../csvs/"
-        for file in os.listdir(csv_dir):
-            if file.endswith(".csv"):
-                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
-                if "invalid" in df.columns:
-                    df = df[df["invalid"] != 1]
-                corrected_responses = (
-                    df["response"]
-                    .map(lambda x: self.corrections.get(x, x))
-                    .str.lower()
-                    .dropna()
-                    .unique()
-                )
-                self.unique_responses.update(corrected_responses)
-        self.unique_responses = list(self.unique_responses)
+        # self.unique_responses = set()
+        # csv_dir = "../csvs/"
+        # for file in os.listdir(csv_dir):
+        #     if file.endswith(".csv"):
+        #         df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
+        #         if "invalid" in df.columns:
+        #             df = df[df["invalid"] != 1]
+        #         corrected_responses = (
+        #             df["response"]
+        #             .map(lambda x: self.corrections.get(x, x))
+        #             .str.lower()
+        #             .dropna()
+        #             .unique()
+        #         )
+        #         self.unique_responses.update(corrected_responses)
+        # self.unique_responses = list(self.unique_responses)
 
-        self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         # self.freq, self.freq_rel = self.get_frequencies()
@@ -83,8 +83,8 @@ class Model:
         self.embeddings = self.get_embeddings()
         self.sim_mat = self.get_embedding_sim_mat()
 
-        if self.config["dataset"] == "hills":
-            self.response_to_category, self.num_categories = self.get_categories()
+        # if self.config["dataset"] == "hills":
+        #     self.response_to_category, self.num_categories = self.get_categories()
         
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)

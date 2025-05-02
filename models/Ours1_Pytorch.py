@@ -82,12 +82,7 @@ class Ours1(Model):
 
         return nll
     
-    # def get_seqs_nll(self, sequences):
-    #     nll = 0
-    #     for seq in sequences:
-    #         nll += self.get_nll(seq)
-    #     return nll
-
+    
 class Random(Ours1, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
