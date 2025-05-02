@@ -4,13 +4,19 @@ import sys
 import os 
 from Model import Model
 from Ours1_Pytorch import Ours1
-# from Hills_Pytorch import Hills
+from Hills_Pytorch import Hills
 # from Heineman_Pytorch import Heineman
 # from Abbott import Abbott
 # from Morales import Morales
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from metrics import *
 import time
+import torch
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+print(device)
+print("CUDA available:", torch.cuda.is_available())
+print("GPU count:", torch.cuda.device_count())
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
 def run(config):
     models = {}
@@ -29,11 +35,11 @@ def run(config):
         models["ours1"] = ours1
         fit_results["ours1"] = {}
     
-    # if config["hills"]:
-    #     hills = Hills(modelobj)
-    #     hills.create_models()
-    #     models["hills"] = hills
-    #     fit_results["hills"] = {}
+    if config["hills"]:
+        hills = Hills(modelobj)
+        hills.create_models()
+        models["hills"] = hills
+        fit_results["hills"] = {}
     
     # if config["heineman"] and config["dataset"] == "hills":
     #     heineman = Heineman(modelobj)
@@ -88,6 +94,11 @@ if __name__ == "__main__":
     
     parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
     parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
+
+    parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
+    parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
+    parser.add_argument("--tol", type=float, default=1e-4, help="gradient and function/param tolerance")
+    parser.add_argument("--maxiter", type=int, default=1000, help="maximum number of training iterations")
 
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
     parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")

@@ -16,7 +16,7 @@ class Ours1(Model):
     def __init__(self, config):
         super().__init__(config)
         self.model_class = "ours1"
-        self.feature_names = self.get_feature_names()
+        self.feature_names = []
         print(self.feature_names)
         self.features = self.get_features()
         self.num_features = len(self.feature_names)
@@ -40,7 +40,7 @@ class Ours1(Model):
         return feature_names
     
     def get_features(self):
-        featuredict = pk.load(open(f"../scripts/vf_features.pk", "rb"))
+        featuredict = pk.load(open(f"../files/vf_features.pk", "rb"))
         return {self.corrections.get(k, k): np.array([1 if v.lower()[:4] == 'true' else 0 for f, v in values.items() if f in self.feature_names]) for k, values in featuredict.items()}
 
     def get_feature_sim_mat(self):
@@ -84,15 +84,15 @@ class Ours1(Model):
     #     return pers_matrix
 
     def get_feature_pers_mat(self):
-        pers_matrix = {(r1, r2): {} for r1, r2 in product(self.unique_responses, repeat=2)}
-        for r1, r2 in tqdm(product(self.unique_responses, repeat=2)):
-            notchange1 = self.not_change_mat[(r1, r2)]
-            for r3 in self.unique_responses:
-                notchange2 = self.not_change_mat[(r2, r3)]
-                pers_matrix[(r1, r2)][r3] = np.dot(notchange1, notchange2)
-        print(pers_matrix)
+        # pers_matrix = {(r1, r2): {} for r1, r2 in product(self.unique_responses, repeat=2)}
+        # for r1, r2 in tqdm(product(self.unique_responses, repeat=2)):
+        #     notchange1 = self.not_change_mat[(r1, r2)]
+        #     for r3 in self.unique_responses:
+        #         notchange2 = self.not_change_mat[(r2, r3)]
+        #         pers_matrix[(r1, r2)][r3] = np.dot(notchange1, notchange2)
+        # print(pers_matrix)
 
-        return np.einsum('ijm,jkm->ijk', self.not_change_mat, self.not_change_mat.transpose(1, 0, 2))
+        return np.einsum('ijm,jkm->ijk', self.not_change_mat, self.not_change_mat)
 
     
     # def get_similarity_vector(self):

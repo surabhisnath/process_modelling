@@ -14,7 +14,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(device)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
 class Hills_Freq(Hills, nn.Module):
     def __init__(self, config):
@@ -232,8 +232,8 @@ class Ours1_FreqWeightedHS(Ours1, nn.Module):
     
 def run(config):
     print("Started")
-    model = Ours1_FreqWeightedHS(config)
-    model = nn.DataParallel(model, device_ids=[0, 1, 2, 3]).to('cuda:0')
+    model = Hills_Freq(config)
+    model = nn.DataParallel(model, device_ids=[0, 1, 2]).to('cuda:0')
     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=1.0, max_iter=50)
 
     splits = model.module.split_sequences()     # perform CV

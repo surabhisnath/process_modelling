@@ -12,10 +12,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
-print("CUDA available:", torch.cuda.is_available())
-print("GPU count:", torch.cuda.device_count())
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 
 class Ours1(Model):
     def __init__(self, parent):
@@ -26,13 +22,11 @@ class Ours1(Model):
         self.sim_mat = self.get_feature_sim_mat()
         self.pers_mat = self.get_feature_pers_mat()
         self.all_features = np.array([self.features[r] for r in self.unique_responses])  # shape: [R, D]
-        self.resp_to_idx = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
-        self.num_total_weights = 3
+        self.num_total_weights = 4
         self.onlyforgroup = False
 
     def create_models(self):
         if self.config["fitting"] == "individual":
-            # self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__() if not subclass.onlyforgroup}
             self.models = {subclass.__name__: instance for subclass in Ours1.__subclasses__() if not getattr(instance := subclass(self), 'onlyforgroup', False)}
         elif self.config["fitting"] == "group":
             self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__()}
@@ -69,15 +63,17 @@ class Ours1(Model):
     def get_nll(self, seq):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
-        
-        previous_responses = [self.resp_to_idx[r] for r in seq[1:-1]]
-        previous_previous_responses = [self.resp_to_idx[r] for r in seq[:-2]]
+        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
+
+        previous_responses = [self.unique_response_to_index[r] for r in seq[1:-1]]
+        previous_previous_responses = [self.unique_response_to_index[r] for r in seq[:-2]]
         pers_terms = self.pers_mat[previous_previous_responses, previous_responses]                                     # shape: (len_seq - 2, num_resp)
         
         logits = (
-            self.allweights[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
+            self.allweights[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                                                    # shape: (1, num_resp)
             self.allweights[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
-            self.allweights[2] * self.np2ts(pers_terms)                                                                 # shape: (len_seq - 2, num_resp)
+            self.allweights[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
+            self.allweights[3] * sim_terms_2step
         )                                                                                                               # shape: (len_seq - 2, num_resp)
         log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
         
@@ -86,11 +82,11 @@ class Ours1(Model):
 
         return nll
     
-    def get_seqs_nll(self, sequences):
-        nll = 0
-        for seq in sequences:
-            nll += self.get_nll(seq)
-        return nll
+    # def get_seqs_nll(self, sequences):
+    #     nll = 0
+    #     for seq in sequences:
+    #         nll += self.get_nll(seq)
+    #     return nll
 
 class Random(Ours1, nn.Module):
     def __init__(self, parent):
@@ -106,7 +102,7 @@ class Freq(Ours1, nn.Module):
         self.num_weights = 1
         self.weight_indices = torch.tensor([0], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class HS(Ours1, nn.Module):
     def __init__(self, parent):
@@ -115,7 +111,16 @@ class HS(Ours1, nn.Module):
         self.num_weights = 1
         self.weight_indices = torch.tensor([1], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class HS2step(Ours1, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 1
+        self.weight_indices = torch.tensor([3], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class Pers(Ours1, nn.Module):
     def __init__(self, parent):
@@ -133,7 +138,16 @@ class Freq_HS(Ours1, nn.Module):
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 1], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class HS_HS2step(Ours1, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([1, 3], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class HS_Pers(Ours1, nn.Module):
     def __init__(self, parent):
@@ -142,7 +156,7 @@ class HS_Pers(Ours1, nn.Module):
         self.num_weights = 2
         self.weight_indices = torch.tensor([1, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class Freq_Pers(Ours1, nn.Module):
     def __init__(self, parent):
@@ -151,7 +165,16 @@ class Freq_Pers(Ours1, nn.Module):
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class Freq_HS_HS2step(Ours1, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 3
+        self.weight_indices = torch.tensor([0, 1, 3], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class Freq_HS_Pers(Ours1, nn.Module):
     def __init__(self, parent):
@@ -160,14 +183,14 @@ class Freq_HS_Pers(Ours1, nn.Module):
         self.num_weights = 3
         self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class WeightedHS(Ours1, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = self.num_features
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
     def get_nll(self, seq):
@@ -188,7 +211,7 @@ class FreqWeightedHS(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = self.num_features + 1
-        self.weights = nn.Parameter(torch.tensor([0.5] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
     def get_nll(self, seq):

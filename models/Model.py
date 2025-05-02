@@ -53,19 +53,13 @@ class Model:
         except:
             pass
 
-        self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         self.unique_responses = set()
         csv_dir = "../csvs/"
-
         for file in os.listdir(csv_dir):
             if file.endswith(".csv"):
-                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])
-                
-                # Filter invalid rows if "invalid" exists
+                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
                 if "invalid" in df.columns:
                     df = df[df["invalid"] != 1]
-
-                # Apply corrections and lowercase in one go
                 corrected_responses = (
                     df["response"]
                     .map(lambda x: self.corrections.get(x, x))
@@ -73,29 +67,30 @@ class Model:
                     .dropna()
                     .unique()
                 )
-
                 self.unique_responses.update(corrected_responses)
-
         self.unique_responses = list(self.unique_responses)
 
+        self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
-        self.freq, self.freq_rel = self.get_frequencies()
-        self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
-        for k, v in self.freq.items():
-            if pd.isna(v):
-                print(k)
-        # self.freq = self.get_frequencies_old()
+        # self.freq, self.freq_rel = self.get_frequencies()
+        # self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
+        # for k, v in self.freq.items():
+        #     if pd.isna(v):
+        #         print(k)
+        self.freq = self.get_frequencies_old()
 
         self.embeddings = self.get_embeddings()
         self.sim_mat = self.get_embedding_sim_mat()
 
-        # self.response_to_category, self.num_categories = self.get_categories()
+        if self.config["dataset"] == "hills":
+            self.response_to_category, self.num_categories = self.get_categories()
         
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
         self.start = 2
+        self.init_val = self.config["initval"]
          
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
@@ -224,10 +219,10 @@ class Model:
 
         self.data["categories"] = self.data["response"].map(examples_to_category)
 
-        for item in self.unique_responses:
+        for item in self.data_unique_responses:
             if item not in examples_to_category:
                 print(item)
-        assert all(item in examples_to_category for item in self.unique_responses)
+        assert all(item in examples_to_category for item in self.data_unique_responses)
         return examples_to_category, num_categories
 
     def split_sequences(self):
@@ -282,12 +277,11 @@ class Model:
             plt.savefig(f"../plots/weight{i+1}_{self.model_class}_{model_name}.png", dpi=300)
             plt.close()
 
-    def fit(self, weights_init=None, bounds=None):
-
+    def fit(self):
         model = nn.DataParallel(self, device_ids=[0, 1, 2]).to('cuda:0')
         if model.module.num_weights > 0:
-            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=0.1, max_iter=1000, tolerance_grad=1e-3, tolerance_change=1e-3)
-
+            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+            
         self.results = {}
 
         if self.config["fitting"] == "individual":
@@ -358,7 +352,8 @@ class Model:
                     nonlocal lbfgs_iters
                     lbfgs_iters += 1
                     optimizer.zero_grad()
-                    loss = model.module.get_seqs_nll(train_sequences)
+                    # loss = model.module.get_seqs_nll(train_sequences)
+                    loss = sum([model.module.get_nll(seq) for seq in train_sequences])
                     loss.backward()
                     loss_history.append(loss.item())
                     param_history.append(model.module.weights.detach().cpu().clone().numpy())
@@ -394,13 +389,12 @@ class Model:
                     plt.close()
 
                 with torch.no_grad():
-                    print(model.module.__class__.__name__)
                     # try:
                     #     print(model.module.allweights)
                     # except:
                     #     print(model.module.weights)
-                    train_nlls[split_ind] = model.module.get_seqs_nll(train_sequences).item()
-                    test_nlls[split_ind] = model.module.get_seqs_nll(test_sequences).item()
+                    train_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in train_sequences])
+                    test_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in test_sequences])
                 
 
             self.results["mean_trainNLL"] = np.mean(train_nlls)
