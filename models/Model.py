@@ -29,6 +29,7 @@ from metrics import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch
 import torch.nn as nn
+import requests
 
 SEED = 42
 np.random.seed(SEED)
@@ -74,11 +75,20 @@ class Model:
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         if config["useapifreq"]: 
-            self.freq, self.freq_rel = self.get_frequencies()
-            self.freq = {k: v / sum(self.freq.values()) for k, v in self.freq.items()}
+            self.freq, self.freq_rel = self.get_frequencies()       # normalising is bad for performance when log freqs
             for k, v in self.freq.items():
                 if pd.isna(v):
                     print(k)
+
+            self.freq2 = self.get_frequencies_hills()
+            from scipy.stats import pearsonr, spearmanr
+            common_keys = set(self.freq) & set(self.freq2)
+            values1 = [self.freq[k] for k in common_keys]
+            values2 = [self.freq2[k] for k in common_keys]
+            print(pearsonr(values1, values2))          # 0.37
+            print(spearmanr(values1, values2))         # 0.83
+
+
         elif config["dataset"] == "hills":      # ie --usehillsfreq
             self.freq = self.get_frequencies_hills()
         
@@ -104,12 +114,12 @@ class Model:
     def d2np(self, some_dict):
         return np.array([some_dict[resp] for resp in self.unique_responses])
 
-    def get_frequencies(self):
+    # def get_frequencies(self):
         # https://stackoverflow.com/questions/74951626/python-nlp-google-ngram-api
-        if os.path.exists("../files/freq_abs.json"):
-            with open("../files/freq_abs.json", "r") as f:
+        if os.path.exists("../files/freq_abs_log.json"):
+            with open("../files/freq_abs_log.json", "r") as f:
                 freq_abs = json.load(f)
-            with open("../files/freq_rel.json", "r") as f:
+            with open("../files/freq_rel_log.json", "r") as f:
                 freq_rel = json.load(f)
             freq_abs = {k: v for k, v in freq_abs.items() if k in self.unique_responses}
             freq_rel = {k: v for k, v in freq_rel.items() if k in self.unique_responses}
@@ -146,8 +156,8 @@ class Model:
                     ngrams = res.get("ngrams", [])
                     count_abs = ngrams[0].get("absTotalMatchCount", 0) if ngrams else 0
                     count_rel = ngrams[0].get("relTotalMatchCount", 0) if ngrams else 0
-                    abs_match_counts.append(count_abs)
-                    rel_match_counts.append(count_rel)
+                    abs_match_counts.append(np.log10(count_abs))
+                    rel_match_counts.append(np.log10(count_rel))
 
                 freq_abs.update(dict(zip(chunk, abs_match_counts)))
                 freq_rel.update(dict(zip(chunk, rel_match_counts)))
@@ -157,12 +167,41 @@ class Model:
 
         freq_abs = dict(sorted(freq_abs.items(), key=lambda item: item[1], reverse=True))
         freq_rel = dict(sorted(freq_rel.items(), key=lambda item: item[1], reverse=True))
-        with open("../files/freq_abs.json", "w") as f:
+        with open("../files/freq_abs_log.json", "w") as f:
             json.dump(freq_abs, f, indent=2)
-        with open("../files/freq_rel.json", "w") as f:
+        with open("../files/freq_rel_log.json", "w") as f:
             json.dump(freq_rel, f, indent=2)
 
         return freq_abs, freq_rel
+
+    def get_frequencies(self):
+        if os.path.exists("../files/freq.json"):
+            with open("../files/freq.json", "r") as f:
+                freq = json.load(f)
+            freq = {k: v for k, v in freq.items() if k in self.unique_responses}
+        else:
+            freq = {}
+
+        remaining = [resp for resp in self.unique_responses if resp not in freq]
+
+        if not remaining:
+            return freq
+
+        for resp in tqdm(remaining):
+            payload = {
+                'index': 'v4_piletrain_llama',
+                'query_type': 'count',
+                'query': resp,
+            }
+            result = requests.post('https://api.infini-gram.io/', json=payload).json()
+            freq[resp] = np.log10(result['count'])
+            with open("../files/freq.json", "w") as f:
+                json.dump(freq, f, indent=2)
+
+        freq = dict(sorted(freq.items(), key=lambda item: item[1], reverse=True))
+        with open("../files/freq.json", "w") as f:
+            json.dump(freq, f, indent=2)
+        return freq
 
     def get_frequencies_hills(self):
         file_path = '../files/datafreqlistlog.txt'

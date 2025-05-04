@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
-    parser.add_argument("--tol", type=float, default=1e-4, help="gradient and function/param tolerance")
+    parser.add_argument("--tol", type=float, default=1e-9, help="gradient and function/param tolerance")
     parser.add_argument("--maxiter", type=int, default=1000, help="maximum number of training iterations")
 
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
