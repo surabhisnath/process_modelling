@@ -99,109 +99,109 @@ class Freq(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([1], device=device)
+# class HS(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 1
+#         self.weight_indices = torch.tensor([1], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS2step(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([3], device=device)
+# class HS2step(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 1
+#         self.weight_indices = torch.tensor([3], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Pers(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([2], device=device)
+# class Pers(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 1
+#         self.weight_indices = torch.tensor([2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([2.0] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([2.0] * self.num_weights, device=device))
 
-class Freq_HS(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([0, 1], device=device)
+# class Freq_HS(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 2
+#         self.weight_indices = torch.tensor([0, 1], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS_HS2step(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 3], device=device)
+# class HS_HS2step(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 2
+#         self.weight_indices = torch.tensor([1, 3], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS_Pers(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 2], device=device)
+# class HS_Pers(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 2
+#         self.weight_indices = torch.tensor([1, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_Pers(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([0, 2], device=device)
+# class Freq_Pers(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 2
+#         self.weight_indices = torch.tensor([0, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_HS_HS2step(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 3], device=device)
+# class Freq_HS_HS2step(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 3
+#         self.weight_indices = torch.tensor([0, 1, 3], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_HS_Pers(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 2], device=device)
+# class Freq_HS_Pers(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 3
+#         self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class WeightedHS(Ours1, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = self.num_features
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-        self.onlyforgroup = True
+# class WeightedHS(Ours1, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = self.num_features
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.onlyforgroup = True
 
-    def get_nll(self, seq):
-        nll = 0
-        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
-        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
-        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
-                                                                                                                                            # weights: (D,)
-        logits = torch.einsum("lnd,d->ln", all_diffs, self.weights)                                                                         # Shape: (L, N)
-        log_probs = F.log_softmax(logits, dim=1)
+#     def get_nll(self, seq):
+#         nll = 0
+#         prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+#         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+#         all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+#                                                                                                                                             # weights: (D,)
+#         logits = torch.einsum("lnd,d->ln", all_diffs, self.weights)                                                                         # Shape: (L, N)
+#         log_probs = F.log_softmax(logits, dim=1)
 
-        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
-        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
-        return nll
+#         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+#         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+#         return nll
     
-class FreqWeightedHS(Ours1, nn.Module):
+# class FreqWeightedHS(Ours1, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)

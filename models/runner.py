@@ -5,7 +5,7 @@ import os
 from Model import Model
 from Ours1_Pytorch import Ours1
 from Hills_Pytorch import Hills
-# from Heineman_Pytorch import Heineman
+from Heineman_Pytorch import Heineman
 # from Abbott import Abbott
 # from Morales import Morales
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
@@ -43,11 +43,11 @@ def run(config):
         models["hills"] = hills
         fit_results["hills"] = {}
     
-    # if config["heineman"] and config["dataset"] == "hills":
-    #     heineman = Heineman(modelobj)
-    #     heineman.create_models()
-    #     models["heineman"] = heineman
-    #     fit_results["heineman"] = {}
+    if config["heineman"] and config["dataset"] == "hills":
+        heineman = Heineman(modelobj)
+        heineman.create_models()
+        models["heineman"] = heineman
+        fit_results["heineman"] = {}
     
     # if config["abbott"]:
     #     abbott = Abbott(config)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
     parser.add_argument("--tol", type=float, default=1e-9, help="gradient and function/param tolerance")
-    parser.add_argument("--maxiter", type=int, default=1000, help="maximum number of training iterations")
+    parser.add_argument("--maxiter", type=int, default=10000, help="maximum number of training iterations")
 
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
     parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")

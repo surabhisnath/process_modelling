@@ -75,7 +75,7 @@ class Model:
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         if config["useapifreq"]: 
-            self.freq, self.freq_rel = self.get_frequencies()       # normalising is bad for performance when log freqs
+            self.freq = self.get_frequencies()       # normalising is bad for performance when log freqs
             for k, v in self.freq.items():
                 if pd.isna(v):
                     print(k)
@@ -114,7 +114,7 @@ class Model:
     def d2np(self, some_dict):
         return np.array([some_dict[resp] for resp in self.unique_responses])
 
-    # def get_frequencies(self):
+    def get_frequencies(self):
         # https://stackoverflow.com/questions/74951626/python-nlp-google-ngram-api
         if os.path.exists("../files/freq_abs_log.json"):
             with open("../files/freq_abs_log.json", "r") as f:
@@ -130,7 +130,7 @@ class Model:
         remaining = [resp for resp in self.unique_responses if resp not in freq_abs]
 
         if not remaining:
-            return freq_abs, freq_rel
+            return freq_abs
 
         chunk_size = 100
         total_chunks = math.ceil(len(remaining) / chunk_size)
@@ -172,9 +172,9 @@ class Model:
         with open("../files/freq_rel_log.json", "w") as f:
             json.dump(freq_rel, f, indent=2)
 
-        return freq_abs, freq_rel
+        return freq_abs
 
-    def get_frequencies(self):
+    # def get_frequencies(self):
         if os.path.exists("../files/freq.json"):
             with open("../files/freq.json", "r") as f:
                 freq = json.load(f)
