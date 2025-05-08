@@ -20,7 +20,7 @@ class Hills(Model):
         self.num_total_weights = 3
      
     def create_models(self):
-        self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__()}
+        self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
     
     @property
     def allweights(self):
@@ -47,14 +47,14 @@ class Hills(Model):
 
         return nll
 
-class OneCueStaticGlobal(Hills, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([0], device=device)
+# class OneCueStaticGlobal(Hills, nn.Module):
+#     def __init__(self, parent):
+#         self.__dict__.update(parent.__dict__)
+#         nn.Module.__init__(self)
+#         self.num_weights = 1
+#         self.weight_indices = torch.tensor([0], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class OneCueStaticLocal(Hills, nn.Module):
     def __init__(self, parent):

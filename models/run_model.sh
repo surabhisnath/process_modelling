@@ -12,6 +12,6 @@
 ##SBATCH -p compute
 
 conda activate process_modelling
-python runner.py --nosimulate $SLURM_ARRAY_TASK_ID;
+python runner.py --nosimulate;
 
 exit 0

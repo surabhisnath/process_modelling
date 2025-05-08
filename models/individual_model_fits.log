@@ -1,0 +1,93 @@
+(process_modelling) [snath@gpu-2 models]$ python runner.py --nosimulate
+cuda
+CUDA available: True
+GPU count: 3
+{'dataset': 'hills', 'representation': 'clip', 'fit': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-09, 'maxiter': 10000, 'plot': True, 'fitting': 'individual', 'cv': 1, 'hills': True, 'useapifreq': True, 'morales': True, 'heineman': True, 'abbott': True, 'ours1': True, 'ours2': True, 'print': True, 'simulate': False, 'preventrepetition': True, 'sensitivity': 4, 'test': True}
+PearsonRResult(statistic=0.8112413448848204, pvalue=4.808592270108805e-84)
+SignificanceResult(statistic=0.8317162142582375, pvalue=5.6796511198379345e-92)
+{'bleu1': 0.97, 'bleu2': 0.4, 'bleu3': 0.08, 'bleu4': 0.01}
+Human BLEU: 0.36500000000000005 0.5347985347985349
+--------------------------------FITTING MODELS--------------------------------
+ours1 Random
+minNLL 199.30626694699552 +- 48.835999655650845
+Random completed in 0.95 seconds
+ours1 Freq
+minNLL -8.830101310784089 +- 4.085621697561269
+weights [0.6794596910476685] +- [0.008391310460865498]
+Freq completed in 11.99 seconds
+ours1 HS
+minNLL -13.769436017841311 +- 7.624909075029521
+weights [10.969243049621582] +- [0.28558439016342163]
+HS completed in 14.53 seconds
+ours1 HS2step
+minNLL -3.838306075292276 +- 4.001356456235661
+weights [7.965338706970215] +- [2.0549357486743247e-06]
+HS2step completed in 8.83 seconds
+ours1 Pers
+minNLL -11.91009672990082 +- 7.647480469665031
+weights [12.597511291503906] +- [1.1726007187462528e-06]
+Pers completed in 9.35 seconds
+ours1 Freq_HS
+minNLL -20.518423635063442 +- 8.155608454086112
+weights [0.9627371430397034, 9.413824081420898] +- [0.06621072441339493, 0.4410950541496277]
+Freq_HS completed in 18.08 seconds
+ours1 HS_HS2step
+minNLL -14.043243029438857 +- 8.609066643204653
+weights [12.130339622497559, 2.6023426055908203] +- [8.735768460610416e-06, 1.2198379408800974e-06]
+HS_HS2step completed in 9.88 seconds
+ours1 HS_Pers
+minNLL -14.082082653722019 +- 8.6022137849215
+weights [10.22288990020752, 3.2889552116394043] +- [2.9027082746324595e-06, 2.2194840312295128e-06]
+HS_Pers completed in 9.80 seconds
+ours1 Freq_Pers
+minNLL -18.51086574581498 +- 8.488752256198538
+weights [0.667373538017273, 13.169306755065918] +- [0.04141770303249359, 0.49104174971580505]
+Freq_Pers completed in 39.65 seconds
+ours1 Freq_HS_HS2step
+minNLL -21.01735706194073 +- 8.973066701606125
+weights [0.922685980796814, 11.127242088317871, 0.6932423710823059] +- [0.13634777069091797, 0.7860758304595947, 1.2317180633544922]
+Freq_HS_HS2step completed in 73.87 seconds
+ours1 Freq_HS_Pers
+minNLL -20.610230601425712 +- 8.28254070144527
+weights [0.947368860244751, 5.0162672996521, 5.489725589752197] +- [0.06455138325691223, 0.7399418354034424, 0.3853723406791687]
+Freq_HS_Pers completed in 16.86 seconds
+hills OneCueStaticGlobal
+minNLL -8.83780637700507 +- 4.097971148645698
+weights [0.6815366148948669] +- [0.008476652204990387]
+OneCueStaticGlobal completed in 11.67 seconds
+hills OneCueStaticLocal
+minNLL -16.69660073138298 +- 6.2045730275821285
+weights [10.606437683105469] +- [4.368787358544068e-06]
+OneCueStaticLocal completed in 9.15 seconds
+hills OneCueStaticLocal_2step
+minNLL -9.382403975682902 +- 3.463760623192384
+weights [7.982343673706055] +- [2.4371431663894327e-06]
+OneCueStaticLocal_2step completed in 8.35 seconds
+hills OneCueStaticLocal_12step
+minNLL -18.81563541060644 +- 7.291973523994847
+weights [11.823174476623535, 4.869948863983154] +- [0.7191612720489502, 0.7443612217903137]
+OneCueStaticLocal_12step completed in 53.90 seconds
+hills CombinedCueStatic
+minNLL -19.0271176277323 +- 8.06958068962909
+weights [0.6542340517044067, 11.687265396118164] +- [0.11373703926801682, 0.50383061170578]
+CombinedCueStatic completed in 71.16 seconds
+hills CombinedCueStatic_12step
+minNLL -19.77817505640341 +- 6.92954256933144
+weights [0.19660666584968567, 10.109206199645996, 3.015258550643921] +- [0.04686659947037697, 0.21775953471660614, 0.7712619304656982]
+CombinedCueStatic_12step completed in 29.93 seconds
+heineman Subcategory
+minNLL -12.919978738411292 +- 8.46989639562375
+weights [10.426956176757812] +- [0.0]
+Subcategory completed in 17.65 seconds
+heineman Freq_Subcategory
+minNLL -20.943158391366783 +- 9.354410306060323
+weights [1.026962399482727, 8.745402336120605] +- [0.06415334343910217, 0.2640972137451172]
+Freq_Subcategory completed in 93.94 seconds
+heineman Sim_Subcategory
+minNLL -22.047973505853417 +- 9.639241664990019
+weights [11.551730155944824, 5.996218681335449] +- [0.5672560930252075, 0.3236539363861084]
+Sim_Subcategory completed in 189.38 seconds
+heineman Freq_Sim_Subcategory
+minNLL -22.066592710281082 +- 11.526148702487635
+weights [1.066351294517517, 6.974006175994873, 8.602898597717285] +- [0.36628514528274536, 1.4208580255508423, 2.07108736038208]
+Freq_Sim_Subcategory completed in 935.32 seconds

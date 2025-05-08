@@ -19,7 +19,6 @@ print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
 
-
 def run(config):
     models = {}
     fit_results = {}
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")
 
     parser.add_argument("--fitting", type=str, default="individual", help="how to fit betas: individual, group or hierarchical")
-    parser.add_argument("--cv", type=int, default=1, help="cross-validation folds. 1 = train-test:80-20. >1 = cv folds")
+    parser.add_argument("--cv", type=int, default=1, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")

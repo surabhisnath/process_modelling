@@ -43,7 +43,8 @@ random_nlls = []
 class Model:
     def __init__(self, config):
         self.config = config
-
+        with open("../files/modelstorun.json", 'r') as f:
+            self.modelstorun = json.load(f)
         self.data = pd.read_csv("../csvs/" + self.config["dataset"] + ".csv")
         self.data = self.data[~self.data["response"].isin(["mammal", "bacterium", "unicorn", "woollymammoth"])]     # filtering NA responses
         with open("../files/spelling_corrections.json", 'r') as f:
@@ -54,23 +55,23 @@ class Model:
         except:
             pass
 
-        # self.unique_responses = set()
-        # csv_dir = "../csvs/"
-        # for file in os.listdir(csv_dir):
-        #     if file.endswith(".csv"):
-        #         df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
-        #         if "invalid" in df.columns:
-        #             df = df[df["invalid"] != 1]
-        #         corrected_responses = (
-        #             df["response"]
-        #             .map(lambda x: self.corrections.get(x, x))
-        #             .str.lower()
-        #             .dropna()
-        #             .unique()
-        #         )
-        #         self.unique_responses.update(corrected_responses)
-        # self.unique_responses = list(self.unique_responses)
-        self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        self.unique_responses = set()
+        csv_dir = "../csvs/"
+        for file in os.listdir(csv_dir):
+            if file.endswith(".csv"):
+                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
+                if "invalid" in df.columns:
+                    df = df[df["invalid"] != 1]
+                corrected_responses = (
+                    df["response"]
+                    .map(lambda x: self.corrections.get(x, x))
+                    .str.lower()
+                    .dropna()
+                    .unique()
+                )
+                self.unique_responses.update(corrected_responses)
+        self.unique_responses = list(self.unique_responses)
+        # self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
@@ -102,6 +103,9 @@ class Model:
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
+
+        self.splits = self.split_sequences()     # perform CV, only used in gorup fitting
+
         self.start = 2
         self.init_val = self.config["initval"]
          
@@ -175,33 +179,33 @@ class Model:
         return freq_abs
 
     # def get_frequencies(self):
-        if os.path.exists("../files/freq.json"):
-            with open("../files/freq.json", "r") as f:
-                freq = json.load(f)
-            freq = {k: v for k, v in freq.items() if k in self.unique_responses}
-        else:
-            freq = {}
+    #     if os.path.exists("../files/freq.json"):
+    #         with open("../files/freq.json", "r") as f:
+    #             freq = json.load(f)
+    #         freq = {k: v for k, v in freq.items() if k in self.unique_responses}
+    #     else:
+    #         freq = {}
 
-        remaining = [resp for resp in self.unique_responses if resp not in freq]
+    #     remaining = [resp for resp in self.unique_responses if resp not in freq]
 
-        if not remaining:
-            return freq
+    #     if not remaining:
+    #         return freq
 
-        for resp in tqdm(remaining):
-            payload = {
-                'index': 'v4_piletrain_llama',
-                'query_type': 'count',
-                'query': resp,
-            }
-            result = requests.post('https://api.infini-gram.io/', json=payload).json()
-            freq[resp] = np.log10(result['count'])
-            with open("../files/freq.json", "w") as f:
-                json.dump(freq, f, indent=2)
+    #     for resp in tqdm(remaining):
+    #         payload = {
+    #             'index': 'v4_piletrain_llama',
+    #             'query_type': 'count',
+    #             'query': resp,
+    #         }
+    #         result = requests.post('https://api.infini-gram.io/', json=payload).json()
+    #         freq[resp] = np.log10(result['count'])
+    #         with open("../files/freq.json", "w") as f:
+    #             json.dump(freq, f, indent=2)
 
-        freq = dict(sorted(freq.items(), key=lambda item: item[1], reverse=True))
-        with open("../files/freq.json", "w") as f:
-            json.dump(freq, f, indent=2)
-        return freq
+    #     freq = dict(sorted(freq.items(), key=lambda item: item[1], reverse=True))
+    #     with open("../files/freq.json", "w") as f:
+    #         json.dump(freq, f, indent=2)
+    #     return freq
 
     def get_frequencies_hills(self):
         file_path = '../files/datafreqlistlog.txt'
@@ -384,11 +388,11 @@ class Model:
                 self.plot(model.module.__class__.__name__)
         
         elif self.config["fitting"] == "group":
-            splits = self.split_sequences()     # perform CV
             weights_list = []
-            train_nlls = np.zeros(len(splits))
-            test_nlls = np.zeros(len(splits))
-            for split_ind, (train_sequences, test_sequences) in enumerate(splits):
+            train_nlls = np.zeros(len(self.splits))
+            test_nlls = np.zeros(len(self.splits))
+            for split_ind, (train_sequences, test_sequences) in enumerate(self.splits):
+                self.split_ind = split_ind
                 lbfgs_iters = 0
                 loss_history = []
                 param_history = []
@@ -433,10 +437,6 @@ class Model:
                     plt.close()
 
                 with torch.no_grad():
-                    # try:
-                    #     print(model.module.allweights)
-                    # except:
-                    #     print(model.module.weights)
                     train_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in train_sequences])
                     test_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in test_sequences])
                 

@@ -17,27 +17,49 @@ class Heineman(Model):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         self.model_class = "heineman"
-        self.cat_trans = self.get_category_transition_matrix()
+        self.cat_trans = self.get_category_transition_matrices()
         self.num_total_weights = 3
         self.cat_trans_terms = {}
+        self.split_ind = 0
      
     def create_models(self):
-        self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__()}
+        self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
     
-    def get_category_transition_matrix(self):
-        transition_matrix = np.zeros((self.num_categories, self.num_categories))
-        self.data["categories"] = self.data["response"].map(self.response_to_category)
-        self.data["previous_categories"] = self.data.groupby("pid")["categories"].shift()
-        data_of_interest = self.data.dropna(subset=["previous_categories"])
-        for _, row in data_of_interest.iterrows():
-            for prev in row["previous_categories"]:
-                for curr in row["categories"]:
-                    try:
-                        transition_matrix[prev, curr] += 1
-                    except:
-                        continue  # when NaN
-        normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
-        return normalized_transition_matrix
+    def get_category_transition_matrices(self):
+        normalized_transition_matrices = np.zeros((self.config["cv"], self.num_categories, self.num_categories))
+        if self.config["fitting"] == "group":
+            for i, (train_seqs, _) in enumerate(self.splits):
+                transition_matrix = np.zeros((self.num_categories, self.num_categories))
+                for seq in train_seqs:
+                    for r in range(1, len(seq)):
+                        previous_categories = self.response_to_category[seq[r - 1]]
+                        categories = self.response_to_category[seq[r]]
+                        
+                        for prev in previous_categories:
+                            for curr in categories:
+                                try:
+                                    transition_matrix[prev, curr] += 1
+                                except:
+                                    continue  # when NaN
+                normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+                normalized_transition_matrices[i] = normalized_transition_matrix
+
+        else:
+            transition_matrix = np.zeros((self.num_categories, self.num_categories))
+            self.data["categories"] = self.data["response"].map(self.response_to_category)
+            self.data["previous_categories"] = self.data.groupby("pid")["categories"].shift()
+            data_of_interest = self.data.dropna(subset=["previous_categories"])
+            for _, row in data_of_interest.iterrows():
+                for prev in row["previous_categories"]:
+                    for curr in row["categories"]:
+                        try:
+                            transition_matrix[prev, curr] += 1
+                        except:
+                            continue  # when NaN
+            normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+            normalized_transition_matrices[0] = normalized_transition_matrix
+        
+        return normalized_transition_matrices
     
     def get_category_cue(self, response, previous_response):
         cats_prev = set(self.response_to_category[previous_response])
@@ -45,9 +67,9 @@ class Heineman(Model):
         cats_intersection = cats_prev.intersection(cats_curr)
 
         if len(cats_intersection) != 0:
-            return max([self.cat_trans[c, c] for c in cats_intersection])
+            return max([self.cat_trans[self.split_ind, c, c] for c in cats_intersection])
         else:
-            return max([self.cat_trans[c1, c2] for c1 in cats_prev for c2 in cats_curr])
+            return max([self.cat_trans[self.split_ind, c1, c2] for c1 in cats_prev for c2 in cats_curr])
 
     @property
     def allweights(self):
@@ -78,6 +100,15 @@ class Heineman(Model):
 
         return nll
 
+class Freq_Sim_Subcategory(Heineman, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 3
+        self.weight_indices = torch.tensor([0, 1, 2], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        
 class Subcategory(Heineman, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
@@ -102,14 +133,5 @@ class Sim_Subcategory(Heineman, nn.Module):
         nn.Module.__init__(self)
         self.num_weights = 2
         self.weight_indices = torch.tensor([1, 2], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class Freq_Sim_Subcategory(Heineman, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
