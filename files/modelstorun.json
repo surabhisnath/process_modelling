@@ -1,20 +1,20 @@
 {
     "Random": 1,
 
-    "Freq": 0,
+    "Freq": 1,
     
     "HS": 1,
-    "HS2step": 1,
+    "HS2step": 0,
     "Pers": 1,
     "Freq_HS": 1,
-    "HS_HS2step": 1,
+    "HS_HS2step": 0,
     "HS_Pers": 1,
     "Freq_Pers": 1,
-    "Freq_HS_HS2step": 1,
+    "Freq_HS_HS2step": 0,
     "Freq_HS_Pers": 1,
     "WeightedHS": 1,
     "FreqWeightedHS": 1,
-    "FreqWeightedHSWeightedPers": 1,
+    "FreqWeightedHSWeightedPers": 0,
     
     "OneCueStaticLocal": 0,
     "OneCueStaticLocal_2step": 0,
@@ -22,7 +22,7 @@
     "CombinedCueStatic": 0,
     "CombinedCueStatic_12step": 0,
 
-    "Freq_Sim_Subcategory": 1,
+    "Freq_Sim_Subcategory": 0,
     "Subcategory": 0,
     "Freq_Subcategory": 0,
     "Sim_Subcategory": 0

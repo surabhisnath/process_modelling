@@ -6,7 +6,7 @@ import os
 import pickle as pk
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
-name = "vf_features"
+name = "../files/vf_features"
 
 save_dir = "../../models/meta-llama-3.1-8B-instruct/"  # Path to the saved model directory
 
@@ -162,7 +162,7 @@ except:
     features_dict = {}
 print("BEFORE", len(features_dict))
 
-data = pd.read_csv("../csvs/claire.csv")
+data = pd.read_csv("../csvs/divergent.csv")
 data = data[~(data["invalid"] == 1)]
 unique_responses = data["response"].tolist()
 texts = [resp for resp in unique_responses if resp not in features_dict]

@@ -18,13 +18,16 @@ print(device)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2"
+import numpy as np
+import matplotlib.pyplot as plt
 
 def run(config):
     models = {}
     fit_results = {}
 
     modelobj = Model(config)
-    human_bleu = calculate_bleu(modelobj.sequences[:modelobj.num_sequences//2], modelobj.sequences[modelobj.num_sequences//2:])
+    human_bleu = calculate_bleu([seq[2:] for seq in modelobj.sequences[:modelobj.num_sequences//2]], \
+                                [seq[2:] for seq in modelobj.sequences[modelobj.num_sequences//2:]])
     print(human_bleu)
     human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
     corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
@@ -81,10 +84,36 @@ def run(config):
             simulations[model_class] = {}
             for model_name in models[model_class].models:
                 print(model_class, model_name)
-                start = None
                 models[model_class].models[model_name].simulate()                          
                 if config["test"]:
                     models[model_class].models[model_name].test()
+    
+    if config["plot"]:
+        print("--------------------------------PLOTTING MODELS--------------------------------")
+        labels = []
+        mean_modelnlls = []
+        std_modelnlls = []
+        for model_class in models:
+            for model_name in models[model_class].models:
+                print(model_class, model_name)
+                labels.append(model_name)
+                if config["fitting"] == "individual":
+                    mean_modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
+                    std_modelnlls.append(models[model_class].models[model_name].results["std_minNLL"])
+                elif config["fitting"] == "group":
+                    mean_modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
+                    std_modelnlls.append(models[model_class].models[model_name].results["std_testNLL"])
+
+        plt.figure(figsize=(8, 5))
+        x = np.arange(len(mean_modelnlls))
+        plt.bar(x, mean_modelnlls, yerr=std_modelnlls, capsize=5, alpha=0.8)
+        plt.xticks(x, labels)
+        plt.ylabel('Mean NLL')
+        plt.title('Model NLL Comparison')
+        plt.grid(axis='y', linestyle=':', alpha=0.5)
+        plt.tight_layout()
+        plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')
+
 
 if __name__ == "__main__":
 
@@ -97,8 +126,8 @@ if __name__ == "__main__":
     parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
 
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
-    parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
-    parser.add_argument("--tol", type=float, default=1e-9, help="gradient and function/param tolerance")
+    parser.add_argument("--initval", type=float, default=0.0, help="initial parameter value")
+    parser.add_argument("--tol", type=float, default=1e-10, help="gradient and function/param tolerance")
     parser.add_argument("--maxiter", type=int, default=10000, help="maximum number of training iterations")
 
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
@@ -106,6 +135,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--fitting", type=str, default="individual", help="how to fit betas: individual, group or hierarchical")
     parser.add_argument("--cv", type=int, default=1, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
+    parser.add_argument("--refnll", type=str, default="random", help="Which model to use as baseline - random, freq, none")
+
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
@@ -138,7 +169,7 @@ if __name__ == "__main__":
     parser.add_argument("--preventrepetition", action="store_true", default=True, help="prevent repetition (default: True)")
     parser.add_argument("--allowrepetition", action="store_false", dest="preventrepetition", help="don't preventrepetition")
 
-    parser.add_argument("--sensitivity", type=float, default=4, help="sampling sensitivity")
+    parser.add_argument("--sensitivity", type=float, default=5, help="sampling sensitivity")
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")

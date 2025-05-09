@@ -30,6 +30,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch
 import torch.nn as nn
 import requests
+from scipy.stats import pearsonr, spearmanr
 
 SEED = 42
 np.random.seed(SEED)
@@ -38,7 +39,9 @@ torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-random_nlls = []
+ref_nlls = []
+train_ref_nlls = []
+test_ref_nlls = []
 
 class Model:
     def __init__(self, config):
@@ -55,23 +58,23 @@ class Model:
         except:
             pass
 
-        self.unique_responses = set()
-        csv_dir = "../csvs/"
-        for file in os.listdir(csv_dir):
-            if file.endswith(".csv"):
-                df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
-                if "invalid" in df.columns:
-                    df = df[df["invalid"] != 1]
-                corrected_responses = (
-                    df["response"]
-                    .map(lambda x: self.corrections.get(x, x))
-                    .str.lower()
-                    .dropna()
-                    .unique()
-                )
-                self.unique_responses.update(corrected_responses)
-        self.unique_responses = list(self.unique_responses)
-        # self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        # self.unique_responses = set()
+        # csv_dir = "../csvs/"
+        # for file in os.listdir(csv_dir):
+        #     if file.endswith(".csv"):
+        #         df = pd.read_csv(os.path.join(csv_dir, file), usecols=["response", "invalid"] if "invalid" in pd.read_csv(os.path.join(csv_dir, file), nrows=1).columns else ["response"])                
+        #         if "invalid" in df.columns:
+        #             df = df[df["invalid"] != 1]
+        #         corrected_responses = (
+        #             df["response"]
+        #             .map(lambda x: self.corrections.get(x, x))
+        #             .str.lower()
+        #             .dropna()
+        #             .unique()
+        #         )
+        #         self.unique_responses.update(corrected_responses)
+        # self.unique_responses = list(self.unique_responses)
+        self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
@@ -82,7 +85,6 @@ class Model:
                     print(k)
 
             self.freq2 = self.get_frequencies_hills()
-            from scipy.stats import pearsonr, spearmanr
             common_keys = set(self.freq) & set(self.freq2)
             values1 = [self.freq[k] for k in common_keys]
             values2 = [self.freq2[k] for k in common_keys]
@@ -361,17 +363,24 @@ class Model:
                 
                 with torch.no_grad():
                     fittednll = model.module.get_nll(seq).item() 
-                    if model.module.__class__.__name__ == "Random":
-                        random_nlls.append(fittednll)
+                    if self.config["refnll"].lower() == "none":
+                        minNLL_list.append(fittednll)
+                    elif self.config["refnll"].lower() == model.module.__class__.__name__.lower():
+                        ref_nlls.append(fittednll)
                         minNLL_list.append(fittednll)
                     else:
-                        minNLL_list.append(fittednll - random_nlls[i])
+                        try:
+                            minNLL_list.append(fittednll - ref_nlls[i])
+                        except:
+                            print("Prevented exception: Model -> fit -> individual -> ref NLL unavailable!")
+                            minNLL_list.append(fittednll)
                     
                     self.results[f"seq{i+1}"]["minNLL"] = fittednll
                 
             self.results["minNLL_list"] = minNLL_list
             self.results["mean_minNLL"] = np.mean(minNLL_list)
             self.results["std_minNLL"] = np.std(minNLL_list)
+            self.results["se_minNLL"] = np.std(minNLL_list) / np.sqrt(len(self.sequences))
 
             if model.module.num_weights > 0:
                 stacked = torch.stack(weights_list, dim=0)  # shape: [n_samples, n_weights]
@@ -437,62 +446,76 @@ class Model:
                     plt.close()
 
                 with torch.no_grad():
-                    train_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in train_sequences])
-                    test_nlls[split_ind] = sum([model.module.get_nll(seq) for seq in test_sequences])
+                    trainnll = sum([model.module.get_nll(seq) for seq in train_sequences])
+                    testnll = sum([model.module.get_nll(seq) for seq in test_sequences])
+                    if self.config["refnll"].lower() == "none":
+                        train_nlls[split_ind] = trainnll
+                        test_nlls[split_ind] = testnll
+
+                    elif self.config["refnll"].lower() == model.module.__class__.__name__.lower():
+                        train_ref_nlls.append(trainnll)
+                        test_ref_nlls.append(testnll)
+                        train_nlls[split_ind] = trainnll
+                        test_nlls[split_ind] = testnll
+
+                    else:
+                        try:
+                            train_nlls[split_ind] = trainnll - train_ref_nlls[i]
+                            test_nlls[split_ind] = testnll - test_ref_nlls[i]
+                        except:
+                            print("Prevented exception: Model -> fit -> group -> ref NLL unavailable!")
+                            train_nlls[split_ind] = trainnll
+                            test_nlls[split_ind] = testnll
                 
 
             self.results["mean_trainNLL"] = np.mean(train_nlls)
+            self.results["std_trainNLL"] = np.std(train_nlls)
+            self.results["se_trainNLL"] = np.std(train_nlls) / np.sqrt(len(train_sequences))
+
             self.results["mean_testNLL"] = np.mean(test_nlls)
+            self.results["std_testNLL"] = np.std(test_nlls)
+            self.results["se_testNLL"] = np.std(test_nlls) / np.sqrt(len(test_sequences))
 
             if model.module.num_weights > 0:
                 self.results["mean_weights"] = torch.mean(torch.stack(weights_list), dim=0)
             
 
             if self.config["print"]:
-                print(f"mean trainNLL over {self.config['cv']} fold(s)", self.results["mean_trainNLL"])
-                print(f"mean testNLL over {self.config['cv']} fold(s)", self.results["mean_testNLL"])
+                print(f"Mean +- SD trainNLL over {self.config['cv']} fold(s)", self.results["mean_trainNLL"], "+-", self.results["std_trainNLL"])
+                print(f"Mean +- SD testNLL over {self.config['cv']} fold(s)", self.results["mean_testNLL"], "+-", self.results["std_testNLL"])
                 if model.module.num_weights > 0:
                     print(f"mean weights over {self.config['cv']} fold(s)", self.results["mean_weights"])
 
-    def get_past_sequence(self, sequence):
-        if len(sequence) == 0:
-            return []
-        else:
-            return [sequence[-1]]
-
-    def simulate(self):                                                               
-        simulations = []
-        if self.config["fitting"] == "individual":
-            for i in tqdm(range(self.num_sequences)):
-                simulated_sequence = []
-                for j in range(self.sequence_lengths[i]):
-                    candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results[f"seq{i+1}"]["weights"], (self.get_past_sequence(simulated_sequence) + [response]))) for response in candidates])
-                    prob_dist /= prob_dist.sum()
-                    next_response = np.random.choice(candidates, p=prob_dist)
-                    simulated_sequence.append(next_response)
-                simulations.append(simulated_sequence)
-        
-        elif self.config["fitting"] == "group":
-            for i in tqdm(range(self.num_sequences)):
-                simulated_sequence = []
-                print(self.sequence_lengths[i], type(self.sequence_lengths[i]))
-                for j in range(self.sequence_lengths[i]):
-                    candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                    prob_dist = np.array([np.exp(-self.config["sensitivity"] * self.get_nll(self.results["mean_weights"], (self.get_past_sequence(simulated_sequence) + [response]))) for response in candidates])
-                    prob_dist /= prob_dist.sum()
-                    next_response = np.random.choice(candidates, p=prob_dist)
-                    simulated_sequence.append(next_response)
-                simulations.append(simulated_sequence)
-        
-        self.simulations = simulations
+    def simulate(self): 
+        self.simulations = []
+        print(self.__class__.__name__)
+        for i in tqdm(range(self.num_sequences)):
+            simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
+            for j in range(self.sequence_lengths[i] - 2):
+                candidates = list(set(self.unique_responses) - set(simulated_sequence))
+                if self.__class__.__name__ == "Random":
+                    prob_dist = torch.ones(len(self.unique_responses))
+                elif self.config["fitting"] == "individual":
+                    nll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"seq{i+1}"]["weights"]).squeeze(0)
+                    prob_dist = torch.tensor(torch.exp(self.config["sensitivity"] * nll), device=device)
+                elif self.config["fitting"] == "group":
+                    nll = self.get_nll(simulated_sequence[-2:] + [""], self.results["mean_weights"]).squeeze(0)
+                    prob_dist = torch.tensor(torch.exp(self.config["sensitivity"] * nll), device=device)
+                inds = [self.unique_response_to_index[c] for c in candidates]
+                prob_dist = prob_dist[inds]
+                prob_dist /= prob_dist.sum()
+                # next_response = np.random.choice(candidates, p=prob_dist)
+                indices = torch.multinomial(prob_dist, 1, replacement=True)
+                next_response = candidates[indices]
+                simulated_sequence.append(next_response)
+            self.simulations.append(simulated_sequence)
 
         if self.config["print"]:
-            print(self.model_class, self.model_name, "simulations..................")
+            print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
     
     def test(self):
-        model_bleu = calculate_bleu(self.simulations, self.sequences)
+        model_bleu = calculate_bleu([sim[2:] for sim in self.simulations], [seq[2:] for seq in self.sequences])     # only calc overlap from 3 onwards
         print(model_bleu)
         model_bleu1 = 0.25 * model_bleu["bleu1"] + 0.25 * model_bleu["bleu2"] + 0.25 * model_bleu["bleu3"] + 0.25 * model_bleu["bleu4"]
         model_bleu2 = 0.33 * model_bleu["bleu2"] + 0.33 * model_bleu["bleu3"] + 0.33 * model_bleu["bleu4"]

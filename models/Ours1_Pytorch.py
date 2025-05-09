@@ -6,6 +6,7 @@ import os
 import pickle as pk
 from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
+from collections import OrderedDict
 from utils import *
 import torch
 import torch
@@ -27,10 +28,15 @@ class Ours1(Model):
 
     def create_models(self):
         if self.config["fitting"] == "individual":
-            self.models = {subclass.__name__: instance for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
+            subclasses = [subclass for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
+            # self.models = {subclass.__name__: instance for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
         elif self.config["fitting"] == "group":
-            self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
-    
+            subclasses = [subclass for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1]
+            # self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+        ref_name = self.config["refnll"]
+        ordered_subclasses = sorted(subclasses, key=lambda cls: 0 if cls.__name__.lower() == ref_name else 1)
+        self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
+
     def get_features(self):
         featuredict = pk.load(open(f"../files/vf_features.pk", "rb"))
         feature_names = next(iter(featuredict.values())).keys()
@@ -52,15 +58,18 @@ class Ours1(Model):
     def get_feature_pers_mat(self):
         return np.einsum('ijd,jkd->ijk', self.not_change_mat, self.not_change_mat) / np.expand_dims(self.not_change_mat.sum(axis=2), 2)
     
-    @property
-    def allweights(self):
+    # @property
+    def allweights(self, weights=None):
         """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
         w = torch.zeros(self.num_total_weights, device=device)
         if self.num_weights > 0:
-            w[self.weight_indices] = self.weights
+            if weights is None:
+                w[self.weight_indices] = self.weights
+            else:
+                w[self.weight_indices] = weights
         return w
     
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
         sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
@@ -69,24 +78,23 @@ class Ours1(Model):
         previous_previous_responses = [self.unique_response_to_index[r] for r in seq[:-2]]
         pers_terms = self.pers_mat[previous_previous_responses, previous_responses]                                     # shape: (len_seq - 2, num_resp)
         
-        repeated = np.zeros((len(seq) - 2, len(self.unique_responses)))
-        # print(len(self.unique_responses))
-        # print(seq, len(seq))
-        # print(self.unique_response_to_index)
-        for i in range(2, len(seq)):
-            # print(i)
-            repeated_responses = [self.unique_response_to_index[resp] for resp in seq[2:i]]
-            # print(repeated_responses)
-            repeated[i - 2, repeated_responses] = 1
+        # repeated = np.zeros((len(seq) - 2, len(self.unique_responses)))
+        # for i in range(3, len(seq)):
+        #     repeated_responses = np.array([self.unique_response_to_index[resp] for resp in seq[2:i]])
+        #     repeated[i - 3, repeated_responses] = 1
 
+        weightstouse = self.allweights(weightsfromarg)
         logits = (
-            self.allweights[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                                                    # shape: (1, num_resp)
-            self.allweights[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
-            self.allweights[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
-            self.allweights[3] * sim_terms_2step +
-            self.allweights[4] * torch.tensor(repeated, device=device)
-        )                                                                                                               # shape: (len_seq - 2, num_resp)
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
+            weightstouse[1] * sim_terms +                                                                             # shape: (len_seq - 2, num_resp)
+            weightstouse[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
+            weightstouse[3] * sim_terms_2step #+
+            # weightstouse[4] * torch.tensor(repeated, device=device)
+        )
         log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
@@ -105,7 +113,7 @@ class Freq(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
-        self.weight_indices = torch.tensor([0, 4], device=device)
+        self.weight_indices = torch.tensor([0], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -114,7 +122,7 @@ class HS(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
-        self.weight_indices = torch.tensor([1, 4], device=device)
+        self.weight_indices = torch.tensor([1], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -123,7 +131,7 @@ class HS2step(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
-        self.weight_indices = torch.tensor([3, 4], device=device)
+        self.weight_indices = torch.tensor([3], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -132,7 +140,7 @@ class Pers(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 1
-        self.weight_indices = torch.tensor([2, 4], device=device)
+        self.weight_indices = torch.tensor([2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([2.0] * self.num_weights, device=device))
 
@@ -141,7 +149,7 @@ class Freq_HS(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
-        self.weight_indices = torch.tensor([0, 1, 4], device=device)
+        self.weight_indices = torch.tensor([0, 1], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -150,7 +158,7 @@ class HS_HS2step(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 3, 4], device=device)
+        self.weight_indices = torch.tensor([1, 3], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -159,7 +167,7 @@ class HS_Pers(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 2, 4], device=device)
+        self.weight_indices = torch.tensor([1, 2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -168,7 +176,7 @@ class Freq_Pers(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
-        self.weight_indices = torch.tensor([0, 2, 4], device=device)
+        self.weight_indices = torch.tensor([0, 2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -177,7 +185,7 @@ class Freq_HS_HS2step(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 3, 4], device=device)
+        self.weight_indices = torch.tensor([0, 1, 3], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -186,7 +194,7 @@ class Freq_HS_Pers(Ours1, nn.Module):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 2, 4], device=device)
+        self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
