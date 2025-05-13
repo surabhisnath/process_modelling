@@ -88,11 +88,20 @@ class Heineman(Model):
             cat_trans_terms = torch.stack([torch.tensor([self.get_category_cue(r_, r) for r_ in self.unique_responses], dtype=float, device=device) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
             self.cat_trans_terms[' '.join(seq)] = cat_trans_terms
 
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
         logits = (
             self.allweights[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
             self.allweights[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
             self.allweights[2] * cat_trans_terms
-        )                                                                                                               # shape: (len_seq - 2, num_resp)
+        )           
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')                                                                                                    # shape: (len_seq - 2, num_resp)
         log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)

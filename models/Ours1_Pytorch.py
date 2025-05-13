@@ -79,18 +79,27 @@ class Ours1(Model):
         pers_terms = self.pers_mat[previous_previous_responses, previous_responses]                                     # shape: (len_seq - 2, num_resp)
         
         # repeated = np.zeros((len(seq) - 2, len(self.unique_responses)))
-        # for i in range(3, len(seq)):
-        #     repeated_responses = np.array([self.unique_response_to_index[resp] for resp in seq[2:i]])
-        #     repeated[i - 3, repeated_responses] = 1
+        # for i in range(2, len(seq)):
+        #     repeated_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+        #     repeated[i - 2, repeated_responses] = 1
+
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
 
         weightstouse = self.allweights(weightsfromarg)
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
             weightstouse[1] * sim_terms +                                                                             # shape: (len_seq - 2, num_resp)
             weightstouse[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
-            weightstouse[3] * sim_terms_2step #+
-            # weightstouse[4] * torch.tensor(repeated, device=device)
+            weightstouse[3] * sim_terms_2step \
+            # + weightstouse[4] * torch.tensor(repeated, device=device)
         )
+
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
         log_probs = F.log_softmax(logits, dim=1)
 
         if weightsfromarg is not None:
@@ -142,7 +151,7 @@ class Pers(Ours1, nn.Module):
         self.num_weights = 1
         self.weight_indices = torch.tensor([2], device=device)
 
-        self.weights = nn.Parameter(torch.tensor([2.0] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class Freq_HS(Ours1, nn.Module):
     def __init__(self, parent):
@@ -206,12 +215,17 @@ class WeightedHS(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
         all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
                                                                                                                                             # weights: (D,)
+        if weightsfromarg is not None:
+            logits = torch.einsum("lnd,d->ln", all_diffs, weightsfromarg)                                                                        # Shape: (L, N)
+            log_probs = F.log_softmax(logits, dim=1)
+            return log_probs
+        
         logits = torch.einsum("lnd,d->ln", all_diffs, self.weights)                                                                        # Shape: (L, N)
         log_probs = F.log_softmax(logits, dim=1)
 
@@ -227,11 +241,16 @@ class FreqWeightedHS(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
         all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+        
+        if weightsfromarg is not None:
+            logits = weightsfromarg[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightsfromarg[1:])                                                                        # Shape: (L, N)
+            log_probs = F.log_softmax(logits, dim=1)
+            return log_probs
                                                                                                                                             # weights: (D,)
         logits = self.weights[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, self.weights[1:])                                                                        # Shape: (L, N)
         log_probs = F.log_softmax(logits, dim=1)
@@ -248,11 +267,16 @@ class FreqWeightedHSWeightedPers(Ours1, nn.Module):
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg):
         nll = 0
         prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
         all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
         all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+        
+        if weightsfromarg is not None:
+            logits = weightsfromarg[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightsfromarg[1:]) + torch.einsum('ijd,jkd,d->ijk', torch.tensor(self.not_change_mat, device=device), torch.tensor(self.not_change_mat, device=device), weightsfromarg[1:]) / np.expand_dims(self.not_change_mat.sum(axis=2), 2)                                                                        # Shape: (L, N)
+            log_probs = F.log_softmax(logits, dim=1)
+            return log_probs
                                                                                                                                             # weights: (D,)
         logits = self.weights[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, self.weights[1:]) + torch.einsum('ijd,jkd,d->ijk', torch.tensor(self.not_change_mat, device=device), torch.tensor(self.not_change_mat, device=device), self.weights[1:]) / np.expand_dims(self.not_change_mat.sum(axis=2), 2)                                                                 # Shape: (L, N)
         log_probs = F.log_softmax(logits, dim=1)

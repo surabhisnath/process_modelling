@@ -35,26 +35,26 @@ class Hills(Model):
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
         sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
         
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
         logits = (
             self.allweights[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
             self.allweights[1] * sim_terms +                                                                          # shape: (len_seq - 2, num_resp)
             self.allweights[2] * sim_terms_2step
-        )                                                                                                               # shape: (len_seq - 2, num_resp)
-        log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
+        )
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)                                                  # shape: (len_seq - 2, num_resp)
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
 
         return nll
-
-# class OneCueStaticGlobal(Hills, nn.Module):
-#     def __init__(self, parent):
-#         self.__dict__.update(parent.__dict__)
-#         nn.Module.__init__(self)
-#         self.num_weights = 1
-#         self.weight_indices = torch.tensor([0], device=device)
-
-#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
 class OneCueStaticLocal(Hills, nn.Module):
     def __init__(self, parent):

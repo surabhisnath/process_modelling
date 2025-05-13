@@ -1,0 +1,246 @@
+nohup: ignoring input
+cuda
+CUDA available: True
+GPU count: 1
+{'dataset': 'hills', 'representation': 'clip', 'fit': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 5000, 'plot': True, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'mask': True, 'hills': True, 'useallresp': False, 'useapifreq': True, 'morales': True, 'heineman': True, 'abbott': True, 'ours1': True, 'ours2': True, 'print': True, 'simulate': False, 'recovery': False, 'preventrepetition': True, 'sensitivity': 5, 'test': True}
+PearsonRResult(statistic=0.8112413448848204, pvalue=4.808592270108805e-84)
+SignificanceResult(statistic=0.8317162142582375, pvalue=5.6796511198379345e-92)
+{'bleu1': 0.97, 'bleu2': 0.38, 'bleu3': 0.06, 'bleu4': 0.0}
+Human BLEU: 0.35250000000000004 0.5212569316081331
+--------------------------------FITTING MODELS--------------------------------
+ours1 Random
+Mean +- SE trainNLL over 5 fold(s) 22262.5046875 +- 67.07533796193292
+Mean +- SE testNLL over 5 fold(s) 5565.62412109375 +- 67.07530726603773
+Random completed in 3.35 seconds
+ours1 Freq
+LBFGS iterations run: 135
+LBFGS iterations run: 108
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+Mean +- SE trainNLL over 5 fold(s) 21032.2546875 +- 57.982100155794306
+Mean +- SE testNLL over 5 fold(s) 5258.23349609375 +- 57.97933851598981
+mean weights over 5 fold(s) tensor([0.9438], device='cuda:0')
+Freq completed in 150.50 seconds
+ours1 HS
+LBFGS iterations run: 464
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 20279.859375 +- 62.801669471563635
+Mean +- SE testNLL over 5 fold(s) 5069.96396484375 +- 62.801276767623484
+mean weights over 5 fold(s) tensor([15.9669], device='cuda:0')
+HS completed in 281.57 seconds
+ours1 HS2step
+LBFGS iterations run: 404
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 0
+Mean +- SE trainNLL over 5 fold(s) 21703.6109375 +- 70.63668567853011
+Mean +- SE testNLL over 5 fold(s) 5425.9025390625 +- 70.63745953390124
+mean weights over 5 fold(s) tensor([8.7561], device='cuda:0')
+HS2step completed in 243.73 seconds
+ours1 Pers
+LBFGS iterations run: 471
+LBFGS iterations run: 4
+LBFGS iterations run: 55
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 20601.330078125 +- 68.0877543033384
+Mean +- SE testNLL over 5 fold(s) 5150.43037109375 +- 68.09833715128386
+mean weights over 5 fold(s) tensor([14.4056], device='cuda:0')
+Pers completed in 316.91 seconds
+ours1 Freq_HS
+LBFGS iterations run: 460
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 19152.219140625 +- 54.342222987459294
+Mean +- SE testNLL over 5 fold(s) 4788.0541015625 +- 54.34229399603831
+mean weights over 5 fold(s) tensor([ 0.9056, 15.5094], device='cuda:0')
+Freq_HS completed in 276.23 seconds
+ours1 HS_HS2step
+LBFGS iterations run: 466
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 0
+Mean +- SE trainNLL over 5 fold(s) 20254.01171875 +- 63.974676989879924
+Mean +- SE testNLL over 5 fold(s) 5063.50244140625 +- 63.974474156802366
+mean weights over 5 fold(s) tensor([15.1092,  2.3638], device='cuda:0')
+HS_HS2step completed in 278.43 seconds
+ours1 HS_Pers
+LBFGS iterations run: 467
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 20249.08046875 +- 64.02058380375587
+Mean +- SE testNLL over 5 fold(s) 5062.27080078125 +- 64.02070542687217
+mean weights over 5 fold(s) tensor([12.4530,  4.1071], device='cuda:0')
+HS_Pers completed in 278.74 seconds
+ours1 Freq_Pers
+LBFGS iterations run: 477
+LBFGS iterations run: 3
+LBFGS iterations run: 62
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 19483.48359375 +- 59.63607088415943
+Mean +- SE testNLL over 5 fold(s) 4870.97275390625 +- 59.6546452534383
+mean weights over 5 fold(s) tensor([ 0.8943, 13.8161], device='cuda:0')
+Freq_Pers completed in 322.72 seconds
+ours1 Freq_HS_HS2step
+LBFGS iterations run: 478
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+LBFGS iterations run: 3
+LBFGS iterations run: 162
+Mean +- SE trainNLL over 5 fold(s) 19134.172265625 +- 55.31814583595537
+Mean +- SE testNLL over 5 fold(s) 4783.75166015625 +- 55.3256215630051
+mean weights over 5 fold(s) tensor([ 0.8989, 14.8200,  1.9313], device='cuda:0')
+Freq_HS_HS2step completed in 381.61 seconds
+ours1 Freq_HS_Pers
+LBFGS iterations run: 476
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 19131.359375 +- 55.404828342501965
+Mean +- SE testNLL over 5 fold(s) 4782.83896484375 +- 55.4049240317511
+mean weights over 5 fold(s) tensor([ 0.9004, 12.5962,  3.4144], device='cuda:0')
+Freq_HS_Pers completed in 285.02 seconds
+ours1 WeightedHS
+LBFGS iterations run: 550
+LBFGS iterations run: 3
+LBFGS iterations run: 3
+LBFGS iterations run: 343
+LBFGS iterations run: 2
+Mean +- SE trainNLL over 5 fold(s) 19612.520703125 +- 65.07989778169507
+Mean +- SE testNLL over 5 fold(s) 4912.002734375 +- 65.0279082162501
+mean weights over 5 fold(s) tensor([ 0.2465, -0.4614,  0.5700,  0.5294,  0.5651,  0.5417,  0.1489,  0.0970,
+         0.0817,  0.0825,  0.6698, -0.5282,  0.1091,  0.0271,  0.1471, -0.0644,
+         0.4003,  0.4560, -0.0502,  0.0036,  0.2313,  0.3846,  0.0119,  0.0600,
+         0.0089, -0.0376, -0.0969,  0.0276, -0.0392,  0.4795, -0.5075,  0.1487,
+         0.1395, -0.0927,  0.0500, -0.5631,  0.0837,  0.4740, -0.0016, -0.1088,
+         0.0239,  0.1640,  0.1955, -0.1484,  0.1531, -0.0841,  0.1808, -0.4359,
+         0.1074,  0.2727,  1.2503,  0.1391,  0.2785,  0.0147,  0.1912,  0.4939,
+         0.3570, -1.1929,  0.0042, -0.1341, -0.2417,  0.0723,  0.1412,  0.1020,
+        -0.0144,  0.2150, -0.0926,  0.3122,  0.6635,  0.1375,  1.0388, -0.3038,
+        -0.1945,  0.1860, -0.0468,  0.1511,  0.2380, -0.0572,  0.2172,  0.9460,
+        -0.2093,  0.3934,  0.0737,  0.0674,  0.2572, -0.1011,  0.0959, -0.9451,
+         0.5129,  0.0764, -0.9342,  0.9940,  0.0923, -0.0594, -0.0139,  0.2584,
+         0.2016,  0.1460,  0.0171, -0.2049, -0.0757,  0.0560,  0.2711,  0.0745,
+         1.2873, -0.0158,  0.2046,  0.0867,  0.0670,  0.6474, -0.0026, -0.0026,
+         0.1108, -0.1486,  0.2199,  0.0557, -0.3299,  0.5032,  0.1259, -0.3303,
+         0.1902,  0.3582,  0.0562, -0.0895,  0.1447,  0.1824,  0.3092],
+       device='cuda:0')
+WeightedHS completed in 843.05 seconds
+ours1 FreqWeightedHS
+LBFGS iterations run: 575
+LBFGS iterations run: 373
+LBFGS iterations run: 3
+LBFGS iterations run: 328
+LBFGS iterations run: 323
+Mean +- SE trainNLL over 5 fold(s) 19015.962109375 +- 63.067369654301466
+Mean +- SE testNLL over 5 fold(s) 4777.43642578125 +- 63.094538071614146
+mean weights over 5 fold(s) tensor([ 0.7485,  0.2754, -0.1203,  0.4738,  0.4627,  0.3987,  0.3962,  0.1786,
+         0.0950,  0.0887,  0.1032,  0.4263, -0.4683,  0.2534,  0.0155,  0.1666,
+        -0.0854,  0.4421,  0.4328, -0.1886,  0.0183,  0.2446,  0.4579, -0.0036,
+         0.0531,  0.0123, -0.0312,  0.0098,  0.0231, -0.0573,  0.4344, -0.5513,
+         0.0519,  0.1289, -0.1019,  0.0213, -0.3617, -0.0702,  0.5432,  0.0144,
+        -0.1191,  0.0068,  0.1219,  0.0332, -0.1061,  0.2445, -0.0634,  0.1724,
+        -0.5773,  0.0386,  0.2807,  0.7142,  0.1779,  0.3430, -0.1183,  0.1560,
+         0.4371,  0.2556, -0.9096,  0.0146, -0.0945, -0.3434,  0.0822,  0.0550,
+         0.1022, -0.0297,  0.1052, -0.1778,  0.2053,  0.2115,  0.1609,  0.8699,
+        -0.2502, -0.1089,  0.1159, -0.0074,  0.1043,  0.1476,  0.0038,  0.1722,
+         0.4523, -0.2933,  0.4554, -0.0582,  0.0488,  0.3077, -0.0613,  0.0879,
+        -0.4656,  0.2212,  0.0694, -0.6817,  0.9600,  0.0798, -0.0570,  0.0231,
+         0.2046,  0.1629,  0.1401,  0.1037, -0.1658, -0.0509,  0.0463,  0.2249,
+         0.2693,  0.2229,  0.0428,  0.1862,  0.2754,  0.1259, -0.0913, -0.0260,
+         0.0341,  0.1283, -0.1178,  0.1383,  0.1518, -0.1533,  0.2878,  0.1622,
+         0.0463,  0.1001,  0.3407,  0.0435, -0.0768,  0.0840,  0.0622,  0.3142],
+       device='cuda:0')
+FreqWeightedHS completed in 1542.49 seconds
+hills OneCueStaticLocal
+LBFGS iterations run: 514
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+Mean +- SE trainNLL over 5 fold(s) 19272.997265625 +- 48.760510155729214
+Mean +- SE testNLL over 5 fold(s) 4818.24921875 +- 48.760646453457234
+mean weights over 5 fold(s) tensor([21.6537], device='cuda:0')
+OneCueStaticLocal completed in 304.25 seconds
+hills OneCueStaticLocal_2step
+LBFGS iterations run: 461
+LBFGS iterations run: 22
+LBFGS iterations run: 1
+LBFGS iterations run: 0
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 20640.714453125 +- 65.44117728501101
+Mean +- SE testNLL over 5 fold(s) 5160.17255859375 +- 65.44034229035152
+mean weights over 5 fold(s) tensor([15.2887], device='cuda:0')
+OneCueStaticLocal_2step completed in 287.70 seconds
+hills OneCueStaticLocal_12step
+LBFGS iterations run: 511
+LBFGS iterations run: 1
+LBFGS iterations run: 4
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 19103.130859375 +- 50.448222774963476
+Mean +- SE testNLL over 5 fold(s) 4775.78173828125 +- 50.44795659844709
+mean weights over 5 fold(s) tensor([19.0872,  6.3862], device='cuda:0')
+OneCueStaticLocal_12step completed in 301.40 seconds
+hills CombinedCueStatic
+LBFGS iterations run: 486
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+LBFGS iterations run: 2
+LBFGS iterations run: 74
+Mean +- SE trainNLL over 5 fold(s) 19086.81875 +- 47.266176079561184
+Mean +- SE testNLL over 5 fold(s) 4771.80107421875 +- 47.2660411075353
+mean weights over 5 fold(s) tensor([ 0.4217, 20.1580], device='cuda:0')
+CombinedCueStatic completed in 328.24 seconds
+hills CombinedCueStatic_12step
+LBFGS iterations run: 491
+LBFGS iterations run: 3
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 71
+Mean +- SE trainNLL over 5 fold(s) 19008.639453125 +- 48.69297711252174
+Mean +- SE testNLL over 5 fold(s) 4752.25498046875 +- 48.69258213053325
+mean weights over 5 fold(s) tensor([ 0.3306, 18.5719,  4.6239], device='cuda:0')
+CombinedCueStatic_12step completed in 331.86 seconds
+heineman Freq_Sim_Subcategory
+LBFGS iterations run: 653
+LBFGS iterations run: 725
+LBFGS iterations run: 401
+LBFGS iterations run: 748
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 18333.620092130343 +- 48.256182121796165
+Mean +- SE testNLL over 5 fold(s) 4584.277853830124 +- 48.289387522387564
+mean weights over 5 fold(s) tensor([ 0.5342, 15.4282,  6.7418], device='cuda:0')
+Freq_Sim_Subcategory completed in 883.61 seconds
+--------------------------------PLOTTING MODELS--------------------------------
+ours1 Random
+ours1 Freq
+ours1 HS
+ours1 HS2step
+ours1 Pers
+ours1 Freq_HS
+ours1 HS_HS2step
+ours1 HS_Pers
+ours1 Freq_Pers
+ours1 Freq_HS_HS2step
+ours1 Freq_HS_Pers
+ours1 WeightedHS
+ours1 FreqWeightedHS
+hills OneCueStaticLocal
+hills OneCueStaticLocal_2step
+hills OneCueStaticLocal_12step
+hills CombinedCueStatic
+hills CombinedCueStatic_12step
+heineman Freq_Sim_Subcategory

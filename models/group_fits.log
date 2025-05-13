@@ -1,0 +1,313 @@
+nohup: ignoring input
+cuda
+CUDA available: True
+GPU count: 1
+{'dataset': 'hills', 'representation': 'clip', 'fit': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-09, 'maxiter': 10000, 'plot': True, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'hills': True, 'useallresp': False, 'useapifreq': False, 'morales': True, 'heineman': True, 'abbott': True, 'ours1': True, 'ours2': True, 'print': True, 'simulate': True, 'recovery': True, 'preventrepetition': True, 'sensitivity': 5, 'test': True}
+{'bleu1': 0.97, 'bleu2': 0.38, 'bleu3': 0.06, 'bleu4': 0.0}
+Human BLEU: 0.35250000000000004 0.5212569316081331
+--------------------------------FITTING MODELS--------------------------------
+ours1 Random
+Mean +- SD trainNLL over 5 fold(s) 22262.5046875 +- 149.9850152966542
+Mean +- SD testNLL over 5 fold(s) 5565.62412109375 +- 149.98494665854594
+Random completed in 3.41 seconds
+ours1 Freq
+LBFGS iterations run: 354
+LBFGS iterations run: 2
+LBFGS iterations run: 6
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SD trainNLL over 5 fold(s) 20304.8484375 +- 129.28858990048033
+Mean +- SD testNLL over 5 fold(s) 5076.21005859375 +- 129.29374037760235
+mean weights over 5 fold(s) tensor([1.9295], device='cuda:0')
+Freq completed in 229.95 seconds
+ours1 HS
+LBFGS iterations run: 396
+LBFGS iterations run: 15
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SD trainNLL over 5 fold(s) 20279.899609375 +- 140.38992081678572
+Mean +- SD testNLL over 5 fold(s) 5069.973046875 +- 140.39032982232973
+mean weights over 5 fold(s) tensor([15.8322], device='cuda:0')
+HS completed in 263.85 seconds
+ours1 HS2step
+LBFGS iterations run: 373
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+Mean +- SD trainNLL over 5 fold(s) 21703.565234375 +- 157.8797660276169
+Mean +- SD testNLL over 5 fold(s) 5425.89140625 +- 157.87992295636622
+mean weights over 5 fold(s) tensor([8.7068], device='cuda:0')
+HS2step completed in 236.72 seconds
+ours1 Pers
+LBFGS iterations run: 417
+LBFGS iterations run: 3
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SD trainNLL over 5 fold(s) 20601.384375 +- 152.25633524424947
+Mean +- SD testNLL over 5 fold(s) 5150.3455078125 +- 152.25855538037794
+mean weights over 5 fold(s) tensor([14.3757], device='cuda:0')
+Pers completed in 266.39 seconds
+ours1 Freq_HS_HS2step
+LBFGS iterations run: 439
+LBFGS iterations run: 5
+LBFGS iterations run: 7
+LBFGS iterations run: 6
+LBFGS iterations run: 18
+Mean +- SD trainNLL over 5 fold(s) 18464.908203125 +- 121.29007490645303
+Mean +- SD testNLL over 5 fold(s) 4616.26298828125 +- 121.30921083050703
+mean weights over 5 fold(s) tensor([ 1.9204, 14.6695,  1.8932], device='cuda:0')
+Freq_HS_HS2step completed in 293.63 seconds
+ours1 Freq_HS_Pers
+LBFGS iterations run: 453
+LBFGS iterations run: 3
+LBFGS iterations run: 2
+LBFGS iterations run: 4
+LBFGS iterations run: 4
+Mean +- SD trainNLL over 5 fold(s) 18462.312109375 +- 121.41375262371176
+Mean +- SD testNLL over 5 fold(s) 4615.5787109375 +- 121.41399621527596
+mean weights over 5 fold(s) tensor([ 1.9202, 12.5349,  3.3419], device='cuda:0')
+Freq_HS_Pers completed in 289.69 seconds
+ours1 WeightedHS
+LBFGS iterations run: 485
+LBFGS iterations run: 308
+LBFGS iterations run: 305
+LBFGS iterations run: 4
+LBFGS iterations run: 3
+Mean +- SD trainNLL over 5 fold(s) 19606.712109375 +- 150.85755763001004
+Mean +- SD testNLL over 5 fold(s) 4914.7015625 +- 151.98396255921932
+mean weights over 5 fold(s) tensor([ 2.2603e-01, -4.4518e-01,  5.6137e-01,  5.1957e-01,  4.6264e-01,
+         5.0703e-01,  1.8119e-01,  1.0506e-01,  7.5698e-02,  8.3482e-02,
+         6.7347e-01, -5.3617e-01,  1.3780e-01,  6.5734e-02,  1.6441e-01,
+        -7.9321e-02,  4.1780e-01,  5.0050e-01, -9.3054e-02, -1.6877e-02,
+         2.3813e-01,  4.1347e-01,  7.2776e-03,  7.0060e-02,  2.7823e-04,
+        -5.2674e-02, -8.0713e-02,  9.1890e-03, -4.0568e-03,  4.6703e-01,
+        -4.9519e-01,  1.3396e-01,  1.2609e-01, -1.2409e-01,  6.4271e-02,
+        -5.6591e-01,  8.6238e-02,  4.8943e-01, -2.8806e-03, -1.1706e-01,
+        -8.9263e-03,  1.9132e-01,  2.0765e-01, -1.5687e-01,  1.6110e-01,
+        -9.3951e-02,  1.7311e-01, -3.9255e-01,  8.7161e-02,  2.7989e-01,
+         1.2736e+00,  1.4118e-01,  2.7545e-01, -1.6689e-02,  1.9725e-01,
+         4.8033e-01,  3.4488e-01, -1.2328e+00,  7.8147e-03, -1.1714e-01,
+        -2.4937e-01,  6.3753e-02,  1.2579e-01,  1.1489e-01,  1.2206e-02,
+         2.2061e-01, -8.5872e-02,  3.1036e-01,  6.3125e-01,  1.4253e-01,
+         9.3555e-01, -3.0844e-01, -1.7462e-01,  1.8022e-01, -2.2474e-02,
+         1.2727e-01,  2.1274e-01, -8.3204e-02,  2.3346e-01,  9.2937e-01,
+        -1.7473e-01,  4.3345e-01,  2.4527e-02,  6.3441e-02,  2.7157e-01,
+        -1.0018e-01,  9.3173e-02, -9.2943e-01,  5.1674e-01,  3.1627e-02,
+        -9.8206e-01,  9.6913e-01,  8.3339e-02, -3.0147e-02,  9.2876e-03,
+         2.6889e-01,  1.5592e-01,  1.2469e-01,  2.6038e-02, -2.3168e-01,
+        -6.0543e-02,  1.9008e-02,  2.8002e-01,  1.7136e-01,  1.1440e+00,
+         4.7347e-02,  2.1239e-01,  3.1600e-02,  7.6558e-02,  6.1399e-01,
+         2.0695e-03,  7.6953e-03,  1.0005e-01, -1.3469e-01,  2.2798e-01,
+         4.0697e-02, -3.2581e-01,  4.8806e-01,  1.1599e-01, -2.9675e-01,
+         2.0829e-01,  3.3280e-01,  2.8313e-02, -7.9590e-02,  1.6803e-01,
+         1.7889e-01,  3.2913e-01], device='cuda:0')
+WeightedHS completed in 1061.83 seconds
+ours1 FreqWeightedHS
+LBFGS iterations run: 553
+LBFGS iterations run: 6
+LBFGS iterations run: 298
+LBFGS iterations run: 12
+LBFGS iterations run: 287
+Mean +- SD trainNLL over 5 fold(s) 18752.880859375 +- 128.51700246222288
+Mean +- SD testNLL over 5 fold(s) 4700.548046875 +- 130.49085984891212
+mean weights over 5 fold(s) tensor([ 1.4933e+00,  3.1724e-01, -1.8463e-01,  6.4336e-01,  5.2858e-01,
+         4.7750e-01,  2.7923e-01,  1.9268e-01,  8.2830e-02,  9.0889e-02,
+         1.0184e-01,  6.3167e-01, -4.2579e-01,  2.5871e-01, -6.5768e-02,
+         1.8401e-01, -6.6160e-02,  4.0145e-01,  3.6231e-01, -6.0059e-02,
+        -1.1027e-01,  2.1776e-01,  5.3014e-01, -3.9696e-02,  5.3911e-02,
+         1.0791e-02, -5.1308e-02,  7.5114e-02,  5.9678e-02, -4.0665e-02,
+         4.0535e-01, -5.2624e-01, -9.0897e-02,  1.1594e-01, -1.2057e-01,
+         2.8489e-02, -3.8651e-01, -1.3220e-01,  5.3727e-01, -1.3839e-02,
+        -1.3096e-01, -3.3474e-03,  9.4824e-02,  5.9195e-03, -6.0258e-02,
+         6.4492e-02, -1.7334e-02,  1.4877e-01, -4.9853e-01,  3.7794e-02,
+         2.2385e-01,  8.3535e-01,  1.8553e-01,  2.8735e-01, -6.8137e-02,
+         1.5471e-01,  3.4130e-01,  2.9265e-01, -6.1795e-01,  2.4047e-02,
+        -2.6979e-02, -3.0234e-01,  7.2946e-02,  3.8111e-02,  8.4222e-02,
+        -1.5293e-03,  4.4694e-02, -2.6797e-01,  2.1339e-01,  3.0303e-01,
+         1.8822e-01,  4.1865e-01, -2.3011e-01, -9.6434e-02,  8.4318e-02,
+        -1.2690e-01,  1.0958e-01,  1.5324e-01,  9.5719e-03,  1.2542e-01,
+         2.8506e-01, -2.5054e-01,  3.8707e-01, -5.9977e-02,  7.4880e-02,
+         3.2508e-01, -3.6778e-02,  1.1678e-01, -4.9250e-01,  1.0679e-01,
+         1.2253e-02, -5.4057e-01,  8.9283e-01,  1.1258e-01, -7.0924e-02,
+        -6.9769e-02,  2.2948e-01, -3.3038e-02,  1.4306e-01,  3.5289e-02,
+        -1.6932e-01, -7.8458e-02,  1.7232e-02,  2.1832e-01, -8.0623e-02,
+         5.8182e-01,  7.4196e-02,  1.1392e-01,  4.0118e-01,  1.2364e-01,
+        -1.6054e-01,  1.1305e-03,  6.3550e-02,  1.3502e-01, -9.3463e-02,
+         1.6181e-01,  1.1991e-01, -1.1591e-01,  9.8833e-02,  1.4324e-01,
+         1.8600e-01,  1.6230e-01,  3.2058e-01,  3.0774e-02, -1.1852e-01,
+         1.0971e-01,  5.3960e-02,  2.7418e-01], device='cuda:0')
+FreqWeightedHS completed in 1145.06 seconds
+hills OneCueStaticLocal
+LBFGS iterations run: 443
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 1
+Mean +- SD trainNLL over 5 fold(s) 19272.91484375 +- 109.08875062954941
+Mean +- SD testNLL over 5 fold(s) 4818.228515625 +- 109.08811573743444
+mean weights over 5 fold(s) tensor([21.5004], device='cuda:0')
+OneCueStaticLocal completed in 273.21 seconds
+hills OneCueStaticLocal_2step
+LBFGS iterations run: 404
+LBFGS iterations run: 57
+LBFGS iterations run: 3
+LBFGS iterations run: 2
+LBFGS iterations run: 3
+Mean +- SD trainNLL over 5 fold(s) 20640.820703125 +- 146.33201060039795
+Mean +- SD testNLL over 5 fold(s) 5160.18671875 +- 146.31588810240197
+mean weights over 5 fold(s) tensor([15.2392], device='cuda:0')
+OneCueStaticLocal_2step completed in 296.98 seconds
+hills OneCueStaticLocal_12step
+LBFGS iterations run: 488
+LBFGS iterations run: 2
+LBFGS iterations run: 5
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SD trainNLL over 5 fold(s) 19103.124609375 +- 112.81180039900585
+Mean +- SD testNLL over 5 fold(s) 4775.7796875 +- 112.8134437962835
+mean weights over 5 fold(s) tensor([19.0534,  6.3688], device='cuda:0')
+OneCueStaticLocal_12step completed in 296.18 seconds
+hills CombinedCueStatic
+LBFGS iterations run: 448
+LBFGS iterations run: 6
+LBFGS iterations run: 3
+LBFGS iterations run: 2
+LBFGS iterations run: 3
+Mean +- SD trainNLL over 5 fold(s) 18828.1 +- 108.1162328538992
+Mean +- SD testNLL over 5 fold(s) 4707.02626953125 +- 108.11767007200329
+mean weights over 5 fold(s) tensor([ 1.0572, 18.3858], device='cuda:0')
+CombinedCueStatic completed in 275.93 seconds
+hills CombinedCueStatic_12step
+LBFGS iterations run: 444
+LBFGS iterations run: 8
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+LBFGS iterations run: 4
+Mean +- SD trainNLL over 5 fold(s) 18796.125 +- 109.65832503652832
+Mean +- SD testNLL over 5 fold(s) 4699.033203125 +- 109.6605381024746
+mean weights over 5 fold(s) tensor([ 0.9534, 17.4469,  2.9478], device='cuda:0')
+CombinedCueStatic_12step completed in 272.64 seconds
+heineman Freq_Sim_Subcategory
+LBFGS iterations run: 1280
+LBFGS iterations run: 35
+LBFGS iterations run: 886
+LBFGS iterations run: 67
+LBFGS iterations run: 762
+Mean +- SD trainNLL over 5 fold(s) 17982.493130314026 +- 109.57733496936906
+Mean +- SD testNLL over 5 fold(s) 4495.822224883579 +- 109.62772246936197
+mean weights over 5 fold(s) tensor([ 1.3049, 13.4720,  7.0933], device='cuda:0')
+Freq_Sim_Subcategory completed in 1089.51 seconds
+--------------------------------PLOTTING MODELS--------------------------------
+ours1 Random
+ours1 Freq
+ours1 HS
+ours1 HS2step
+ours1 Pers
+ours1 Freq_HS_HS2step
+ours1 Freq_HS_Pers
+ours1 WeightedHS
+ours1 FreqWeightedHS
+hills OneCueStaticLocal
+hills OneCueStaticLocal_2step
+hills OneCueStaticLocal_12step
+hills CombinedCueStatic
+hills CombinedCueStatic_12step
+heineman Freq_Sim_Subcategory
+--------------------------------SIMULATING MODELS--------------------------------
+ours1 Random
+Random
+  0%|          | 0/141 [00:00<?, ?it/s]  9%|▊         | 12/141 [00:00<00:01, 119.16it/s] 18%|█▊        | 25/141 [00:00<00:00, 120.23it/s] 27%|██▋       | 38/141 [00:00<00:00, 119.73it/s] 37%|███▋      | 52/141 [00:00<00:00, 125.88it/s] 47%|████▋     | 66/141 [00:00<00:00, 127.88it/s] 56%|█████▌    | 79/141 [00:00<00:00, 127.78it/s] 66%|██████▌   | 93/141 [00:00<00:00, 128.68it/s] 75%|███████▌  | 106/141 [00:00<00:00, 124.08it/s] 85%|████████▌ | 120/141 [00:00<00:00, 127.31it/s] 94%|█████████▍| 133/141 [00:01<00:00, 124.03it/s]100%|██████████| 141/141 [00:01<00:00, 125.32it/s]
+ours1 simulations..................
+cat	  dog	  moth	  owl	  wasp	  viper	  muskrat	  seal	  anaconda	  pembroke welsh corgi	  chipmunk	  hornet	  scorpion	  alpaca	  junebug	  kiwi	  cougar	  snow monkey	  rat	  mako shark	  cricket	  sea monkey	  flea	  catfish	  octopus	  shih tzu	  bonobo	  reptile	  woodpecker	  hamster	  squid	  pillbug	  flamingo	  bullfrog	  elephant
+penguin	  bear	  leopard	  vulture	  chinchilla	  pillbug	  elk	  bison	  starfish	  snow lion	  orca	  cavy	  white tailed deer	  bullfrog	  red-rumped agouti	  moth	  manatee	  siamese cat	  goose	  bonobo	  meerkat	  stag	  reindeer	  mako shark	  bat	  tree frog	  llama	  snow monkey	  groundhog	  poodle	  tuna	  walrus	  labrador retriever	  grey hound	  sanddollar	  mongoose	  ape
+deer	  snake	  stick insect	  eel	  crawfish	  giraffe	  hammerhead shark	  tapir	  prairie dog	  betta	  woodpecker	  macaw	  bulldog	  siberian husky	  minnow	  seahorse	  bug	  worm	  caribou	  koala	  gazelle	  heron	  mouse	  brine shrimp	  great dane
+{'bleu1': 1.0, 'bleu2': 0.02, 'bleu3': 0.0, 'bleu4': 0.0}
+0.255 0.006600000000000001 0.10400000000000001
+ours1 Freq
+Freq
+  0%|          | 0/141 [00:00<?, ?it/s]  2%|▏         | 3/141 [00:00<00:04, 28.86it/s]  5%|▍         | 7/141 [00:00<00:04, 28.62it/s]  7%|▋         | 10/141 [00:00<00:04, 28.45it/s] 10%|▉         | 14/141 [00:00<00:04, 29.79it/s] 12%|█▏        | 17/141 [00:00<00:04, 29.29it/s] 15%|█▍        | 21/141 [00:00<00:03, 30.48it/s] 18%|█▊        | 25/141 [00:00<00:03, 29.95it/s] 21%|██        | 29/141 [00:00<00:03, 28.53it/s] 23%|██▎       | 33/141 [00:01<00:03, 29.82it/s] 26%|██▌       | 37/141 [00:01<00:03, 30.12it/s] 29%|██▉       | 41/141 [00:01<00:03, 30.65it/s] 32%|███▏      | 45/141 [00:01<00:03, 30.09it/s] 35%|███▍      | 49/141 [00:01<00:02, 32.03it/s] 38%|███▊      | 53/141 [00:01<00:02, 32.29it/s] 40%|████      | 57/141 [00:01<00:02, 32.69it/s] 43%|████▎     | 61/141 [00:01<00:02, 33.29it/s] 46%|████▌     | 65/141 [00:02<00:02, 33.59it/s] 49%|████▉     | 69/141 [00:02<00:02, 32.41it/s] 52%|█████▏    | 73/141 [00:02<00:02, 31.48it/s] 55%|█████▍    | 77/141 [00:02<00:02, 31.32it/s] 57%|█████▋    | 81/141 [00:02<00:01, 31.44it/s] 60%|██████    | 85/141 [00:02<00:01, 30.98it/s] 63%|██████▎   | 89/141 [00:02<00:01, 32.48it/s] 66%|██████▌   | 93/141 [00:02<00:01, 32.18it/s] 69%|██████▉   | 97/141 [00:03<00:01, 30.42it/s] 72%|███████▏  | 101/141 [00:03<00:01, 30.50it/s] 74%|███████▍  | 105/141 [00:03<00:01, 29.32it/s] 77%|███████▋  | 109/141 [00:03<00:01, 30.59it/s] 80%|████████  | 113/141 [00:03<00:00, 32.27it/s] 83%|████████▎ | 117/141 [00:03<00:00, 31.10it/s] 86%|████████▌ | 121/141 [00:03<00:00, 31.48it/s] 89%|████████▊ | 125/141 [00:04<00:00, 30.66it/s] 91%|█████████▏| 129/141 [00:04<00:00, 30.51it/s] 94%|█████████▍| 133/141 [00:04<00:00, 29.63it/s] 97%|█████████▋| 137/141 [00:04<00:00, 31.42it/s]100%|██████████| 141/141 [00:04<00:00, 30.82it/s]100%|██████████| 141/141 [00:04<00:00, 30.92it/s]
+ours1 simulations..................
+cat	  dog	  human	  horse	  ant	  fish	  fox	  wolf	  sheep	  bird	  bear	  fly	  duck	  puppy	  worm	  bat	  coral	  lion	  turkey	  turtle	  snake	  owl	  rabbit	  seal	  whale	  pig	  insect	  chicken	  camel	  mouse	  frog	  lizards	  spider	  elephant	  tiger
+penguin	  bear	  human	  dog	  puppy	  cat	  fish	  duck	  bird	  horse	  ant	  squirrel	  lizard	  sheep	  fly	  crow	  seal	  rat	  goose	  turkey	  rabbit	  fox	  turtle	  frog	  tiger	  elephant	  raven	  pig	  donkey	  mouse	  snake	  cattle	  goat	  wolf	  pigeon	  salmon	  spider
+deer	  snake	  human	  bird	  fish	  sheep	  fox	  ant	  rabbit	  puppy	  horse	  bat	  duck	  elephant	  cat	  bear	  dog	  bug	  bee	  pig	  turkey	  seal	  lion	  fly	  insect
+{'bleu1': 1.0, 'bleu2': 0.26, 'bleu3': 0.01, 'bleu4': 0.0}
+0.3175 0.0891 0.15500000000000003
+ours1 HS
+HS
+  0%|          | 0/141 [00:00<?, ?it/s]  3%|▎         | 4/141 [00:00<00:04, 32.47it/s]  6%|▌         | 8/141 [00:00<00:04, 29.28it/s]  8%|▊         | 11/141 [00:00<00:04, 29.18it/s] 11%|█         | 15/141 [00:00<00:04, 30.38it/s] 13%|█▎        | 19/141 [00:00<00:03, 30.76it/s] 16%|█▋        | 23/141 [00:00<00:03, 30.61it/s] 19%|█▉        | 27/141 [00:00<00:03, 30.36it/s] 22%|██▏       | 31/141 [00:01<00:03, 28.82it/s] 25%|██▍       | 35/141 [00:01<00:03, 30.20it/s] 28%|██▊       | 39/141 [00:01<00:03, 30.44it/s] 30%|███       | 43/141 [00:01<00:03, 31.09it/s] 33%|███▎      | 47/141 [00:01<00:03, 30.64it/s] 36%|███▌      | 51/141 [00:01<00:02, 32.64it/s] 39%|███▉      | 55/141 [00:01<00:02, 32.20it/s] 42%|████▏     | 59/141 [00:01<00:02, 32.79it/s] 45%|████▍     | 63/141 [00:02<00:02, 34.35it/s] 48%|████▊     | 67/141 [00:02<00:02, 31.80it/s] 50%|█████     | 71/141 [00:02<00:02, 31.92it/s] 53%|█████▎    | 75/141 [00:02<00:02, 30.40it/s] 56%|█████▌    | 79/141 [00:02<00:01, 31.82it/s] 59%|█████▉    | 83/141 [00:02<00:01, 31.65it/s] 62%|██████▏   | 87/141 [00:02<00:01, 30.69it/s] 65%|██████▌   | 92/141 [00:02<00:01, 32.38it/s] 68%|██████▊   | 96/141 [00:03<00:01, 31.57it/s] 71%|███████   | 100/141 [00:03<00:01, 31.35it/s] 74%|███████▍  | 104/141 [00:03<00:01, 29.44it/s] 77%|███████▋  | 108/141 [00:03<00:01, 30.45it/s] 79%|███████▉  | 112/141 [00:03<00:00, 31.01it/s] 82%|████████▏ | 116/141 [00:03<00:00, 31.29it/s] 85%|████████▌ | 120/141 [00:03<00:00, 31.39it/s] 88%|████████▊ | 124/141 [00:03<00:00, 30.93it/s] 91%|█████████ | 128/141 [00:04<00:00, 30.19it/s] 94%|█████████▎| 132/141 [00:04<00:00, 30.19it/s] 96%|█████████▋| 136/141 [00:04<00:00, 30.54it/s] 99%|█████████▉| 140/141 [00:04<00:00, 31.71it/s]100%|██████████| 141/141 [00:04<00:00, 31.01it/s]
+ours1 simulations..................
+cat	  dog	  terrier	  puppy	  kitten	  guinea pig	  siamese cat	  pembroke welsh corgi	  bloodhound	  dalmation	  great dane	  bulldog	  shih tzu	  liger	  poodle	  puggle	  labrador retriever	  malamute	  akita	  siberian husky	  hamster	  gerbil	  chihuahua	  snow lion	  snow monkey	  red-rumped agouti	  mountain bear	  wolverine	  badger	  mink	  muskrat	  otter	  mongoose	  tiger	  ocelot
+penguin	  bear	  brown bear	  black bear	  grizzly	  otter	  muskrat	  woodchuck	  mountain bear	  wolverine	  ocelot	  jaguar	  puma	  panther	  leopard	  cougar	  mountain lion	  bobcat	  lynx	  fox	  wild cat	  snow leopard	  wolf	  reindeer	  deer	  stag	  elk	  moose	  caribou	  bison	  buffalo	  sheep	  cattle	  ewe	  lamb	  cow	  goat
+deer	  snake	  reptile	  lizard	  lizards	  gecko	  tarantula	  scorpion	  spider	  cobra	  black mamba	  rattlesnake	  boa constrictor	  anaconda	  jaguar	  ocelot	  lynx	  bobcat	  wolverine	  kodiak bear	  polar bear	  brown bear	  bear	  black bear	  grizzly
+{'bleu1': 1.0, 'bleu2': 0.23, 'bleu3': 0.02, 'bleu4': 0.0}
+0.3125 0.0825 0.15200000000000002
+ours1 HS2step
+HS2step
+  0%|          | 0/141 [00:00<?, ?it/s]  3%|▎         | 4/141 [00:00<00:04, 32.45it/s]  6%|▌         | 8/141 [00:00<00:04, 29.30it/s]  8%|▊         | 11/141 [00:00<00:04, 29.18it/s] 11%|█         | 15/141 [00:00<00:04, 30.37it/s] 13%|█▎        | 19/141 [00:00<00:03, 30.80it/s] 16%|█▋        | 23/141 [00:00<00:03, 30.65it/s] 19%|█▉        | 27/141 [00:00<00:03, 30.38it/s] 22%|██▏       | 31/141 [00:01<00:03, 28.84it/s] 25%|██▍       | 35/141 [00:01<00:03, 30.24it/s] 28%|██▊       | 39/141 [00:01<00:03, 30.44it/s] 30%|███       | 43/141 [00:01<00:03, 31.08it/s] 33%|███▎      | 47/141 [00:01<00:03, 30.64it/s] 36%|███▌      | 51/141 [00:01<00:02, 32.63it/s] 39%|███▉      | 55/141 [00:01<00:02, 32.20it/s] 42%|████▏     | 59/141 [00:01<00:02, 32.79it/s] 45%|████▍     | 63/141 [00:02<00:02, 34.34it/s] 48%|████▊     | 67/141 [00:02<00:02, 31.76it/s] 50%|█████     | 71/141 [00:02<00:02, 31.90it/s] 53%|█████▎    | 75/141 [00:02<00:02, 30.39it/s] 56%|█████▌    | 79/141 [00:02<00:01, 31.94it/s] 59%|█████▉    | 83/141 [00:02<00:01, 31.74it/s] 62%|██████▏   | 87/141 [00:02<00:01, 30.76it/s] 65%|██████▌   | 92/141 [00:02<00:01, 32.40it/s] 68%|██████▊   | 96/141 [00:03<00:01, 31.58it/s] 71%|███████   | 100/141 [00:03<00:01, 31.36it/s] 74%|███████▍  | 104/141 [00:03<00:01, 29.48it/s] 77%|███████▋  | 108/141 [00:03<00:01, 30.40it/s] 79%|███████▉  | 112/141 [00:03<00:00, 30.94it/s] 82%|████████▏ | 116/141 [00:03<00:00, 31.22it/s] 85%|████████▌ | 120/141 [00:03<00:00, 31.35it/s] 88%|████████▊ | 124/141 [00:03<00:00, 30.90it/s] 91%|█████████ | 128/141 [00:04<00:00, 30.20it/s] 94%|█████████▎| 132/141 [00:04<00:00, 30.19it/s] 96%|█████████▋| 136/141 [00:04<00:00, 30.55it/s] 99%|█████████▉| 140/141 [00:04<00:00, 31.73it/s]100%|██████████| 141/141 [00:04<00:00, 31.02it/s]
+ours1 simulations..................
+cat	  dog	  ferret	  chihuahua	  ocelot	  puppy	  leopard	  guinea pig	  panther	  potbellied pig	  cougar	  cub	  wild cat	  siamese cat	  coyote	  dalmation	  fox	  bloodhound	  lynx	  human	  bobcat	  great dane	  mountain lion	  pembroke welsh corgi	  puma	  akita	  dingo	  malamute	  lioness	  alpaca	  lion	  wolverine	  kodiak bear	  fisher	  hippopotamus
+penguin	  bear	  dove	  brown bear	  nightingale	  black bear	  bluebird	  grizzly	  stork	  muskrat	  falcon	  bobcat	  eagle	  mountain bear	  hawk	  fisher	  loon	  panther	  swan	  puma	  pelican	  cougar	  black bird	  mountain lion	  goldfinch	  lynx	  robin	  fox	  pheasant	  ocelot	  flamingo	  leopard	  crane	  dingo	  duck	  jaguar	  blue footed booby
+deer	  snake	  elk	  cobra	  wolf	  black mamba	  cougar	  rattlesnake	  mountain lion	  hammerhead shark	  bobcat	  tuna	  lynx	  swordfish	  panther	  bass	  leopard	  pig	  ocelot	  cow	  wild cat	  cattle	  lioness	  camel	  dingo
+{'bleu1': 1.0, 'bleu2': 0.03, 'bleu3': 0.0, 'bleu4': 0.0}
+0.2575 0.0099 0.10600000000000001
+ours1 Pers
+Pers
+  0%|          | 0/141 [00:00<?, ?it/s]  3%|▎         | 4/141 [00:00<00:04, 32.45it/s]  6%|▌         | 8/141 [00:00<00:04, 29.30it/s]  8%|▊         | 11/141 [00:00<00:04, 29.20it/s] 11%|█         | 15/141 [00:00<00:04, 30.23it/s] 13%|█▎        | 19/141 [00:00<00:03, 30.70it/s] 16%|█▋        | 23/141 [00:00<00:03, 30.56it/s] 19%|█▉        | 27/141 [00:00<00:03, 30.32it/s] 22%|██▏       | 31/141 [00:01<00:03, 28.80it/s] 25%|██▍       | 35/141 [00:01<00:03, 30.20it/s] 28%|██▊       | 39/141 [00:01<00:03, 30.45it/s] 30%|███       | 43/141 [00:01<00:03, 31.10it/s] 33%|███▎      | 47/141 [00:01<00:03, 30.69it/s] 36%|███▌      | 51/141 [00:01<00:02, 32.66it/s] 39%|███▉      | 55/141 [00:01<00:02, 32.20it/s] 42%|████▏     | 59/141 [00:01<00:02, 32.80it/s] 45%|████▍     | 63/141 [00:02<00:02, 34.35it/s] 48%|████▊     | 67/141 [00:02<00:02, 31.79it/s] 50%|█████     | 71/141 [00:02<00:02, 31.91it/s] 53%|█████▎    | 75/141 [00:02<00:02, 30.41it/s] 56%|█████▌    | 79/141 [00:02<00:01, 31.98it/s] 59%|█████▉    | 83/141 [00:02<00:01, 31.77it/s] 62%|██████▏   | 87/141 [00:02<00:01, 30.76it/s] 65%|██████▌   | 92/141 [00:02<00:01, 32.42it/s] 68%|██████▊   | 96/141 [00:03<00:01, 31.60it/s] 71%|███████   | 100/141 [00:03<00:01, 31.38it/s] 74%|███████▍  | 104/141 [00:03<00:01, 29.48it/s] 77%|███████▋  | 108/141 [00:03<00:01, 30.51it/s] 79%|███████▉  | 112/141 [00:03<00:00, 31.07it/s] 82%|████████▏ | 116/141 [00:03<00:00, 31.32it/s] 85%|████████▌ | 120/141 [00:03<00:00, 31.41it/s] 88%|████████▊ | 124/141 [00:03<00:00, 30.92it/s] 91%|█████████ | 128/141 [00:04<00:00, 30.22it/s] 94%|█████████▎| 132/141 [00:04<00:00, 30.20it/s] 96%|█████████▋| 136/141 [00:04<00:00, 30.55it/s] 99%|█████████▉| 140/141 [00:04<00:00, 31.60it/s]100%|██████████| 141/141 [00:04<00:00, 31.02it/s]
+ours1 simulations..................
+cat	  dog	  terrier	  puppy	  chihuahua	  pembroke welsh corgi	  potbellied pig	  great dane	  bloodhound	  bulldog	  grey hound	  shih tzu	  kitten	  guinea pig	  siamese cat	  ferret	  hamster	  gerbil	  mouse	  rat	  badger	  kodiak bear	  lioness	  lion	  wolverine	  cougar	  mountain lion	  lynx	  bobcat	  wild cat	  ocelot	  jaguar	  panther	  leopard	  puma
+penguin	  bear	  brown bear	  wolf	  fox	  wild cat	  ocelot	  leopard	  jaguar	  panther	  puma	  cougar	  mountain lion	  bobcat	  lynx	  cheetah	  lioness	  lion	  meerkat	  donkey	  ape	  malamute	  akita	  dog	  labrador retriever	  chihuahua	  kitten	  terrier	  puppy	  pembroke welsh corgi	  dalmation	  bloodhound	  great dane	  liger	  puggle	  bulldog	  poodle
+deer	  snake	  mule deer	  viper	  camel	  lamb	  goat	  sheep	  cow	  cattle	  ewe	  zebra	  giraffe	  rhinoceros	  rhino	  hippopotamus	  hog	  tapir	  pig	  capybara	  buffalo	  boar	  bison	  stag	  elk
+{'bleu1': 1.0, 'bleu2': 0.19, 'bleu3': 0.01, 'bleu4': 0.0}
+0.3 0.066 0.14100000000000001
+ours1 Freq_HS_HS2step
+Freq_HS_HS2step
+  0%|          | 0/141 [00:00<?, ?it/s]  3%|▎         | 4/141 [00:00<00:04, 32.60it/s]  6%|▌         | 8/141 [00:00<00:04, 29.38it/s]  8%|▊         | 11/141 [00:00<00:04, 29.27it/s] 11%|█         | 15/141 [00:00<00:04, 30.47it/s] 13%|█▎        | 19/141 [00:00<00:03, 30.88it/s] 16%|█▋        | 23/141 [00:00<00:03, 30.73it/s] 19%|█▉        | 27/141 [00:00<00:03, 30.48it/s] 22%|██▏       | 31/141 [00:01<00:03, 28.96it/s] 25%|██▍       | 35/141 [00:01<00:03, 30.35it/s] 28%|██▊       | 39/141 [00:01<00:03, 30.59it/s] 30%|███       | 43/141 [00:01<00:03, 31.21it/s] 33%|███▎      | 47/141 [00:01<00:03, 30.73it/s] 36%|███▌      | 51/141 [00:01<00:02, 32.73it/s] 39%|███▉      | 55/141 [00:01<00:02, 32.29it/s] 42%|████▏     | 59/141 [00:01<00:02, 32.88it/s] 45%|████▍     | 63/141 [00:01<00:02, 34.44it/s] 48%|████▊     | 67/141 [00:02<00:02, 31.90it/s] 50%|█████     | 71/141 [00:02<00:02, 32.02it/s] 53%|█████▎    | 75/141 [00:02<00:02, 30.52it/s] 56%|█████▌    | 79/141 [00:02<00:01, 32.08it/s] 59%|█████▉    | 83/141 [00:02<00:01, 31.85it/s] 62%|██████▏   | 87/141 [00:02<00:01, 30.86it/s] 65%|██████▌   | 92/141 [00:02<00:01, 32.55it/s] 68%|██████▊   | 96/141 [00:03<00:01, 31.73it/s] 71%|███████   | 100/141 [00:03<00:01, 31.51it/s] 74%|███████▍  | 104/141 [00:03<00:01, 29.61it/s] 77%|███████▋  | 108/141 [00:03<00:01, 30.63it/s] 79%|███████▉  | 112/141 [00:03<00:00, 31.17it/s] 82%|████████▏ | 116/141 [00:03<00:00, 31.45it/s] 85%|████████▌ | 120/141 [00:03<00:00, 31.54it/s] 88%|████████▊ | 124/141 [00:03<00:00, 31.06it/s] 91%|█████████ | 128/141 [00:04<00:00, 30.36it/s] 94%|█████████▎| 132/141 [00:04<00:00, 30.34it/s] 96%|█████████▋| 136/141 [00:04<00:00, 30.71it/s] 99%|█████████▉| 140/141 [00:04<00:00, 31.87it/s]100%|██████████| 141/141 [00:04<00:00, 31.16it/s]
+ours1 simulations..................
+cat	  dog	  puppy	  human	  horse	  cattle	  cow	  sheep	  pig	  lamb	  rabbit	  bunny	  mouse	  rat	  fox	  bear	  wolf	  lion	  elephant	  buffalo	  bull	  ox	  buck	  ant	  fish	  turtle	  frog	  snake	  lizard	  lizards	  insect	  beetle	  cricket	  bat	  seal
+penguin	  bear	  wolf	  fox	  leopard	  dog	  cat	  puppy	  human	  horse	  cattle	  sheep	  lamb	  cow	  pig	  rabbit	  bunny	  mouse	  rat	  raccoon	  squirrel	  beaver	  elephant	  lion	  tiger	  jaguar	  panther	  lynx	  deer	  goat	  camel	  buffalo	  bull	  buck	  ox	  ram	  ant
+deer	  snake	  reptile	  lizard	  lizards	  insect	  beetle	  ant	  dog	  cat	  puppy	  human	  horse	  cattle	  sheep	  cow	  pig	  hog	  bull	  buffalo	  wolf	  bear	  tiger	  fox	  leopard
+{'bleu1': 1.0, 'bleu2': 0.48, 'bleu3': 0.08, 'bleu4': 0.01}
+0.3925 0.18810000000000002 0.224
+ours1 Freq_HS_Pers
+Freq_HS_Pers
+  0%|          | 0/141 [00:00<?, ?it/s]  3%|▎         | 4/141 [00:00<00:04, 32.70it/s]  6%|▌         | 8/141 [00:00<00:04, 29.47it/s]  8%|▊         | 11/141 [00:00<00:04, 29.38it/s] 11%|█         | 15/141 [00:00<00:04, 30.61it/s] 13%|█▎        | 19/141 [00:00<00:03, 31.02it/s] 16%|█▋        | 23/141 [00:00<00:03, 30.85it/s] 19%|█▉        | 27/141 [00:00<00:03, 30.60it/s] 22%|██▏       | 31/141 [00:01<00:03, 29.07it/s] 25%|██▍       | 35/141 [00:01<00:03, 30.47it/s] 28%|██▊       | 39/141 [00:01<00:03, 30.70it/s] 30%|███       | 43/141 [00:01<00:03, 31.35it/s] 33%|███▎      | 47/141 [00:01<00:03, 30.92it/s] 36%|███▌      | 51/141 [00:01<00:02, 32.92it/s] 39%|███▉      | 55/141 [00:01<00:02, 32.47it/s] 42%|████▏     | 59/141 [00:01<00:02, 33.07it/s] 45%|████▍     | 63/141 [00:01<00:02, 34.64it/s] 48%|████▊     | 67/141 [00:02<00:02, 32.05it/s] 50%|█████     | 71/141 [00:02<00:02, 32.16it/s] 53%|█████▎    | 75/141 [00:02<00:02, 30.62it/s] 56%|█████▌    | 79/141 [00:02<00:01, 32.10it/s] 59%|█████▉    | 83/141 [00:02<00:01, 31.92it/s] 62%|██████▏   | 87/141 [00:02<00:01, 30.95it/s] 65%|██████▌   | 92/141 [00:02<00:01, 32.64it/s] 68%|██████▊   | 96/141 [00:03<00:01, 31.83it/s] 71%|███████   | 100/141 [00:03<00:01, 31.62it/s] 74%|███████▍  | 104/141 [00:03<00:01, 29.70it/s] 77%|███████▋  | 108/141 [00:03<00:01, 30.72it/s] 79%|███████▉  | 112/141 [00:03<00:00, 31.29it/s] 82%|████████▏ | 116/141 [00:03<00:00, 31.56it/s] 85%|████████▌ | 120/141 [00:03<00:00, 31.66it/s] 88%|████████▊ | 124/141 [00:03<00:00, 31.18it/s] 91%|█████████ | 128/141 [00:04<00:00, 30.47it/s] 94%|█████████▎| 132/141 [00:04<00:00, 30.44it/s] 96%|█████████▋| 136/141 [00:04<00:00, 30.79it/s] 99%|█████████▉| 140/141 [00:04<00:00, 31.97it/s]100%|██████████| 141/141 [00:04<00:00, 31.27it/s]
+ours1 simulations..................
+cat	  dog	  puppy	  human	  monkey	  squirrel	  deer	  sheep	  buffalo	  cattle	  cow	  horse	  lamb	  pig	  hog	  rabbit	  bunny	  mouse	  rat	  ant	  spider	  scorpion	  snake	  turtle	  fish	  frog	  amphibian	  seal	  lion	  bear	  tiger	  leopard	  fox	  panther	  wolf
+penguin	  bear	  wolf	  fox	  dog	  puppy	  cat	  mouse	  rat	  human	  pig	  sheep	  cattle	  cow	  horse	  lion	  elephant	  buffalo	  bison	  deer	  elk	  moose	  tiger	  leopard	  panther	  bat	  seal	  whale	  dolphin	  orca	  killer whale	  shark	  fish	  frog	  turtle	  crocodile	  snake
+deer	  snake	  turtle	  fish	  frog	  amphibian	  pig	  cow	  cattle	  horse	  human	  dog	  cat	  mouse	  rabbit	  bunny	  ant	  spider	  lizard	  lizards	  insect	  beetle	  fly	  bee	  butterfly
+{'bleu1': 1.0, 'bleu2': 0.48, 'bleu3': 0.08, 'bleu4': 0.01}
+0.3925 0.18810000000000002 0.224
+ours1 WeightedHS
+WeightedHS
+  0%|          | 0/141 [00:00<?, ?it/s]  1%|          | 1/141 [00:00<00:37,  3.78it/s]  1%|▏         | 2/141 [00:00<00:38,  3.66it/s]  2%|▏         | 3/141 [00:00<00:32,  4.30it/s]  3%|▎         | 4/141 [00:01<00:35,  3.83it/s]  4%|▎         | 5/141 [00:01<00:36,  3.70it/s]  4%|▍         | 6/141 [00:01<00:34,  3.88it/s]  5%|▍         | 7/141 [00:01<00:39,  3.43it/s]  6%|▌         | 8/141 [00:02<00:41,  3.22it/s]  6%|▋         | 9/141 [00:02<00:39,  3.32it/s]  7%|▋         | 10/141 [00:02<00:37,  3.45it/s]  8%|▊         | 11/141 [00:03<00:39,  3.32it/s]  9%|▊         | 12/141 [00:03<00:36,  3.57it/s]  9%|▉         | 13/141 [00:03<00:33,  3.86it/s] 10%|▉         | 14/141 [00:03<00:34,  3.70it/s] 11%|█         | 15/141 [00:04<00:35,  3.54it/s] 11%|█▏        | 16/141 [00:04<00:33,  3.77it/s] 12%|█▏        | 17/141 [00:04<00:36,  3.41it/s] 13%|█▎        | 18/141 [00:05<00:34,  3.57it/s] 13%|█▎        | 19/141 [00:05<00:32,  3.73it/s] 14%|█▍        | 20/141 [00:05<00:30,  3.93it/s] 15%|█▍        | 21/141 [00:05<00:32,  3.65it/s] 16%|█▌        | 22/141 [00:06<00:33,  3.56it/s] 16%|█▋        | 23/141 [00:06<00:32,  3.60it/s] 17%|█▋        | 24/141 [00:06<00:33,  3.47it/s] 18%|█▊        | 25/141 [00:06<00:33,  3.50it/s] 18%|█▊        | 26/141 [00:07<00:32,  3.59it/s] 19%|█▉        | 27/141 [00:07<00:31,  3.61it/s] 20%|█▉        | 28/141 [00:07<00:32,  3.51it/s] 21%|██        | 29/141 [00:08<00:37,  2.97it/s] 21%|██▏       | 30/141 [00:08<00:38,  2.91it/s] 22%|██▏       | 31/141 [00:08<00:32,  3.41it/s] 23%|██▎       | 32/141 [00:09<00:31,  3.43it/s] 23%|██▎       | 33/141 [00:09<00:28,  3.79it/s] 24%|██▍       | 34/141 [00:09<00:24,  4.34it/s] 25%|██▍       | 35/141 [00:09<00:28,  3.71it/s] 26%|██▌       | 36/141 [00:10<00:28,  3.64it/s] 26%|██▌       | 37/141 [00:10<00:29,  3.56it/s] 27%|██▋       | 38/141 [00:10<00:29,  3.53it/s] 28%|██▊       | 39/141 [00:10<00:26,  3.80it/s] 28%|██▊       | 40/141 [00:11<00:28,  3.54it/s] 29%|██▉       | 41/141 [00:11<00:26,  3.77it/s] 30%|██▉       | 42/141 [00:11<00:25,  3.81it/s] 30%|███       | 43/141 [00:11<00:24,  3.98it/s] 31%|███       | 44/141 [00:12<00:27,  3.56it/s] 32%|███▏      | 45/141 [00:12<00:28,  3.42it/s] 33%|███▎      | 46/141 [00:12<00:27,  3.49it/s] 33%|███▎      | 47/141 [00:13<00:24,  3.87it/s] 34%|███▍      | 48/141 [00:13<00:21,  4.28it/s] 35%|███▍      | 49/141 [00:13<00:22,  4.16it/s] 35%|███▌      | 50/141 [00:13<00:19,  4.68it/s] 36%|███▌      | 51/141 [00:13<00:21,  4.19it/s] 37%|███▋      | 52/141 [00:14<00:21,  4.14it/s] 38%|███▊      | 53/141 [00:14<00:23,  3.74it/s] 38%|███▊      | 54/141 [00:14<00:21,  3.97it/s] 39%|███▉      | 55/141 [00:15<00:22,  3.81it/s] 40%|███▉      | 56/141 [00:15<00:20,  4.18it/s] 40%|████      | 57/141 [00:15<00:21,  3.83it/s] 41%|████      | 58/141 [00:15<00:21,  3.78it/s] 42%|████▏     | 59/141 [00:15<00:20,  4.00it/s] 43%|████▎     | 60/141 [00:16<00:19,  4.09it/s] 43%|████▎     | 61/141 [00:16<00:19,  4.07it/s] 44%|████▍     | 62/141 [00:16<00:18,  4.31it/s] 45%|████▍     | 63/141 [00:16<00:17,  4.55it/s] 45%|████▌     | 64/141 [00:17<00:15,  5.01it/s] 46%|████▌     | 65/141 [00:17<00:20,  3.69it/s] 47%|████▋     | 66/141 [00:17<00:22,  3.33it/s] 48%|████▊     | 67/141 [00:18<00:21,  3.37it/s] 48%|████▊     | 68/141 [00:18<00:19,  3.77it/s] 49%|████▉     | 69/141 [00:18<00:19,  3.71it/s] 50%|████▉     | 70/141 [00:18<00:19,  3.66it/s] 50%|█████     | 71/141 [00:19<00:19,  3.57it/s] 51%|█████     | 72/141 [00:19<00:19,  3.48it/s] 52%|█████▏    | 73/141 [00:19<00:19,  3.56it/s] 52%|█████▏    | 74/141 [00:20<00:18,  3.57it/s] 53%|█████▎    | 75/141 [00:20<00:20,  3.21it/s] 54%|█████▍    | 76/141 [00:20<00:19,  3.39it/s] 55%|█████▍    | 77/141 [00:20<00:16,  3.89it/s] 55%|█████▌    | 78/141 [00:20<00:14,  4.34it/s] 56%|█████▌    | 79/141 [00:21<00:16,  3.82it/s] 57%|█████▋    | 80/141 [00:21<00:16,  3.78it/s] 57%|█████▋    | 81/141 [00:21<00:16,  3.68it/s] 58%|█████▊    | 82/141 [00:22<00:16,  3.53it/s] 59%|█████▉    | 83/141 [00:22<00:15,  3.83it/s] 60%|█████▉    | 84/141 [00:22<00:16,  3.36it/s] 60%|██████    | 85/141 [00:23<00:15,  3.63it/s] 61%|██████    | 86/141 [00:23<00:14,  3.68it/s] 62%|██████▏   | 87/141 [00:23<00:15,  3.55it/s] 62%|██████▏   | 88/141 [00:23<00:12,  4.08it/s] 63%|██████▎   | 89/141 [00:23<00:11,  4.36it/s] 64%|██████▍   | 90/141 [00:24<00:10,  4.74it/s] 65%|██████▍   | 91/141 [00:24<00:10,  4.71it/s] 65%|██████▌   | 92/141 [00:24<00:13,  3.59it/s] 66%|██████▌   | 93/141 [00:25<00:13,  3.68it/s] 67%|██████▋   | 94/141 [00:25<00:13,  3.49it/s] 67%|██████▋   | 95/141 [00:25<00:14,  3.12it/s] 68%|██████▊   | 96/141 [00:25<00:12,  3.67it/s] 69%|██████▉   | 97/141 [00:26<00:13,  3.30it/s] 70%|██████▉   | 98/141 [00:26<00:14,  3.01it/s] 70%|███████   | 99/141 [00:26<00:12,  3.33it/s] 72%|███████▏  | 101/141 [00:27<00:10,  3.67it/s] 72%|███████▏  | 102/141 [00:27<00:10,  3.62it/s] 73%|███████▎  | 103/141 [00:27<00:10,  3.50it/s] 74%|███████▍  | 104/141 [00:28<00:10,  3.37it/s] 74%|███████▍  | 105/141 [00:28<00:11,  3.27it/s] 75%|███████▌  | 106/141 [00:28<00:10,  3.33it/s] 76%|███████▌  | 107/141 [00:29<00:08,  4.03it/s] 77%|███████▋  | 108/141 [00:29<00:08,  3.89it/s] 77%|███████▋  | 109/141 [00:29<00:08,  3.69it/s] 78%|███████▊  | 110/141 [00:29<00:08,  3.45it/s] 79%|███████▊  | 111/141 [00:30<00:08,  3.70it/s] 79%|███████▉  | 112/141 [00:30<00:07,  4.13it/s] 80%|████████  | 113/141 [00:30<00:06,  4.50it/s] 81%|████████  | 114/141 [00:30<00:06,  4.09it/s] 82%|████████▏ | 115/141 [00:31<00:06,  3.72it/s] 82%|████████▏ | 116/141 [00:31<00:06,  3.77it/s] 83%|████████▎ | 117/141 [00:31<00:06,  3.64it/s] 84%|████████▎ | 118/141 [00:31<00:06,  3.65it/s] 84%|████████▍ | 119/141 [00:32<00:05,  3.94it/s] 85%|████████▌ | 120/141 [00:32<00:05,  3.79it/s] 86%|████████▌ | 121/141 [00:32<00:05,  3.76it/s] 87%|████████▋ | 122/141 [00:33<00:05,  3.57it/s] 87%|████████▋ | 123/141 [00:33<00:04,  3.64it/s] 88%|████████▊ | 124/141 [00:33<00:04,  3.62it/s] 89%|████████▊ | 125/141 [00:33<00:04,  3.48it/s] 89%|████████▉ | 126/141 [00:34<00:04,  3.63it/s] 90%|█████████ | 127/141 [00:34<00:04,  3.46it/s] 91%|█████████ | 128/141 [00:34<00:03,  3.44it/s] 91%|█████████▏| 129/141 [00:35<00:03,  3.57it/s] 92%|█████████▏| 130/141 [00:35<00:03,  3.42it/s] 93%|█████████▎| 131/141 [00:35<00:02,  3.74it/s] 94%|█████████▎| 132/141 [00:35<00:02,  3.47it/s] 94%|█████████▍| 133/141 [00:36<00:02,  3.26it/s] 95%|█████████▌| 134/141 [00:36<00:02,  3.32it/s] 96%|█████████▌| 135/141 [00:36<00:01,  3.76it/s] 96%|█████████▋| 136/141 [00:36<00:01,  3.84it/s] 97%|█████████▋| 137/141 [00:37<00:00,  4.13it/s] 98%|█████████▊| 138/141 [00:37<00:00,  3.87it/s] 99%|█████████▊| 139/141 [00:37<00:00,  4.19it/s] 99%|█████████▉| 140/141 [00:37<00:00,  3.99it/s]100%|██████████| 141/141 [00:38<00:00,  3.47it/s]100%|██████████| 141/141 [00:38<00:00,  3.68it/s]
+ours1 simulations..................
+cat	  dog	  horse	  elephant	  giraffe	  rhinoceros	  lion	  wild cat	  gorilla	  ape	  monkey	  cub	  chipmunk	  squirrel	  bat	  egret	  chickadee	  loon	  oriole	  pelican	  crow	  nightingale	  robin	  black bird	  gull	  gulls	  blue jay	  raccoon	  black bear	  tiger	  panther	  leopard	  brown bear	  lynx	  dingo
+penguin	  bear	  lion	  tiger	  elephant	  giraffe	  rhinoceros	  moose	  elk	  deer	  caribou	  gazelle	  wildebeest	  mountain goat	  peacock	  komodo dragon	  bengal tiger	  crocodile	  alligator	  otter	  trout	  fish	  bass	  tuna	  whale	  humpback whale	  dolphin	  squid	  barracuda	  great white shark	  swordfish	  hammerhead shark	  shark	  porpoise	  blue whale	  walrus	  sea lion
+deer	  snake	  cobra	  bat	  elephant	  giraffe	  lion	  tiger	  brown bear	  panther	  leopard	  cougar	  wild cat	  bear	  alligator	  crocodile	  horse	  pig	  cattle	  cow	  yak	  camel	  rhinoceros	  peacock	  komodo dragon
+{'bleu1': 1.0, 'bleu2': 0.36, 'bleu3': 0.05, 'bleu4': 0.01}
+0.355 0.1386 0.191
+ours1 FreqWeightedHS
+FreqWeightedHS
+  0%|          | 0/141 [00:00<?, ?it/s]  1%|          | 1/141 [00:00<00:37,  3.73it/s]  1%|▏         | 2/141 [00:00<00:38,  3.61it/s]  2%|▏         | 3/141 [00:00<00:32,  4.24it/s]  3%|▎         | 4/141 [00:01<00:36,  3.78it/s]  4%|▎         | 5/141 [00:01<00:37,  3.64it/s]  4%|▍         | 6/141 [00:01<00:35,  3.83it/s]  5%|▍         | 7/141 [00:01<00:39,  3.39it/s]  6%|▌         | 8/141 [00:02<00:41,  3.18it/s]  6%|▋         | 9/141 [00:02<00:40,  3.28it/s]  7%|▋         | 10/141 [00:02<00:38,  3.40it/s]  8%|▊         | 11/141 [00:03<00:39,  3.27it/s]  9%|▊         | 12/141 [00:03<00:36,  3.52it/s]  9%|▉         | 13/141 [00:03<00:33,  3.82it/s] 10%|▉         | 14/141 [00:03<00:34,  3.66it/s] 11%|█         | 15/141 [00:04<00:36,  3.49it/s] 11%|█▏        | 16/141 [00:04<00:33,  3.72it/s] 12%|█▏        | 17/141 [00:04<00:36,  3.36it/s] 13%|█▎        | 18/141 [00:05<00:34,  3.53it/s] 13%|█▎        | 19/141 [00:05<00:33,  3.68it/s] 14%|█▍        | 20/141 [00:05<00:31,  3.87it/s] 15%|█▍        | 21/141 [00:05<00:33,  3.60it/s] 16%|█▌        | 22/141 [00:06<00:33,  3.51it/s] 16%|█▋        | 23/141 [00:06<00:33,  3.55it/s] 17%|█▋        | 24/141 [00:06<00:34,  3.42it/s] 18%|█▊        | 25/141 [00:07<00:33,  3.45it/s] 18%|█▊        | 26/141 [00:07<00:32,  3.53it/s] 19%|█▉        | 27/141 [00:07<00:32,  3.56it/s] 20%|█▉        | 28/141 [00:07<00:32,  3.46it/s] 21%|██        | 29/141 [00:08<00:38,  2.93it/s] 21%|██▏       | 30/141 [00:08<00:38,  2.87it/s] 22%|██▏       | 31/141 [00:08<00:32,  3.37it/s] 23%|██▎       | 32/141 [00:09<00:32,  3.38it/s] 23%|██▎       | 33/141 [00:09<00:28,  3.74it/s] 24%|██▍       | 34/141 [00:09<00:25,  4.28it/s] 25%|██▍       | 35/141 [00:09<00:28,  3.66it/s] 26%|██▌       | 36/141 [00:10<00:29,  3.59it/s] 26%|██▌       | 37/141 [00:10<00:29,  3.51it/s] 27%|██▋       | 38/141 [00:10<00:29,  3.48it/s] 28%|██▊       | 39/141 [00:11<00:27,  3.75it/s] 28%|██▊       | 40/141 [00:11<00:28,  3.49it/s] 29%|██▉       | 41/141 [00:11<00:26,  3.72it/s] 30%|██▉       | 42/141 [00:11<00:26,  3.76it/s] 30%|███       | 43/141 [00:12<00:24,  3.93it/s] 31%|███       | 44/141 [00:12<00:27,  3.51it/s] 32%|███▏      | 45/141 [00:12<00:28,  3.37it/s] 33%|███▎      | 46/141 [00:13<00:27,  3.45it/s] 33%|███▎      | 47/141 [00:13<00:24,  3.83it/s] 34%|███▍      | 48/141 [00:13<00:21,  4.23it/s] 35%|███▍      | 49/141 [00:13<00:22,  4.11it/s] 35%|███▌      | 50/141 [00:13<00:19,  4.62it/s] 36%|███▌      | 51/141 [00:14<00:21,  4.14it/s] 37%|███▋      | 52/141 [00:14<00:21,  4.09it/s] 38%|███▊      | 53/141 [00:14<00:23,  3.69it/s] 38%|███▊      | 54/141 [00:14<00:22,  3.91it/s] 39%|███▉      | 55/141 [00:15<00:22,  3.75it/s] 40%|███▉      | 56/141 [00:15<00:20,  4.13it/s] 40%|████      | 57/141 [00:15<00:22,  3.78it/s] 41%|████      | 58/141 [00:15<00:22,  3.74it/s] 42%|████▏     | 59/141 [00:16<00:20,  3.95it/s] 43%|████▎     | 60/141 [00:16<00:20,  4.04it/s] 43%|████▎     | 61/141 [00:16<00:19,  4.02it/s] 44%|████▍     | 62/141 [00:16<00:18,  4.26it/s] 45%|████▍     | 63/141 [00:17<00:17,  4.49it/s] 45%|████▌     | 64/141 [00:17<00:15,  4.94it/s] 46%|████▌     | 65/141 [00:17<00:20,  3.63it/s] 47%|████▋     | 66/141 [00:18<00:22,  3.29it/s] 48%|████▊     | 67/141 [00:18<00:22,  3.33it/s] 48%|████▊     | 68/141 [00:18<00:19,  3.72it/s] 49%|████▉     | 69/141 [00:18<00:19,  3.66it/s] 50%|████▉     | 70/141 [00:19<00:19,  3.62it/s] 50%|█████     | 71/141 [00:19<00:19,  3.53it/s] 51%|█████     | 72/141 [00:19<00:20,  3.44it/s] 52%|█████▏    | 73/141 [00:19<00:19,  3.52it/s] 52%|█████▏    | 74/141 [00:20<00:19,  3.52it/s] 53%|█████▎    | 75/141 [00:20<00:20,  3.17it/s] 54%|█████▍    | 76/141 [00:20<00:19,  3.35it/s] 55%|█████▍    | 77/141 [00:21<00:16,  3.85it/s] 55%|█████▌    | 78/141 [00:21<00:14,  4.29it/s] 56%|█████▌    | 79/141 [00:21<00:16,  3.77it/s] 57%|█████▋    | 80/141 [00:21<00:16,  3.72it/s] 57%|█████▋    | 81/141 [00:22<00:16,  3.63it/s] 58%|█████▊    | 82/141 [00:22<00:16,  3.48it/s] 59%|█████▉    | 83/141 [00:22<00:15,  3.77it/s] 60%|█████▉    | 84/141 [00:23<00:17,  3.31it/s] 60%|██████    | 85/141 [00:23<00:15,  3.58it/s] 61%|██████    | 86/141 [00:23<00:15,  3.62it/s] 62%|██████▏   | 87/141 [00:23<00:15,  3.50it/s] 62%|██████▏   | 88/141 [00:24<00:13,  4.02it/s] 63%|██████▎   | 89/141 [00:24<00:12,  4.30it/s] 64%|██████▍   | 90/141 [00:24<00:10,  4.68it/s] 65%|██████▍   | 91/141 [00:24<00:10,  4.65it/s] 65%|██████▌   | 92/141 [00:25<00:13,  3.55it/s] 66%|██████▌   | 93/141 [00:25<00:13,  3.63it/s] 67%|██████▋   | 94/141 [00:25<00:13,  3.45it/s] 67%|██████▋   | 95/141 [00:26<00:14,  3.08it/s] 68%|██████▊   | 96/141 [00:26<00:12,  3.63it/s] 69%|██████▉   | 97/141 [00:26<00:13,  3.25it/s] 70%|██████▉   | 98/141 [00:27<00:14,  2.97it/s] 70%|███████   | 99/141 [00:27<00:12,  3.29it/s] 72%|███████▏  | 101/141 [00:27<00:11,  3.63it/s] 72%|███████▏  | 102/141 [00:28<00:10,  3.58it/s] 73%|███████▎  | 103/141 [00:28<00:10,  3.46it/s] 74%|███████▍  | 104/141 [00:28<00:11,  3.32it/s] 74%|███████▍  | 105/141 [00:28<00:11,  3.23it/s] 75%|███████▌  | 106/141 [00:29<00:10,  3.28it/s] 76%|███████▌  | 107/141 [00:29<00:08,  3.98it/s] 77%|███████▋  | 108/141 [00:29<00:08,  3.83it/s] 77%|███████▋  | 109/141 [00:30<00:08,  3.64it/s] 78%|███████▊  | 110/141 [00:30<00:09,  3.40it/s] 79%|███████▊  | 111/141 [00:30<00:08,  3.65it/s] 79%|███████▉  | 112/141 [00:30<00:07,  4.07it/s] 80%|████████  | 113/141 [00:30<00:06,  4.43it/s] 81%|████████  | 114/141 [00:31<00:06,  4.03it/s] 82%|████████▏ | 115/141 [00:31<00:07,  3.66it/s] 82%|████████▏ | 116/141 [00:31<00:06,  3.72it/s] 83%|████████▎ | 117/141 [00:32<00:06,  3.60it/s] 84%|████████▎ | 118/141 [00:32<00:06,  3.61it/s] 84%|████████▍ | 119/141 [00:32<00:05,  3.89it/s] 85%|████████▌ | 120/141 [00:32<00:05,  3.74it/s] 86%|████████▌ | 121/141 [00:33<00:05,  3.70it/s] 87%|████████▋ | 122/141 [00:33<00:05,  3.53it/s] 87%|████████▋ | 123/141 [00:33<00:05,  3.59it/s] 88%|████████▊ | 124/141 [00:34<00:04,  3.57it/s] 89%|████████▊ | 125/141 [00:34<00:04,  3.44it/s] 89%|████████▉ | 126/141 [00:34<00:04,  3.58it/s] 90%|█████████ | 127/141 [00:34<00:04,  3.41it/s] 91%|█████████ | 128/141 [00:35<00:03,  3.39it/s] 91%|█████████▏| 129/141 [00:35<00:03,  3.52it/s] 92%|█████████▏| 130/141 [00:35<00:03,  3.38it/s] 93%|█████████▎| 131/141 [00:36<00:02,  3.70it/s] 94%|█████████▎| 132/141 [00:36<00:02,  3.44it/s] 94%|█████████▍| 133/141 [00:36<00:02,  3.22it/s] 95%|█████████▌| 134/141 [00:37<00:02,  3.28it/s] 96%|█████████▌| 135/141 [00:37<00:01,  3.71it/s] 96%|█████████▋| 136/141 [00:37<00:01,  3.79it/s] 97%|█████████▋| 137/141 [00:37<00:00,  4.07it/s] 98%|█████████▊| 138/141 [00:37<00:00,  3.82it/s] 99%|█████████▊| 139/141 [00:38<00:00,  4.14it/s] 99%|█████████▉| 140/141 [00:38<00:00,  3.93it/s]100%|██████████| 141/141 [00:38<00:00,  3.42it/s]100%|██████████| 141/141 [00:38<00:00,  3.63it/s]
+ours1 simulations..................
+cat	  dog	  horse	  pig	  rabbit	  bunny	  mouse	  rat	  fox	  tiger	  lion	  bear	  wolf	  brown bear	  leopard	  elephant	  zebra	  monkey	  giraffe	  deer	  moose	  elk	  buffalo	  cow	  sheep	  cattle	  lamb	  camel	  goat	  chicken	  turkey	  bird	  eagle	  raven	  falcon
+penguin	  bear	  lion	  tiger	  elephant	  horse	  pig	  chicken	  rabbit	  dog	  cat	  bird	  goose	  swan	  turkey	  chick	  duck	  fish	  trout	  whale	  shark	  dolphin	  seal	  giraffe	  monkey	  panda	  leopard	  wolf	  fox	  brown bear	  lynx	  squirrel	  rat	  mouse	  bunny	  bat	  raven
+deer	  snake	  turtle	  monkey	  elephant	  lion	  tiger	  bear	  fox	  wolf	  leopard	  cat	  dog	  horse	  pig	  cattle	  cow	  sheep	  lamb	  camel	  rabbit	  bunny	  mouse	  rat	  squirrel
+{'bleu1': 1.0, 'bleu2': 0.56, 'bleu3': 0.1, 'bleu4': 0.01}
+0.41750000000000004 0.22110000000000002 0.24600000000000002
+hills OneCueStaticLocal
+OneCueStaticLocal
+  0%|          | 0/141 [00:00<?, ?it/s]  0%|          | 0/141 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/snath/process_modelling/models/runner.py", line 201, in <module>
+    run(config)
+  File "/home/snath/process_modelling/models/runner.py", line 110, in run
+    models[model_class].models[model_name].simulate()                          
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/snath/process_modelling/models/Model.py", line 482, in simulate
+    nll = self.get_nll(simulated_sequence[-2:] + [""], self.results["mean_weights"]).squeeze(0)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: Hills.get_nll() takes 2 positional arguments but 3 were given
