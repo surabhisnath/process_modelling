@@ -21,6 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 random.seed(42)
+import pickle as pk
 
 def run(config):
     models = {}
@@ -91,17 +92,27 @@ def run(config):
                     continue
                 print(model_class, model_name)
                 labels.append(model_name)
-                if config["fitting"] == "individual":
-                    mean_modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
-                    se_modelnlls.append(models[model_class].models[model_name].results["se_minNLL"])
-                elif config["fitting"] == "group":
-                    mean_modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
-                    se_modelnlls.append(models[model_class].models[model_name].results["se_testNLL"])
+                try:
+                    if config["fitting"] == "individual":
+                        mean_modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
+                        se_modelnlls.append(models[model_class].models[model_name].results["se_minNLL"])
+                    elif config["fitting"] == "group":
+                        mean_modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
+                        se_modelnlls.append(models[model_class].models[model_name].results["se_testNLL"])
+                except:
+                    results = pk.load(open(f"../fits/{model_name.lower()}_results.pk", "rb"))
+                    if config["fitting"] == "individual":
+                        mean_modelnlls.append(results["mean_minNLL"])
+                        se_modelnlls.append(results["se_minNLL"])
+                    elif config["fitting"] == "group":
+                        mean_modelnlls.append(results["mean_testNLL"])
+                        se_modelnlls.append(results["se_testNLL"])
 
         plt.figure(figsize=(8, 5))
         x = np.arange(len(mean_modelnlls))
         plt.bar(x, mean_modelnlls, yerr=se_modelnlls, capsize=5, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=90)
+        plt.ylim(min(mean_modelnlls) - 100, max(mean_modelnlls) + 100)
         plt.ylabel('Mean NLL')
         plt.title(f'Model NLL comparison ({config["fitting"]})')
         plt.grid(axis='y', linestyle=':', alpha=0.5)

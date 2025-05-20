@@ -1,0 +1,219 @@
+nohup: ignoring input
+cuda
+CUDA available: True
+GPU count: 1
+{'dataset': 'hills', 'representation': 'clip', 'fit': False, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 5000, 'plot': True, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'mask': True, 'hills': True, 'useallresp': False, 'useapifreq': True, 'heineman': True, 'ours1': True, 'print': True, 'simulate': True, 'recovery': False, 'preventrepetition': True, 'sensitivity': 5, 'test': True}
+PearsonRResult(statistic=0.8119866335089143, pvalue=4.416893758556285e-84)
+SignificanceResult(statistic=0.833226288919769, pvalue=2.4293387168113275e-92)
+TRUE BLEUS MEAN: {'bleu1': 0.9066666666666666, 'bleu2': 0.242, 'bleu3': 0.030000000000000002, 'bleu4': 0.0006666666666666666}
+--------------------------------PLOTTING MODELS--------------------------------
+ours1 Random
+ours1 Freq
+ours1 HS
+ours1 HS2step
+ours1 Pers
+ours1 Freq_HS
+ours1 HS_HS2step
+ours1 HS_Pers
+ours1 Freq_Pers
+ours1 Freq_HS_HS2step
+ours1 Freq_HS_Pers
+ours1 WeightedHS
+ours1 FreqWeightedHS
+ours1 FreqWeightedHSWeightedPers
+hills OneCueStaticLocal
+hills OneCueStaticLocal_2step
+hills OneCueStaticLocal_12step
+hills CombinedCueStatic
+hills CombinedCueStatic_12step
+hills CombinedCueDynamicCat
+hills CombinedCueDynamicSimdrop
+heineman Freq_Sim_Subcategory
+heineman Subcategory
+heineman Freq_Subcategory
+heineman Sim_Subcategory
+--------------------------------SIMULATING MODELS--------------------------------
+ours1 Random
+nofit
+Random
+SIM BLEUS MEAN: {'bleu1': 0.62, 'bleu2': 0.007333333333333333, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  whale	  turtle	  leopard	  swan	  sparrow	  puppy	  bengal tiger	  alligator	  wolf	  praying mantis	  ostrich	  mountain goat	  chameleon	  amphibian	  labrador retriever	  poodle	  ocelot	  rhino	  sugar glider	  tree frog	  coyote	  gazelle	  falcon	  butterfly	  reptile	  water snake	  horse	  rat	  anteater	  human	  chinchilla	  stork	  bulldog	  malamute	  mountain bear
+penguin	  bear	  jack rabbit	  hamster	  bunny	  okapi	  puppy	  stick insect	  chihuahua	  hedgehog	  flamingo	  stork	  cow	  whale	  leopard	  fish	  fly	  macaw	  llama	  clownfish	  fisher	  rhino	  gorilla	  labrador retriever	  zebra	  poodle	  platypus	  shark	  eagle	  antelope	  bloodhound	  sloth	  boar	  goose	  spider monkey	  ladybug	  piglet	  bass	  oriole	  bison
+deer	  snake	  fly	  bluebird	  pike	  white tailed deer	  chicken	  manatee	  tadpole	  wildebeest	  seal	  anteater	  malamute	  cheetah	  newt	  woodpecker	  robin	  mouse	  rhinoceros	  bullfrog	  snow leopard	  gopher	  raptor	  crocodile	  kodiak bear	  cub	  hawk	  wasp	  tarantula	  colt	  moth	  snow fox	  insect	  duckbill	  elephant	  ferret	  coral	  chimpanzee
+ours1 Freq
+nofit
+Freq
+SIM BLEUS MEAN: {'bleu1': 0.8473333333333334, 'bleu2': 0.05, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  human	  fish	  salmon	  fox	  bear	  bird	  crane	  horse	  rabbit	  duck	  ant	  deer	  cattle	  seal	  wolf	  fly	  turkey	  bee	  sheep	  clam	  rat	  fisher	  bull	  tick	  buffalo	  pheasant	  cow	  ox	  insect	  bat	  pig	  eagle	  devil	  robin	  snake
+penguin	  bear	  human	  sheep	  horse	  fish	  dog	  bird	  pig	  whale	  rat	  cardinal	  doe	  bull	  wolf	  ant	  fly	  fisher	  snake	  fox	  seal	  lamb	  insect	  buffalo	  pigeon	  lion	  cattle	  mouse	  deer	  mole	  cat	  bass	  beaver	  salmon	  rabbit	  cow	  eagle	  tuna	  bee	  turkey
+deer	  snake	  human	  fish	  horse	  caterpillar	  cattle	  bass	  bear	  dog	  hen	  seal	  buffalo	  lamb	  penguin	  cow	  hare	  fisher	  bird	  sheep	  tiger	  fly	  bull	  eagle	  beaver	  monkey	  calf	  whale	  pig	  wolf	  rat	  lion	  chicken	  moth	  fox	  turkey	  mouse	  buck
+ours1 HS
+nofit
+HS
+SIM BLEUS MEAN: {'bleu1': 0.6253333333333334, 'bleu2': 0.08600000000000001, 'bleu3': 0.004, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  chihuahua	  puppy	  terrier	  pembroke welsh corgi	  great dane	  pony	  stallion	  liger	  human	  potbellied pig	  kitten	  hamster	  gerbil	  chinchilla	  guinea pig	  sugar glider	  raptor	  bengal tiger	  kodiak bear	  tapir	  hippopotamus	  rhinoceros	  rhino	  wombat	  dingo	  leopard	  ocelot	  panther	  jaguar	  puma	  cougar	  mountain lion	  bobcat	  lynx	  wild cat
+penguin	  bear	  brown bear	  wolverine	  badger	  panther	  ocelot	  leopard	  cougar	  mountain lion	  puma	  dingo	  lioness	  polar bear	  kodiak bear	  tapir	  mountain bear	  woodchuck	  boar	  deer	  elk	  moose	  stag	  bison	  buffalo	  yak	  cattle	  cow	  pig	  hog	  cavy	  rat	  mouse	  gerbil	  chihuahua	  puppy	  pembroke welsh corgi	  terrier	  dog	  cat
+deer	  snake	  tick	  doe	  buck	  ox	  bull	  cow	  cattle	  ewe	  lamb	  sheep	  goat	  stag	  bison	  buffalo	  yak	  antelope	  kangaroo	  ostrich	  emu	  parakeet	  cockatiel	  cockatoo	  peacock	  canary	  rooster	  chicken	  hen	  chick	  quail	  pheasant	  goose	  swan	  heron	  flamingo	  crane	  egret
+ours1 HS2step
+nofit
+HS2step
+SIM BLEUS MEAN: {'bleu1': 0.6333333333333333, 'bleu2': 0.01, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  puppy	  hamster	  chihuahua	  gerbil	  shih tzu	  kitten	  great dane	  anteater	  dalmation	  aardvark	  lamb	  wild cat	  buffalo	  bobcat	  bull	  leopard	  cow	  ocelot	  cattle	  lynx	  ewe	  cheetah	  calf	  jaguar	  liger	  dingo	  poodle	  tiger	  terrier	  kodiak bear	  pembroke welsh corgi	  malamute	  parakeet	  akita	  lemur
+penguin	  bear	  dolphin	  snow fox	  orca	  dingo	  killer whale	  pembroke welsh corgi	  whale	  terrier	  humpback whale	  chihuahua	  blue whale	  hare	  narwhal	  dalmation	  manatee	  akita	  tuna	  malamute	  hammerhead shark	  brown bear	  swordfish	  kodiak bear	  shark	  badger	  mantaray	  gopher	  starfish	  mole	  oyster	  snow monkey	  scallop	  snow lion	  coral	  porpoise	  clownfish	  mako shark	  angelfish	  cobra
+deer	  snake	  mule deer	  baboon	  elk	  rat	  reindeer	  hamster	  kangaroo	  gerbil	  labrador retriever	  shih tzu	  pembroke welsh corgi	  potbellied pig	  mountain bear	  dog	  kodiak bear	  liger	  black bear	  great dane	  wombat	  dalmation	  jack rabbit	  python	  hare	  boa constrictor	  llama	  rattlesnake	  poodle	  water snake	  puggle	  cobra	  bulldog	  reptile	  moose	  lizard	  dingo	  lizards
+ours1 Pers
+nofit
+Pers
+SIM BLEUS MEAN: {'bleu1': 0.6126666666666666, 'bleu2': 0.068, 'bleu3': 0.002, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  terrier	  puppy	  labrador retriever	  shih tzu	  great dane	  poodle	  liger	  puggle	  dalmation	  pony	  cattle	  cow	  ewe	  lamb	  alpaca	  pig	  llama	  kangaroo	  stag	  bison	  elk	  moose	  deer	  mule deer	  goat	  buffalo	  sheep	  yak	  camel	  capybara	  boar	  ox	  bull	  buck	  snow lion
+penguin	  bear	  seal	  brown bear	  walrus	  sea lion	  whale	  orca	  humpback whale	  killer whale	  blue whale	  dolphin	  porpoise	  narwhal	  beluga	  siamese cat	  dalmation	  pembroke welsh corgi	  terrier	  dog	  chihuahua	  akita	  puppy	  malamute	  labrador retriever	  siberian husky	  gorilla	  ape	  chimpanzee	  bonobo	  monkey	  lemur	  marmoset	  guinea pig	  sugar glider	  hamster	  cat	  kitten	  ferret	  dingo
+deer	  snake	  reindeer	  bear	  panther	  jaguar	  ocelot	  leopard	  lynx	  brown bear	  wolverine	  mountain bear	  snow fox	  snow lion	  snow monkey	  pembroke welsh corgi	  terrier	  kitten	  puppy	  colt	  dalmation	  liger	  pony	  bronco	  stallion	  ferret	  dog	  chihuahua	  cat	  chinchilla	  guinea pig	  hamster	  siamese cat	  gerbil	  cub	  mouse	  rat	  chipmunk
+ours1 Freq_HS
+nofit
+Freq_HS
+SIM BLEUS MEAN: {'bleu1': 0.834, 'bleu2': 0.19133333333333333, 'bleu3': 0.012, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  human	  cattle	  cow	  sheep	  lamb	  calf	  horse	  mule	  stallion	  colt	  puppy	  terrier	  kitten	  chihuahua	  mouse	  rat	  ox	  bull	  buffalo	  bison	  elk	  deer	  moose	  bear	  tiger	  lion	  ram	  mole	  gopher	  fisher	  wolverine	  badger	  fox	  wolf	  eagle
+penguin	  bear	  tiger	  jaguar	  lion	  human	  dog	  cat	  mouse	  rat	  hog	  pig	  cow	  cattle	  horse	  calf	  lamb	  bull	  ox	  buck	  bunny	  rabbit	  goat	  sheep	  buffalo	  deer	  elk	  moose	  wolf	  eagle	  hawk	  crow	  bird	  turkey	  duck	  crane	  swan	  goose	  cardinal	  robin
+deer	  snake	  tick	  doe	  bull	  buffalo	  cattle	  horse	  cow	  sheep	  goat	  pig	  hog	  rat	  mouse	  rabbit	  bunny	  lamb	  calf	  human	  dog	  cat	  kitten	  puppy	  colt	  lion	  stallion	  pony	  hare	  ram	  ox	  buck	  cub	  bear	  tiger	  jaguar	  panther	  leopard
+ours1 HS_HS2step
+nofit
+HS_HS2step
+SIM BLEUS MEAN: {'bleu1': 0.616, 'bleu2': 0.07933333333333333, 'bleu3': 0.0033333333333333335, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  great dane	  akita	  malamute	  siberian husky	  kitten	  hamster	  gerbil	  mouse	  chihuahua	  puppy	  terrier	  pembroke welsh corgi	  dalmation	  puggle	  bulldog	  pony	  stallion	  colt	  liger	  bronco	  calf	  piglet	  lamb	  ewe	  cattle	  cow	  pig	  hog	  tapir	  mountain bear	  kodiak bear	  polar bear	  lion	  lioness	  dingo
+penguin	  bear	  tiger	  wild cat	  panther	  ocelot	  leopard	  puma	  cougar	  mountain lion	  jaguar	  dingo	  dog	  puppy	  chihuahua	  terrier	  pembroke welsh corgi	  bloodhound	  kitten	  guinea pig	  potbellied pig	  human	  great dane	  liger	  dalmation	  poodle	  bulldog	  pony	  colt	  stallion	  horse	  cattle	  cow	  ewe	  lamb	  pig	  tapir	  ox	  buck	  bull
+deer	  snake	  tick	  doe	  buck	  ox	  bull	  cock	  canary	  parakeet	  cockatiel	  cockatoo	  parrot	  macaw	  toucan	  oriole	  nightingale	  cardinal	  bluebird	  hawk	  eagle	  falcon	  crow	  woodpecker	  hummingbird	  chickadee	  black bird	  blue footed booby	  egret	  robin	  dove	  flamingo	  crane	  goose	  swan	  pheasant	  rooster	  peacock
+ours1 HS_Pers
+nofit
+HS_Pers
+SIM BLEUS MEAN: {'bleu1': 0.626, 'bleu2': 0.08466666666666667, 'bleu3': 0.0033333333333333335, 'bleu4': 0.0006666666666666666}
+ours1 simulations..................
+cat	  dog	  chihuahua	  pembroke welsh corgi	  terrier	  puppy	  kitten	  ferret	  dingo	  wolverine	  panther	  ocelot	  leopard	  wild cat	  puma	  cougar	  mountain lion	  bobcat	  lynx	  fox	  coyote	  mink	  badger	  armadillo	  warthog	  hippopotamus	  rhinoceros	  rhino	  wombat	  pig	  hog	  cavy	  rat	  mouse	  bunny	  rabbit	  llama
+penguin	  bear	  brown bear	  wolverine	  ocelot	  leopard	  panther	  jaguar	  cougar	  puma	  mountain lion	  bobcat	  lynx	  wild cat	  fox	  mink	  coyote	  chipmunk	  raccoon	  squirrel	  beaver	  caribou	  elk	  moose	  stag	  bison	  buffalo	  cattle	  horse	  stallion	  colt	  pony	  dalmation	  puggle	  great dane	  liger	  bulldog	  poodle	  labrador retriever	  akita
+deer	  snake	  tick	  doe	  buck	  ox	  bull	  cow	  lamb	  sheep	  yak	  goat	  mule deer	  mountain lion	  cougar	  puma	  leopard	  panther	  ocelot	  wild cat	  lynx	  bobcat	  snow fox	  dalmation	  great dane	  liger	  stallion	  pony	  colt	  dog	  chihuahua	  ferret	  terrier	  akita	  malamute	  siberian husky	  labrador retriever	  puppy
+ours1 Freq_Pers
+nofit
+Freq_Pers
+SIM BLEUS MEAN: {'bleu1': 0.84, 'bleu2': 0.16133333333333333, 'bleu3': 0.007333333333333333, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  human	  pig	  horse	  cattle	  cow	  sheep	  lamb	  goat	  deer	  buffalo	  elk	  wolf	  bear	  fox	  coyote	  mink	  grizzly	  seal	  bull	  lion	  elephant	  donkey	  rhinoceros	  rhino	  chicken	  turkey	  hen	  goose	  chick	  crane	  cardinal	  robin	  nightingale	  crow	  fly
+penguin	  bear	  seal	  wolf	  deer	  cattle	  stag	  buffalo	  sheep	  cow	  pig	  horse	  calf	  lamb	  human	  bull	  dog	  cat	  rat	  mouse	  rabbit	  bunny	  ram	  ox	  buck	  goat	  boar	  hog	  mole	  badger	  fisher	  wolverine	  fox	  panther	  bobcat	  leopard	  lynx	  jaguar	  tiger	  lion
+deer	  snake	  reindeer	  beaver	  elk	  buffalo	  horse	  cattle	  cow	  lamb	  sheep	  ewe	  pig	  human	  dog	  cat	  devil	  bear	  fisher	  wolverine	  badger	  fox	  coyote	  mink	  panther	  leopard	  jaguar	  cougar	  tiger	  puma	  lion	  wolf	  moose	  grizzly	  caribou	  boar	  goat	  stag
+ours1 Freq_HS_HS2step
+nofit
+Freq_HS_HS2step
+SIM BLEUS MEAN: {'bleu1': 0.8393333333333334, 'bleu2': 0.19666666666666668, 'bleu3': 0.011333333333333334, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  human	  pig	  hog	  sheep	  cattle	  cow	  horse	  lamb	  ewe	  calf	  buffalo	  bull	  ox	  buck	  rabbit	  bunny	  mouse	  rat	  bear	  tiger	  wolf	  seal	  elk	  moose	  stag	  deer	  goat	  mule	  elephant	  rhinoceros	  rhino	  lion	  stallion	  colt	  pony
+penguin	  bear	  wolf	  elk	  moose	  deer	  cattle	  sheep	  cow	  horse	  dog	  human	  turkey	  lamb	  calf	  ewe	  buffalo	  bull	  buck	  ox	  pig	  hog	  devil	  fly	  bee	  fish	  trout	  salmon	  bass	  shark	  seal	  whale	  humpback whale	  dolphin	  porpoise	  bat	  owl	  hawk	  eagle	  crow
+deer	  snake	  tick	  bull	  horse	  cow	  cattle	  pig	  sheep	  lamb	  human	  turkey	  hog	  bear	  tiger	  dog	  cat	  chihuahua	  puppy	  lion	  stallion	  colt	  pony	  calf	  ewe	  buffalo	  bison	  stag	  goat	  camel	  mule	  ox	  buck	  boar	  wolf	  elk	  moose	  jaguar
+ours1 Freq_HS_Pers
+nofit
+Freq_HS_Pers
+SIM BLEUS MEAN: {'bleu1': 0.8406666666666667, 'bleu2': 0.19066666666666665, 'bleu3': 0.010666666666666666, 'bleu4': 0.0006666666666666666}
+ours1 simulations..................
+cat	  dog	  human	  turkey	  cattle	  horse	  calf	  lamb	  cow	  sheep	  goat	  deer	  elk	  moose	  wolf	  bear	  tiger	  grizzly	  fox	  coyote	  otter	  seal	  whale	  dolphin	  orca	  killer whale	  sea lion	  buffalo	  bull	  buck	  ox	  ram	  hare	  rabbit	  bunny	  mouse	  rat
+penguin	  bear	  wolf	  fox	  coyote	  deer	  elk	  moose	  buffalo	  cattle	  cow	  sheep	  lamb	  horse	  calf	  human	  dog	  cat	  mouse	  rat	  hog	  pig	  goat	  mule	  donkey	  lion	  elephant	  rhinoceros	  rhino	  tiger	  jaguar	  panther	  leopard	  puma	  cougar	  mountain lion	  fisher	  mole	  devil	  ram
+deer	  snake	  tick	  doe	  buck	  ox	  bull	  cow	  cattle	  buffalo	  sheep	  horse	  lamb	  calf	  human	  dog	  puppy	  cat	  kitten	  mouse	  rat	  hog	  pig	  rabbit	  bunny	  hamster	  guinea pig	  bear	  wolf	  elk	  moose	  stag	  goat	  boar	  fox	  leopard	  panther	  tiger
+ours1 WeightedHS
+nofit
+WeightedHS
+SIM BLEUS MEAN: {'bleu1': 0.752, 'bleu2': 0.136, 'bleu3': 0.008, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  hamster	  chinchilla	  guinea pig	  sugar glider	  marmoset	  rooster	  goose	  crane	  duckbill	  emu	  turkey	  parrot	  cockatiel	  cockatoo	  parakeet	  canary	  chick	  hen	  chicken	  quail	  bird	  hawk	  eagle	  falcon	  egret	  blue footed booby	  toucan	  flamingo	  elephant	  zebra	  giraffe	  okapi	  deer	  elk	  moose
+penguin	  bear	  brown bear	  grizzly	  mountain bear	  woodchuck	  groundhog	  wombat	  panda	  koala	  rhinoceros	  giraffe	  elephant	  buffalo	  cow	  yak	  camel	  donkey	  cattle	  sheep	  goat	  pig	  ox	  hog	  tapir	  raccoon	  chipmunk	  squirrel	  coyote	  fox	  ocelot	  panther	  leopard	  jaguar	  tiger	  lion	  dingo	  lemur	  bison	  kangaroo
+deer	  snake	  lizards	  lizard	  gecko	  reptile	  anaconda	  cobra	  boa constrictor	  boa	  garden snake	  caterpillar	  snail	  spider	  tarantula	  scorpion	  viper	  warthog	  tiger	  lion	  dingo	  ocelot	  leopard	  jaguar	  puma	  panther	  wild cat	  elephant	  buffalo	  bison	  bear	  brown bear	  wolf	  elk	  moose	  stag	  kangaroo	  ostrich
+ours1 FreqWeightedHS
+nofit
+FreqWeightedHS
+SIM BLEUS MEAN: {'bleu1': 0.8813333333333334, 'bleu2': 0.27799999999999997, 'bleu3': 0.04533333333333334, 'bleu4': 0.004666666666666667}
+ours1 simulations..................
+cat	  dog	  guinea pig	  human	  hare	  horse	  cattle	  cow	  lamb	  pig	  chicken	  turkey	  goose	  crane	  hawk	  eagle	  bird	  duck	  robin	  crow	  gull	  gulls	  sparrow	  cardinal	  bluebird	  nightingale	  oriole	  fly	  bee	  fish	  trout	  salmon	  bass	  tuna	  swordfish	  whale	  porpoise
+penguin	  bear	  wolf	  fox	  deer	  elk	  moose	  buffalo	  elephant	  lion	  tiger	  cat	  dog	  mouse	  rat	  human	  hare	  horse	  cattle	  cow	  sheep	  lamb	  pig	  rabbit	  bunny	  buck	  bull	  ox	  hog	  calf	  ewe	  goat	  camel	  donkey	  alpaca	  chicken	  hen	  chick	  turkey	  goose
+deer	  snake	  bull	  buck	  ox	  hog	  pig	  cattle	  cow	  horse	  lamb	  calf	  human	  hare	  dog	  cat	  lion	  tiger	  bear	  wolf	  fox	  coyote	  squirrel	  rat	  mouse	  rabbit	  bunny	  sheep	  goat	  camel	  donkey	  elephant	  buffalo	  bison	  moose	  elk	  caribou	  beaver
+ours1 FreqWeightedHSWeightedPers
+nofit
+FreqWeightedHSWeightedPers
+SIM BLEUS MEAN: {'bleu1': 0.8786666666666666, 'bleu2': 0.2793333333333334, 'bleu3': 0.04533333333333334, 'bleu4': 0.005333333333333333}
+ours1 simulations..................
+cat	  dog	  mouse	  rat	  human	  devil	  fly	  bee	  fish	  trout	  salmon	  bass	  tuna	  shark	  seal	  bear	  wolf	  fox	  elk	  deer	  moose	  elephant	  buffalo	  cow	  cattle	  horse	  lamb	  sheep	  goat	  pig	  hog	  ox	  bull	  buck	  doe	  tick	  snake
+penguin	  bear	  wolf	  deer	  moose	  elk	  squirrel	  fox	  coyote	  cow	  cattle	  horse	  lamb	  pig	  goat	  sheep	  ewe	  calf	  human	  hare	  lion	  tiger	  elephant	  buffalo	  bison	  giraffe	  rhinoceros	  zebra	  monkey	  ape	  gorilla	  chimpanzee	  butterfly	  fly	  bee	  fish	  trout	  salmon	  bass	  tuna
+deer	  snake	  ox	  bull	  hog	  pig	  cattle	  horse	  cow	  sheep	  goat	  lamb	  camel	  donkey	  buffalo	  elephant	  lion	  tiger	  bear	  wolf	  fox	  squirrel	  rat	  mouse	  dog	  cat	  guinea pig	  kitten	  colt	  monkey	  human	  hare	  ram	  devil	  fly	  bee	  robin	  crow
+hills OneCueStaticLocal
+nofit
+OneCueStaticLocal
+SIM BLEUS MEAN: {'bleu1': 0.804, 'bleu2': 0.14866666666666667, 'bleu3': 0.007333333333333333, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  cock	  bee	  bug	  insect	  beetle	  crab	  lobster	  crawfish	  shrimp	  fish	  bass	  hog	  boar	  pig	  rat	  elephant	  panda	  penguin	  owl	  bird	  duck	  chicken	  crow	  black bird	  pigeon	  seagull	  gulls	  gull	  swan	  goose	  eagle	  hawk	  falcon	  wolf	  lion
+penguin	  bear	  black bear	  brown bear	  grizzly	  mountain bear	  mountain goat	  billy goat	  bull	  donkey	  monkey	  chimpanzee	  snake	  rattlesnake	  lizard	  lizards	  reptile	  turtle	  tortoise	  dinosaur	  crocodile	  alligator	  caiman	  iguana	  komodo dragon	  salamander	  amphibian	  frog	  toad	  squirrel	  chipmunk	  hamster	  gerbil	  rat	  dog	  cat	  kitten	  tiger	  bengal tiger	  zebra
+deer	  snake	  lizard	  lizards	  reptile	  chameleon	  butterfly	  insect	  mosquito	  spider	  beetle	  bug	  ewe	  dog	  cat	  kitten	  koala	  kangaroo	  reindeer	  elk	  elephant	  dinosaur	  iguana	  crocodile	  alligator	  caiman	  gecko	  frog	  tree frog	  toad	  turtle	  tortoise	  hedgehog	  boar	  pig	  cow	  devil	  rat
+hills OneCueStaticLocal_2step
+nofit
+OneCueStaticLocal_2step
+SIM BLEUS MEAN: {'bleu1': 0.8093333333333333, 'bleu2': 0.032, 'bleu3': 0.0, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  cow	  devil	  bee	  human	  bug	  rat	  insect	  coyote	  moth	  fox	  butterfly	  wolf	  puppy	  bear	  raccoon	  lion	  badger	  lioness	  beaver	  wild cat	  hog	  mountain lion	  pig	  sea lion	  boar	  otter	  hedgehog	  sloth	  owl	  spider	  penguin	  monkey	  gorilla	  spider monkey	  koala
+penguin	  bear	  owl	  mountain bear	  koala	  black bear	  kangaroo	  brown bear	  camel	  moose	  elephant	  beaver	  cow	  clam	  bull	  oyster	  hog	  lobster	  pig	  crab	  boar	  insect	  hedgehog	  mosquito	  tortoise	  swan	  turtle	  goose	  frog	  duck	  toad	  bird	  gecko	  hawk	  lizard	  eagle	  lizards	  crow	  reptile	  raven
+deer	  snake	  white tailed deer	  worm	  black tailed deer	  frog	  mule deer	  tree frog	  elk	  monkey	  reindeer	  spider monkey	  kangaroo	  spider	  koala	  insect	  gorilla	  bug	  elephant	  bee	  cow	  owl	  ox	  fox	  ewe	  cat	  doe	  kitten	  duck	  devil	  bird	  octopus	  chicken	  tarantula	  chick	  dog	  cock	  puppy
+hills OneCueStaticLocal_12step
+nofit
+OneCueStaticLocal_12step
+SIM BLEUS MEAN: {'bleu1': 0.822, 'bleu2': 0.156, 'bleu3': 0.008, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  bee	  bug	  insect	  beetle	  spider	  crab	  lobster	  crawfish	  shrimp	  chicken	  bird	  duck	  swan	  goose	  moose	  buck	  bull	  bulldog	  bullfrog	  frog	  lizard	  lizards	  reptile	  snake	  worm	  leech	  slug	  snail	  turtle	  toad	  fish	  goldfish	  shark	  dolphin	  whale
+penguin	  bear	  black bear	  brown bear	  mountain bear	  mountain lion	  lion	  lioness	  wild cat	  wolf	  bull	  horse	  donkey	  monkey	  chimpanzee	  baboon	  sheep	  deer	  stag	  buck	  goose	  swan	  duck	  chicken	  bird	  black bird	  crow	  raven	  hawk	  eagle	  falcon	  pigeon	  seagull	  gulls	  gull	  squirrel	  mouse	  hamster	  gerbil	  rat
+deer	  snake	  lizard	  lizards	  reptile	  chameleon	  turtle	  frog	  toad	  bullfrog	  bull	  bulldog	  puppy	  dog	  cat	  kitten	  tiger	  bengal tiger	  zebra	  panda	  cow	  pig	  boar	  hog	  hedgehog	  human	  bug	  insect	  moth	  butterfly	  bird	  chicken	  fish	  duck	  mouse	  hamster	  rabbit	  bunny
+hills CombinedCueStatic
+nofit
+CombinedCueStatic
+SIM BLEUS MEAN: {'bleu1': 0.8713333333333334, 'bleu2': 0.17933333333333332, 'bleu3': 0.011333333333333334, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  bee	  human	  lion	  bear	  wolf	  horse	  donkey	  deer	  sheep	  lamb	  cow	  ox	  bull	  buck	  fish	  shark	  whale	  humpback whale	  elephant	  buffalo	  fly	  bird	  chicken	  chick	  duck	  goose	  swan	  eagle	  crow	  raven	  hawk	  pigeon	  squirrel	  rabbit	  bunny
+penguin	  bear	  beaver	  otter	  deer	  bull	  horse	  fish	  goldfish	  whale	  shark	  puppy	  dog	  cat	  kitten	  rat	  devil	  human	  chicken	  bird	  eagle	  hawk	  crow	  raven	  swan	  duck	  goose	  pigeon	  dove	  sparrow	  falcon	  wolf	  sheep	  donkey	  monkey	  frog	  toad	  turtle	  tortoise	  tiger
+deer	  snake	  worm	  insect	  bee	  fly	  human	  devil	  rat	  dog	  cat	  kitten	  tiger	  bengal tiger	  zebra	  cow	  pig	  boar	  hog	  bull	  bear	  black bear	  lion	  lioness	  wolf	  shark	  fish	  chicken	  bird	  crow	  eagle	  hawk	  swan	  duck	  goose	  moose	  buck	  horse
+hills CombinedCueStatic_12step
+nofit
+CombinedCueStatic_12step
+SIM BLEUS MEAN: {'bleu1': 0.874, 'bleu2': 0.186, 'bleu3': 0.008666666666666666, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  puppy	  bear	  bull	  deer	  wolf	  chicken	  bird	  hawk	  eagle	  crow	  raven	  black bird	  pigeon	  duck	  fish	  shark	  whale	  horse	  cow	  cattle	  sheep	  lamb	  pig	  rat	  mouse	  hamster	  squirrel	  raccoon	  rabbit	  bunny	  hare	  jack rabbit	  donkey	  monkey	  chimpanzee
+penguin	  bear	  wolf	  lion	  lioness	  sheep	  insect	  butterfly	  moth	  bird	  chicken	  duck	  frog	  lizard	  lizards	  reptile	  snake	  worm	  fish	  crab	  lobster	  crawfish	  shrimp	  oyster	  clam	  snail	  slug	  turtle	  tortoise	  elephant	  camel	  horse	  bull	  donkey	  monkey	  squirrel	  chipmunk	  hamster	  mouse	  rat
+deer	  snake	  lizard	  lizards	  reptile	  turtle	  frog	  toad	  fish	  chicken	  bird	  crow	  hawk	  eagle	  lion	  bear	  bull	  wolf	  sheep	  rabbit	  bunny	  hare	  jack rabbit	  donkey	  monkey	  chimpanzee	  baboon	  bass	  buck	  human	  devil	  dog	  cat	  kitten	  cow	  pig	  boar	  hog
+heineman Freq_Sim_Subcategory
+nofit
+Freq_Sim_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.8373333333333334, 'bleu2': 0.22733333333333333, 'bleu3': 0.018000000000000002, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  puppy	  bird	  fish	  bass	  shark	  turtle	  whale	  dolphin	  clam	  oyster	  crab	  lobster	  shrimp	  salmon	  trout	  catfish	  goldfish	  frog	  toad	  snake	  sheep	  horse	  bull	  cattle	  cow	  pig	  hog	  donkey	  goat	  chicken	  duck	  goose	  swan	  eagle	  hawk
+penguin	  bear	  black bear	  wolf	  bull	  cattle	  sheep	  horse	  chicken	  duck	  goose	  bird	  fish	  whale	  shark	  dolphin	  salmon	  trout	  bass	  goldfish	  lizard	  snake	  frog	  toad	  mouse	  rat	  cat	  dog	  tiger	  lion	  lioness	  camel	  elephant	  buffalo	  bison	  elk	  deer	  doe	  fox	  coyote
+deer	  snake	  duck	  sheep	  cattle	  bull	  horse	  donkey	  goose	  chicken	  cock	  cow	  ewe	  pig	  lamb	  llama	  alpaca	  dog	  cat	  kitten	  rat	  mouse	  hamster	  fish	  bass	  whale	  shark	  dolphin	  salmon	  trout	  shrimp	  crab	  lobster	  crawfish	  oyster	  clam	  scallop	  sponge
+heineman Subcategory
+nofit
+Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.6453333333333333, 'bleu2': 0.026000000000000002, 'bleu3': 0.0, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  snow leopard	  grizzly	  loon	  bird	  grey hound	  lion	  bengal tiger	  elephant	  gecko	  mongoose	  gazelle	  zebra	  rhino	  rhinoceros	  buffalo	  wildebeest	  giraffe	  ostrich	  boar	  hyena	  pony	  llama	  calf	  ewe	  pig	  turkey	  sheep	  hog	  pheasant	  ox	  goose	  horse	  mule	  snake	  rooster
+penguin	  bear	  squirrel	  bison	  coyote	  grizzly	  stallion	  kitten	  rooster	  duck	  billy goat	  pony	  labrador retriever	  grey hound	  gerbil	  frog	  turtle	  jellyfish	  blue whale	  pike	  minnow	  crawfish	  leech	  mantaray	  shrimp	  sponge	  blowfish	  sea monkey	  betta	  eel	  catfish	  urchin	  sea lion	  koi	  guppy	  whale	  scallop	  swordfish	  blue gill	  shark
+deer	  snake	  cattle	  duck	  cow	  donkey	  pig	  rooster	  goat	  billy goat	  turkey	  ewe	  pony	  colt	  mule	  chicken	  hog	  cock	  bronco	  potbellied pig	  horse	  ox	  sheep	  bull	  llama	  stallion	  piglet	  ferret	  stag	  goose	  kitten	  hedgehog	  cockatoo	  kiwi	  seagull	  woodpecker	  sparrow	  crane
+heineman Freq_Subcategory
+nofit
+Freq_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.7586666666666667, 'bleu2': 0.09200000000000001, 'bleu3': 0.0026666666666666666, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  fish	  salmon	  coral	  eel	  oyster	  leech	  tuna	  trout	  bass	  shark	  whale	  turtle	  sponge	  crab	  urchin	  clam	  flounder	  shrimp	  lobster	  pike	  squid	  tilapia	  dolphin	  octopus	  catfish	  koi	  manatee	  swordfish	  starfish	  scallop	  minnow	  orca	  goldfish	  bird	  snake
+penguin	  bear	  turkey	  horse	  cattle	  cow	  sheep	  pig	  bull	  chicken	  lamb	  duck	  goat	  snake	  mouse	  fish	  bass	  eel	  salmon	  pike	  lobster	  trout	  oyster	  shrimp	  whale	  shark	  crab	  tuna	  sponge	  turtle	  frog	  bird	  dog	  cat	  rat	  devil	  bison	  buffalo	  fox	  pony
+deer	  snake	  mule	  cattle	  cock	  horse	  chicken	  bull	  pig	  sheep	  cow	  duck	  ox	  calf	  lamb	  hen	  turkey	  stallion	  fish	  coral	  bass	  trout	  turtle	  salmon	  whale	  sponge	  crab	  shrimp	  pike	  eel	  catfish	  oyster	  lobster	  shark	  dolphin	  tuna	  octopus	  clam
+heineman Sim_Subcategory
+nofit
+Sim_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.7806666666666667, 'bleu2': 0.164, 'bleu3': 0.01, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  rat	  gerbil	  hamster	  mouse	  rabbit	  bunny	  hare	  jack rabbit	  bear	  black bear	  brown bear	  mountain bear	  grizzly	  groundhog	  woodchuck	  beaver	  badger	  wolf	  lion	  lioness	  mountain lion	  wild cat	  panther	  cougar	  leopard	  snow leopard	  snow lion	  snow fox	  fox	  coyote	  tiger	  bengal tiger	  zebra	  cheetah	  jaguar
+penguin	  bear	  black bear	  brown bear	  mountain bear	  mountain goat	  mountain lion	  wild cat	  wolf	  lion	  lioness	  panther	  jaguar	  tiger	  bengal tiger	  zebra	  cheetah	  hyena	  boar	  rhino	  rhinoceros	  hippopotamus	  elephant	  camel	  cow	  pig	  hog	  bull	  donkey	  goat	  sheep	  ewe	  lamb	  llama	  alpaca	  cat	  kitten	  dog	  puppy	  bunny
+deer	  snake	  goose	  duck	  bird	  turtle	  whale	  humpback whale	  killer whale	  dolphin	  shark	  fish	  goldfish	  clownfish	  lobster	  crab	  crawfish	  shrimp	  clam	  oyster	  bass	  trout	  salmon	  sponge	  squid	  octopus	  jellyfish	  starfish	  porpoise	  orca	  tuna	  eel	  betta	  koi	  coral	  barracuda	  beluga	  narwhal

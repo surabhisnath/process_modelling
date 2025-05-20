@@ -162,6 +162,7 @@ features = [
     "feature_Is reptile",
     "feature_Is amphibian",
     "feature_Is fish",
+    "feature_Is subspecies of an animal",
 
     "feature_Is rodent",
     "feature_Is primate",
@@ -174,6 +175,9 @@ features = [
     "feature_Is carnivore",
     "feature_Is herbivore",
     "feature_Is omnivore",
+    "feature_Is larger in size compared to other animals",
+    "feature_Is smaller in size compared to other animals",
+    "feature_Is average size compared to other animals",
 
     "feature_Has fur",
     "feature_Has feathers",
@@ -206,7 +210,6 @@ features = [
     "feature_Is venomous",
     "feature_Is domesticated",
     "feature_Builds nests",
-    "feature_Is migratory",
     "feature_Communicates vocally",
 
     "feature_Is endangered",
@@ -224,7 +227,6 @@ features = [
     "feature_Is predator",
     "feature_Is prey for other animals",
     "feature_Is associated with mythology or folklore",
-    "feature_Is endangered",
 
     "feature_Can fly",
     "feature_Can swim",
@@ -266,18 +268,17 @@ for path in ["../csvs/divergent.csv", "../csvs/similar.csv", "../csvs/noconstrai
     if "invalid" in data.columns:
         data = data[~(data["invalid"] == 1)]
     for resp in data["response"].tolist():
-        if resp not in features_dict:
-            texts.add(resp)
+        texts.add(resp)
 
 texts = list(texts)
 
 print(len(texts), texts)
 
-for response in tqdm(texts):
-    print(response)
+for idx, response in enumerate(texts):
+    print(response, idx/len(texts))
     if response not in features_dict:
         features_dict[response] = {}
-    for i, feature in tqdm(enumerate(features)):
+    for i, feature in enumerate(features):
         if feature in features_dict[response]:
             continue
         # print(response, feature.split("_")[1], end = " ")

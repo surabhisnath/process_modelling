@@ -39,8 +39,8 @@ class Ours1(Model):
 
     def get_features(self):
         featuredict = pk.load(open(f"../files/vf_features.pk", "rb"))
-        feature_names = next(iter(featuredict.values())).keys()
-        # feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
+        # feature_names = next(iter(featuredict.values())).keys()
+        feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
         return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
 
     def get_feature_sim_mat(self):

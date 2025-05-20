@@ -421,33 +421,54 @@ LBFGS iterations run: 1
 Mean +- SE trainNLL over 5 fold(s) 20853.228515625 +- 58.59455475749434
 Sum testNLL over 5 fold(s) 26067.16015625
 weights for each 5 fold [tensor([0.8413, 8.3870], device='cuda:0'), tensor([0.8224, 8.6258], device='cuda:0'), tensor([0.8224, 8.6258], device='cuda:0'), tensor([0.8224, 8.6258], device='cuda:0'), tensor([0.8224, 8.6258], device='cuda:0')]
-CombinedCueDynamicCat completed in 482.73 seconds
+CombinedCueDynamicCat completed in 303.03 seconds
 hills CombinedCueDynamicSimdrop
-Traceback (most recent call last):
-  File "/home/snath/process_modelling/models/runner.py", line 214, in <module>
-    run(config)
-  File "/home/snath/process_modelling/models/runner.py", line 78, in run
-    models[model_class].models[model_name].fit()
-  File "/home/snath/process_modelling/models/Model.py", line 432, in fit
-    optimizer.step(closure)
-  File "/home/snath/miniconda3/envs/process_modelling/lib/python3.12/site-packages/torch/optim/optimizer.py", line 493, in wrapper
-    out = func(*args, **kwargs)
-          ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/snath/miniconda3/envs/process_modelling/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/snath/miniconda3/envs/process_modelling/lib/python3.12/site-packages/torch/optim/lbfgs.py", line 330, in step
-    orig_loss = closure()
-                ^^^^^^^^^
-  File "/home/snath/miniconda3/envs/process_modelling/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
-    return func(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/snath/process_modelling/models/Model.py", line 425, in closure
-    loss = torch.stack([model.module.get_nll(seq) for seq in train_sequences]).sum()
-                        ^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/snath/process_modelling/models/Hills_Pytorch.py", line 42, in get_nll
-    if self.dynamic_cat:
-       ^^^^^^^^^^^^^^^^
-  File "/home/snath/miniconda3/envs/process_modelling/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1928, in __getattr__
-    raise AttributeError(
-AttributeError: 'CombinedCueDynamicSimdrop' object has no attribute 'dynamic_cat'
+LBFGS iterations run: 327
+LBFGS iterations run: 98
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 21016.357421875 +- 58.0123795050874
+Sum testNLL over 5 fold(s) 26270.96240234375
+weights for each 5 fold [tensor([0.9237, 2.6907], device='cuda:0'), tensor([0.9081, 2.8607], device='cuda:0'), tensor([0.9080, 2.8634], device='cuda:0'), tensor([0.9080, 2.8634], device='cuda:0'), tensor([0.9080, 2.8634], device='cuda:0')]
+CombinedCueDynamicSimdrop completed in 260.26 seconds
+heineman Freq_Sim_Subcategory
+LBFGS iterations run: 653
+LBFGS iterations run: 725
+LBFGS iterations run: 401
+LBFGS iterations run: 748
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 18333.620092130343 +- 48.256182121796165
+Sum testNLL over 5 fold(s) 22921.38926915062
+weights for each 5 fold [tensor([ 0.5453, 15.7190,  6.7663], device='cuda:0'), tensor([ 0.5245, 15.2631,  6.7732], device='cuda:0'), tensor([ 0.5409, 15.6396,  6.5751], device='cuda:0'), tensor([ 0.5302, 15.2596,  6.7972], device='cuda:0'), tensor([ 0.5302, 15.2596,  6.7972], device='cuda:0')]
+Freq_Sim_Subcategory completed in 857.88 seconds
+heineman Subcategory
+LBFGS iterations run: 851
+LBFGS iterations run: 1
+LBFGS iterations run: 4999
+LBFGS iterations run: 0
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 20695.972927674273 +- 67.30164199431061
+Sum testNLL over 5 fold(s) 25869.99850165531
+weights for each 5 fold [tensor([9.4212], device='cuda:0'), tensor([9.4212], device='cuda:0'), tensor([9.4165], device='cuda:0'), tensor([9.4165], device='cuda:0'), tensor([9.4165], device='cuda:0')]
+Subcategory completed in 2018.28 seconds
+heineman Freq_Subcategory
+LBFGS iterations run: 656
+LBFGS iterations run: 363
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+LBFGS iterations run: 1
+Mean +- SE trainNLL over 5 fold(s) 19492.836397594707 +- 56.36609536525811
+Sum testNLL over 5 fold(s) 24367.426063928753
+weights for each 5 fold [tensor([0.9637, 9.2875], device='cuda:0'), tensor([0.9360, 9.2346], device='cuda:0'), tensor([0.9360, 9.2346], device='cuda:0'), tensor([0.9360, 9.2346], device='cuda:0'), tensor([0.9360, 9.2346], device='cuda:0')]
+Freq_Subcategory completed in 349.86 seconds
+heineman Sim_Subcategory
+LBFGS iterations run: 757
+LBFGS iterations run: 59
+LBFGS iterations run: 385
+LBFGS iterations run: 1
+LBFGS iterations run: 265
+Mean +- SE trainNLL over 5 fold(s) 18639.348878794925 +- 50.60020350592174
+Sum testNLL over 5 fold(s) 23300.357204967117
+weights for each 5 fold [tensor([17.9798,  6.1776], device='cuda:0'), tensor([17.9797,  6.1776], device='cuda:0'), tensor([17.9037,  5.9835], device='cuda:0'), tensor([17.9037,  5.9835], device='cuda:0'), tensor([17.9742,  6.0566], device='cuda:0')]
+Sim_Subcategory completed in 504.59 seconds
