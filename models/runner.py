@@ -19,18 +19,24 @@ print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
 import numpy as np
 import matplotlib.pyplot as plt
+import random
+random.seed(42)
 
 def run(config):
     models = {}
     fit_results = {}
 
     modelobj = Model(config)
-    human_bleu = calculate_bleu([seq[2:] for seq in modelobj.sequences[:modelobj.num_sequences//2]], \
-                                [seq[2:] for seq in modelobj.sequences[modelobj.num_sequences//2:]])
-    print(human_bleu)
-    human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
-    corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
-    print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
+    BLEUs = []
+    for (train_sequences, test_sequences) in modelobj.splits:
+        for i in range(modelobj.numsubsamples):
+            train_sample = random.sample(train_sequences, k=len(test_sequences))
+            BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
+    
+    print("TRUE BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
+    # human_bleu_combined = 0.25 * human_bleu["bleu1"] + 0.25 * human_bleu["bleu2"] + 0.25 * human_bleu["bleu3"] + 0.25 * human_bleu["bleu4"]
+    # corrected_human_bleu_combined = (2 * human_bleu_combined) / (1 + human_bleu_combined)
+    # print("Human BLEU:", human_bleu_combined, corrected_human_bleu_combined)
         
     if config["ours1"]:
         ours1 = Ours1(modelobj)
@@ -106,27 +112,29 @@ def run(config):
         print("--------------------------------SIMULATING MODELS--------------------------------")
         for model_class in models:
             for model_name in models[model_class].models:
+                if models[model_class].models[model_name].dynamic:
+                    continue
                 print(model_class, model_name)
                 models[model_class].models[model_name].simulate()                          
-                if config["test"]:
-                    models[model_class].models[model_name].test()
+                # if config["test"]:
+                #     models[model_class].models[model_name].test()
          
-    if config["recovery"]:
-        print("--------------------------------RECOVERING MODELS--------------------------------")
-        for model_class_sim in models:
-            for model_name_sim in models[model_class_sim].models:
-                simseqs = models[model_class_sim].models[model_name_sim].simulations
-                models[model_class_sim].models[model_name_sim].suffix = "_recovery"
-                models[model_class_sim].models[model_name_sim].splits_recovery = models[model_class_sim].models[model_name_sim].split_sequences(simseqs)
+    # if config["recovery"]:
+    #     print("--------------------------------RECOVERING MODELS--------------------------------")
+    #     for model_class_sim in models:
+    #         for model_name_sim in models[model_class_sim].models:
+    #             simseqs = models[model_class_sim].models[model_name_sim].simulations
+    #             models[model_class_sim].models[model_name_sim].suffix = "_recovery"
+    #             models[model_class_sim].models[model_name_sim].splits_recovery = models[model_class_sim].models[model_name_sim].split_sequences(simseqs)
                 
-                for model_class in models:
-                    for model_name in models[model_class].models:
-                        print(model_class, model_name)
-                        start_time = time.time()
-                        models[model_class].models[model_name].fit(simseqs)
-                        end_time = time.time()
-                        elapsed_time = end_time - start_time
-                        print(f"{model_name} completed in {elapsed_time:.2f} seconds")
+    #             for model_class in models:
+    #                 for model_name in models[model_class].models:
+    #                     print(model_class, model_name)
+    #                     start_time = time.time()
+    #                     models[model_class].models[model_name].fit(simseqs)
+    #                     end_time = time.time()
+    #                     elapsed_time = end_time - start_time
+    #                     print(f"{model_name} completed in {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
 
@@ -146,8 +154,8 @@ if __name__ == "__main__":
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
     parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")
 
-    parser.add_argument("--fitting", type=str, default="individual", help="how to fit betas: individual, group or hierarchical")
-    parser.add_argument("--cv", type=int, default=1, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
+    parser.add_argument("--fitting", type=str, default="group", help="how to fit betas: individual, group or hierarchical")
+    parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
     parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
@@ -166,20 +174,20 @@ if __name__ == "__main__":
     parser.add_argument("--usehillsfreq", action="store_false", dest="useapifreq", help="use hills frequency")
     # parser.add_argument("--usehillsfreq", type=str2bool, default=False, help="use hills frequency (default: False)")
 
-    parser.add_argument("--morales", action="store_true", default=True, help="implement morales model (default: True)")
-    parser.add_argument("--nomorales", action="store_false", dest="morales", help="don't implement morales models")
+    # parser.add_argument("--morales", action="store_true", default=True, help="implement morales model (default: True)")
+    # parser.add_argument("--nomorales", action="store_false", dest="morales", help="don't implement morales models")
 
     parser.add_argument("--heineman", action="store_true", default=True, help="implement heineman models (default: True)")
     parser.add_argument("--noheineman", action="store_false", dest="heineman", help="don't implement heineman models")
 
-    parser.add_argument("--abbott", action="store_true", default=True, help="implement abbott model (default: True)")
-    parser.add_argument("--noabbott", action="store_false", dest="abbott", help="don't implement abbott model")
+    # parser.add_argument("--abbott", action="store_true", default=True, help="implement abbott model (default: True)")
+    # parser.add_argument("--noabbott", action="store_false", dest="abbott", help="don't implement abbott model")
 
     parser.add_argument("--ours1", action="store_true", default=True, help="implement our class 1 models (default: True)")
     parser.add_argument("--noours1", action="store_false", dest="ours1", help="don't implement our class 1 models")
 
-    parser.add_argument("--ours2", action="store_true", default=True, help="implement our class 2 models (default: True)")
-    parser.add_argument("--noours2", action="store_false", dest="ours2", help="don't implement our class 2 models")
+    # parser.add_argument("--ours2", action="store_true", default=True, help="implement our class 2 models (default: True)")
+    # parser.add_argument("--noours2", action="store_false", dest="ours2", help="don't implement our class 2 models")
 
     parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
     parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")

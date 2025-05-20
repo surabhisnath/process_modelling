@@ -71,15 +71,17 @@ class Heineman(Model):
         else:
             return max([self.cat_trans[self.split_ind, c1, c2] for c1 in cats_prev for c2 in cats_curr])
 
-    @property
-    def allweights(self):
+    def allweights(self, weights=None):
         """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
         w = torch.zeros(self.num_total_weights, device=device)
         if self.num_weights > 0:
-            w[self.weight_indices] = self.weights
+            if weights is None:
+                w[self.weight_indices] = self.weights
+            else:
+                w[self.weight_indices] = weights
         return w
     
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
         try:
@@ -93,16 +95,20 @@ class Heineman(Model):
             visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
             mask[i - 2, visited_responses] = 0
 
+        weightstouse = self.allweights(weightsfromarg)
         logits = (
-            self.allweights[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
-            self.allweights[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
-            self.allweights[2] * cat_trans_terms
-        )           
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
+            weightstouse[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
+            weightstouse[2] * cat_trans_terms
+        ) 
         
         if self.config["mask"]:
             mask = torch.tensor(mask, dtype=torch.bool, device=device)
             logits[mask == 0] = float('-inf')                                                                                                    # shape: (len_seq - 2, num_resp)
         log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
+        
+        if weightsfromarg is not None:
+            return log_probs
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')

@@ -32,6 +32,9 @@ import torch.nn as nn
 import requests
 from scipy.stats import pearsonr, spearmanr
 import time
+from collections import Counter
+from scipy.stats import ttest_ind
+import pickle as pk
 
 SEED = 42
 np.random.seed(SEED)
@@ -111,6 +114,10 @@ class Model:
 
         self.start = 2
         self.init_val = self.config["initval"]
+        self.numsubsamples = 3
+        self.dynamic = False
+        self.dynamic_cat = False
+        self.sim_drop = False
 
         self.suffix = ""
          
@@ -426,7 +433,9 @@ class Model:
                 if model.module.num_weights > 0:
                     optimizer.step(closure)
                     print(f"LBFGS iterations run: {lbfgs_iters}")
-                    weights_list.append(model.module.weights.detach().clone())
+                    fittedweights = model.module.weights.detach().clone()
+                    self.results[f"weights_fold{split_ind + 1}{self.suffix}"] = fittedweights
+                    weights_list.append(fittedweights)
 
                     if self.config["plot"] and self.suffix == "":
                         self.plot_group(loss_history, param_history)
@@ -450,47 +459,82 @@ class Model:
                             test_nlls[split_ind] = testnll
                 
 
+            self.results[f"trainNLLs{self.suffix}"] = train_nlls
             self.results[f"mean_trainNLL{self.suffix}"] = np.mean(train_nlls)
             self.results[f"std_trainNLL{self.suffix}"] = np.std(train_nlls)
             self.results[f"se_trainNLL{self.suffix}"] = np.std(train_nlls) / np.sqrt(len(splitstofit))
 
+            self.results[f"testNLLs{self.suffix}"] = test_nlls
             self.results[f"mean_testNLL{self.suffix}"] = np.mean(test_nlls)
             self.results[f"std_testNLL{self.suffix}"] = np.std(test_nlls)
             self.results[f"se_testNLL{self.suffix}"] = np.std(test_nlls) / np.sqrt(len(splitstofit))
 
             if model.module.num_weights > 0:
+                self.results[f"weights{self.suffix}"] = weights_list
                 self.results[f"mean_weights{self.suffix}"] = torch.mean(torch.stack(weights_list), dim=0)
             
 
             if self.config["print"]:
                 print(f"Mean +- SE trainNLL over {self.config['cv']} fold(s)", self.results[f"mean_trainNLL{self.suffix}"], "+-", self.results[f"se_trainNLL{self.suffix}"])
-                print(f"Mean +- SE testNLL over {self.config['cv']} fold(s)", self.results[f"mean_testNLL{self.suffix}"], "+-", self.results[f"se_testNLL{self.suffix}"])
+                print(f"Sum testNLL over {self.config['cv']} fold(s)", sum(self.results[f"testNLLs{self.suffix}"]))
                 if model.module.num_weights > 0:
-                    print(f"mean weights over {self.config['cv']} fold(s)", self.results[f"mean_weights{self.suffix}"])
+                    print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
+
+        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_results.pk", "wb"))
+
+    # def simulate(self): 
+    #     self.simulations = []
+    #     print(self.__class__.__name__)
+    #     for i in tqdm(range(self.num_sequences)):
+    #         simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
+    #         for j in range(self.sequence_lengths[i] - 2):
+    #             candidates = list(set(self.unique_responses) - set(simulated_sequence))
+    #             if self.__class__.__name__ == "Random":
+    #                 prob_dist = torch.ones(len(self.unique_responses))
+    #             elif self.config["fitting"] == "individual":
+    #                 ll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"seq{i+1}"]["weights"]).squeeze(0)
+    #                 prob_dist = torch.exp(ll)
+    #             elif self.config["fitting"] == "group":
+    #                 ll = self.get_nll(simulated_sequence[-2:] + [""], self.results["mean_weights"]).squeeze(0)
+    #                 prob_dist = torch.exp(ll)
+    #             inds = [self.unique_response_to_index[c] for c in candidates]
+    #             prob_dist = prob_dist[inds]
+    #             prob_dist /= prob_dist.sum()
+    #             # next_response = np.random.choice(candidates, p=prob_dist)
+    #             indices = torch.multinomial(prob_dist, 1, replacement=True)
+    #             next_response = candidates[indices]
+    #             simulated_sequence.append(next_response)
+    #         self.simulations.append(simulated_sequence)
 
     def simulate(self): 
         self.simulations = []
+        self.bleus = []
         print(self.__class__.__name__)
-        for i in tqdm(range(self.num_sequences)):
-            simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
-            for j in range(self.sequence_lengths[i] - 2):
-                candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                if self.__class__.__name__ == "Random":
-                    prob_dist = torch.ones(len(self.unique_responses))
-                elif self.config["fitting"] == "individual":
-                    nll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"seq{i+1}"]["weights"]).squeeze(0)
-                    prob_dist = torch.tensor(torch.exp(self.config["sensitivity"] * nll), device=device)
-                elif self.config["fitting"] == "group":
-                    nll = self.get_nll(simulated_sequence[-2:] + [""], self.results["mean_weights"]).squeeze(0)
-                    prob_dist = torch.tensor(torch.exp(self.config["sensitivity"] * nll), device=device)
-                inds = [self.unique_response_to_index[c] for c in candidates]
-                prob_dist = prob_dist[inds]
-                prob_dist /= prob_dist.sum()
-                # next_response = np.random.choice(candidates, p=prob_dist)
-                indices = torch.multinomial(prob_dist, 1, replacement=True)
-                next_response = candidates[indices]
-                simulated_sequence.append(next_response)
-            self.simulations.append(simulated_sequence)
+        for split_ind, (train_seqs, test_seqs) in enumerate(self.splits):
+            for _ in range(self.numsubsamples):
+                forblue = []
+                for i in range(len(test_seqs)):
+                    simulated_sequence = [test_seqs[i][0], test_seqs[i][1]]
+                    for l in range(len(test_seqs[i]) - 2):
+                        candidates = list(set(self.unique_responses) - set(simulated_sequence))
+                        if self.__class__.__name__ == "Random":
+                            prob_dist = torch.ones(len(self.unique_responses))
+                        elif self.config["fitting"] == "individual":
+                            ll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"seq{i+1}"]["weights"]).squeeze(0)
+                            prob_dist = torch.exp(ll)
+                        elif self.config["fitting"] == "group":
+                            ll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"weights_fold{split_ind + 1}"]).squeeze(0)
+                            prob_dist = torch.exp(ll)
+                        inds = [self.unique_response_to_index[c] for c in candidates]
+                        prob_dist = prob_dist[inds]
+                        prob_dist /= prob_dist.sum()
+                        indices = torch.multinomial(prob_dist, 1, replacement=True)
+                        next_response = candidates[indices]
+                        simulated_sequence.append(next_response)
+                    self.simulations.append(simulated_sequence)
+                    forblue.append(simulated_sequence)
+                self.bleus.append(calculate_bleu([sim[2:] for sim in forblue], [seq[2:] for seq in test_seqs]))
+        print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")
@@ -503,4 +547,15 @@ class Model:
         model_bleu2 = 0.33 * model_bleu["bleu2"] + 0.33 * model_bleu["bleu3"] + 0.33 * model_bleu["bleu4"]
         model_bleu3 = 0.1 * model_bleu["bleu1"] + 0.2 * model_bleu["bleu2"] + 0.3 * model_bleu["bleu3"] + 0.4 * model_bleu["bleu4"]
         print(model_bleu1, model_bleu2, model_bleu3)
-        # print(calculate_rouge([" ".join(seq) for seq in self.simulations], [" ".join(seq) for seq in self.sequences]))
+
+        # print(calculate_rouge([" ".join(seq[2:]) for seq in self.simulations], [" ".join(seq[2:]) for seq in self.sequences]))
+
+        flat_seq = [w for sublist in self.sequences for w in sublist]
+        freq_true = Counter(flat_seq)
+        dist_true = [freq_true.get(u, 0) for u in self.unique_responses]
+        flat_sim = [w for sublist in self.simulations for w in sublist]
+        freq_sim = Counter(flat_sim)
+        dist_sim = [freq_sim.get(u, 0) for u in self.unique_responses]
+        t_stat, p_value = ttest_ind(dist_true, dist_sim)
+        print("t-statistic:", t_stat)
+        print("p-value:", p_value)

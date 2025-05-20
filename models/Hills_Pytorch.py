@@ -22,34 +22,51 @@ class Hills(Model):
     def create_models(self):
         self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
     
-    @property
-    def allweights(self):
+    def allweights(self, weights=None):
         """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
         w = torch.zeros(self.num_total_weights, device=device)
         if self.num_weights > 0:
-            w[self.weight_indices] = self.weights
+            if weights is None:
+                w[self.weight_indices] = self.weights
+            else:
+                w[self.weight_indices] = weights
         return w
 
-    def get_nll(self, seq):
+    def get_nll(self, seq, weightsfromarg=None):
         nll = 0
-        sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
-        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
+        sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                              # shape: (len_seq - 2, num_resp)
+        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
         
+        sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
+        if self.dynamic:
+            if self.dynamic_cat:
+                sim_terms_mask = torch.tensor([not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
+            elif self.sim_drop:
+                sim1 = torch.tensor([self.sim_mat[seq[i - 2]][seq[i - 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim2 = torch.tensor([self.sim_mat[seq[i - 1]][seq[i]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim3 = torch.tensor([self.sim_mat[seq[i]][seq[i + 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                   # (len(seq) - 3,)
+                sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
+
         mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         for i in range(2, len(seq)):
             visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
             mask[i - 2, visited_responses] = 0
 
+        weightstouse = self.allweights(weightsfromarg)
         logits = (
-            self.allweights[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
-            self.allweights[1] * sim_terms +                                                                          # shape: (len_seq - 2, num_resp)
-            self.allweights[2] * sim_terms_2step
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                                   # shape: (1, num_resp)
+            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1) +                                                                          # shape: (len_seq - 2, num_resp)
+            weightstouse[2] * sim_terms_2step
         )
         
         if self.config["mask"]:
             mask = torch.tensor(mask, dtype=torch.bool, device=device)
             logits[mask == 0] = float('-inf')
         log_probs = F.log_softmax(logits, dim=1)                                                  # shape: (len_seq - 2, num_resp)
+
+        if weightsfromarg is not None:
+            return log_probs
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
@@ -101,20 +118,24 @@ class CombinedCueStatic_12step(Hills, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-# class CombinedCueDynamicCat(Hills, nn.Module):
-#     def __init__(self, parent):
-#         self.__dict__.update(parent.__dict__)
-#         nn.Module.__init__(self)
-#         self.num_weights = 2
-#         self.weight_indices = torch.tensor([0, 1], device=device)
+class CombinedCueDynamicCat(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 1], device=device)
+        self.dynamic = True
+        self.dynamic_cat = True
 
-#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-# class CombinedCueDynamicSimdrop(Hills, nn.Module):
-#     def __init__(self, parent):
-#         self.__dict__.update(parent.__dict__)
-#         nn.Module.__init__(self)
-#         self.num_weights = 2
-#         self.weight_indices = torch.tensor([0, 1], device=device)
+class CombinedCueDynamicSimdrop(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 1], device=device)
+        self.dynamic = True
+        self.sim_drop = True
 
-#         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
