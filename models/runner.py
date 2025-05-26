@@ -84,7 +84,7 @@ def run(config):
     if config["plot"]:
         print("--------------------------------PLOTTING MODELS--------------------------------")
         labels = []
-        mean_modelnlls = []
+        modelnlls = []
         se_modelnlls = []
         for model_class in models:
             for model_name in models[model_class].models:
@@ -94,26 +94,26 @@ def run(config):
                 labels.append(model_name)
                 try:
                     if config["fitting"] == "individual":
-                        mean_modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
+                        modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
                         se_modelnlls.append(models[model_class].models[model_name].results["se_minNLL"])
                     elif config["fitting"] == "group":
-                        mean_modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
+                        modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
                         se_modelnlls.append(models[model_class].models[model_name].results["se_testNLL"])
                 except:
                     results = pk.load(open(f"../fits/{model_name.lower()}_results.pk", "rb"))
                     if config["fitting"] == "individual":
-                        mean_modelnlls.append(results["mean_minNLL"])
+                        modelnlls.append(results["mean_minNLL"])
                         se_modelnlls.append(results["se_minNLL"])
                     elif config["fitting"] == "group":
-                        mean_modelnlls.append(results["mean_testNLL"])
+                        modelnlls.append(results["mean_testNLL"])
                         se_modelnlls.append(results["se_testNLL"])
 
         plt.figure(figsize=(8, 5))
-        x = np.arange(len(mean_modelnlls))
-        plt.bar(x, mean_modelnlls, yerr=se_modelnlls, capsize=5, alpha=0.8, color='#9370DB')
+        x = np.arange(len(modelnlls))
+        plt.bar(x, modelnlls, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=90)
-        plt.ylim(min(mean_modelnlls) - 100, max(mean_modelnlls) + 100)
-        plt.ylabel('Mean NLL')
+        plt.ylim(min(modelnlls) - 100, max(modelnlls) + 100)
+        plt.ylabel(f'Sum NLL over {config["cv"]} folds')
         plt.title(f'Model NLL comparison ({config["fitting"]})')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
@@ -169,6 +169,7 @@ if __name__ == "__main__":
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
     parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
+    parser.add_argument("--featurestouse", type=str, default="vf_features", help="features to use: vf_features or vf_features_updated")
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
     parser.add_argument("--nomask", action="store_false", dest="mask", help="don't use mask")
 
@@ -212,7 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--preventrepetition", action="store_true", default=True, help="prevent repetition (default: True)")
     parser.add_argument("--allowrepetition", action="store_false", dest="preventrepetition", help="don't preventrepetition")
 
-    parser.add_argument("--sensitivity", type=float, default=5, help="sampling sensitivity")
+    # parser.add_argument("--sensitivity", type=float, default=5, help="sampling sensitivity")
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
