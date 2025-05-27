@@ -1,0 +1,137 @@
+nohup: ignoring input
+cuda
+CUDA available: True
+GPU count: 1
+{'dataset': 'hills', 'representation': 'clip', 'fit': False, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 5000, 'plot': True, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'vf_features', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours1': True, 'print': True, 'simulate': True, 'recovery': False, 'test': True}
+PearsonRResult(statistic=0.8119866335089141, pvalue=4.416893758557106e-84)
+SignificanceResult(statistic=0.833226288919769, pvalue=2.4293387168113275e-92)
+TRUE BLEUS MEAN: {'bleu1': 0.9066666666666666, 'bleu2': 0.242, 'bleu3': 0.030000000000000002, 'bleu4': 0.0006666666666666666}
+dict_keys(['feature_Is mammal', 'feature_Is bird', 'feature_Is insect', 'feature_Is reptile', 'feature_Is amphibian', 'feature_Is fish', 'feature_Is carnivore', 'feature_Is herbivore', 'feature_Is omnivore', 'feature_Has fur', 'feature_Has feathers', 'feature_Has scales', 'feature_Has exoskeleton', 'feature_Has beak', 'feature_Has claws', 'feature_Has whiskers', 'feature_Has horns', 'feature_Has antlers', 'feature_Has tusks', 'feature_Has wings', 'feature_Has tail', 'feature_Can fly', 'feature_Can swim', 'feature_Can climb', 'feature_Can dig', 'feature_Can jump', 'feature_Is nocturnal', 'feature_Is diurnal', 'feature_Has more than four limbs', 'feature_Lives in water', 'feature_Lives in trees', 'feature_Lives underground', 'feature_Lives on land', 'feature_Lays eggs', 'feature_Gives birth', 'feature_Has a long neck', 'feature_Is venomous', 'feature_Is domesticated', 'feature_Lives in groups', 'feature_Is solitary', 'feature_Builds nests', 'feature_Is migratory', 'feature_Has social hierarchy', 'feature_Uses tools', 'feature_Shows intelligence', 'feature_Communicates vocally', 'feature_Has camouflage', 'feature_Has stripes', 'feature_Has spots', 'feature_Can change color', 'feature_Is endangered', 'feature_Is commonly kept as a pet', 'feature_Is used in farming', 'feature_Is hunted by humans', 'feature_Is used for food by humans', 'feature_Is found in zoos', 'feature_Is capable of mimicry', 'feature_Has echolocation', 'feature_Is warm-blooded', 'feature_Is cold-blooded', 'feature_Has a long lifespan', 'feature_Is capable of regrowth', 'feature_Has specialized hunting techniques', 'feature_Is known for speed', 'feature_Is known for strength', 'feature_Has a specialized diet', 'feature_Can hibernate', 'feature_Has a backbone', 'feature_Is marsupial', 'feature_Is placental', 'feature_Is monotreme', 'feature_Is flightless', 'feature_Has webbed feet', 'feature_Is known for intelligence', 'feature_Is a scavenger', 'feature_Is territorial', 'feature_Is native to Africa', 'feature_Is native to Asia', 'feature_Is native to North America', 'feature_Is native to South America', 'feature_Is native to Australia', 'feature_Is native to Europe', 'feature_Is found in deserts', 'feature_Is found in forests', 'feature_Is found in oceans', 'feature_Is found in grasslands', 'feature_Is found in mountains', 'feature_Has a mane', 'feature_Has a crest', 'feature_Has gills', 'feature_Is bioluminescent', 'feature_Is used in scientific research', 'feature_Is a predator', 'feature_Is prey for larger animals', 'feature_Is capable of parental care', 'feature_Lives in a burrow', 'feature_Is a pollinator', 'feature_Can tolerate extreme temperatures', 'feature_Exhibits seasonal color changes', 'feature_Migrates seasonally', 'feature_Is active during dawn or dusk (crepuscular)', 'feature_Produces pheromones for communication', 'feature_Lives symbiotically with other species', 'feature_Is a parasite', 'feature_Is a host for parasites', 'feature_Is bi-parental (both parents care for offspring)', 'feature_Displays mating rituals', 'feature_Has specialized courtship behavior', 'feature_Exhibits territorial marking', 'feature_Is associated with mythology or folklore', 'feature_Exhibits altruistic behavior', 'feature_Is a keystone species in its ecosystem', 'feature_Uses burrows or dens for shelter', 'feature_Can regenerate body parts', 'feature_Is raised in captivity or farms', 'feature_Has unique reproductive strategies (e.g., asexual reproduction)', 'feature_Hibernates during winter', 'feature_Has a role in biological pest control', 'feature_Has distinct seasonal breeding cycles', 'feature_Forms a symbiotic relationship with plants (e.g., pollination)', 'feature_Uses specific vocalizations to communicate', 'feature_Is a flagship species (conservation symbol)', 'feature_Can be trained or tamed by humans', 'feature_Displays warning coloration', 'feature_Has flippers', 'feature_Has compound eyes', 'feature_Has a segmented body'])
+--------------------------------PLOTTING MODELS--------------------------------
+ours1 Random
+ours1 Freq
+ours1 HS
+ours1 Freq_HS
+ours1 WeightedHS
+ours1 FreqWeightedHS
+ours1 WeightedHSdebiased
+ours1 FreqWeightedHSdebiased
+hills OneCueStaticLocal
+hills CombinedCueStatic
+heineman Freq_Sim_Subcategory
+heineman Subcategory
+heineman Freq_Subcategory
+heineman Sim_Subcategory
+--------------------------------SIMULATING MODELS--------------------------------
+ours1 Random
+nofit
+Random
+SIM BLEUS MEAN: {'bleu1': 0.6193333333333333, 'bleu2': 0.007333333333333333, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  ape	  loon	  scorpion	  black widow	  horse	  turtle	  crab	  nightingale	  kangaroo	  wombat	  giraffe	  caiman	  cavy	  rhino	  bass	  snake	  monkey	  tadpole	  coyote	  seal	  gopher	  pony	  malamute	  colt	  sloth	  egret	  chickadee	  beaver	  grasshopper	  humpback whale	  quail	  tuna	  mountain bear	  possum	  koala
+penguin	  bear	  cardinal	  humpback whale	  dove	  nightingale	  turtle	  jellyfish	  kiwi	  elk	  chameleon	  mountain bear	  hamster	  ape	  sheep	  goose	  caribou	  raccoon	  wild cat	  crow	  opossum	  tadpole	  blowfish	  bass	  blue jay	  panther	  toad	  shrimp	  manatee	  jack rabbit	  emu	  labrador retriever	  dalmation	  antlion	  coral	  wallaby	  calf	  giraffe	  flamingo	  komodo dragon
+deer	  snake	  crocodile	  puma	  leopard	  warthog	  swordfish	  pigeon	  skunk	  armadillo	  cavy	  grasshopper	  possum	  grizzly	  rabbit	  stingray	  heron	  whale	  newt	  bunny	  ewe	  centipede	  lamb	  hammerhead shark	  brine shrimp	  hare	  sanddollar	  pembroke welsh corgi	  chihuahua	  gnat	  crab	  bird	  lioness	  bobcat	  pike	  cock	  terrier	  crawfish
+ours1 Freq
+nofit
+Freq
+SIM BLEUS MEAN: {'bleu1': 0.738, 'bleu2': 0.018000000000000002, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  kangaroo	  anaconda	  fish	  bass	  fly	  prairie dog	  human	  skunk	  rat	  tilapia	  ram	  monkey	  chicken	  panda	  owl	  hog	  warthog	  canary	  cattle	  groundhog	  calf	  finch	  goldfinch	  horse	  ant	  jack rabbit	  elephant	  hare	  muskrat	  raccoon	  crocodile	  robin	  sparrow	  lamb	  octopus
+penguin	  bear	  ram	  crow	  puppy	  dove	  salmon	  human	  insect	  terrier	  monkey	  lamb	  akita	  eagle	  falcon	  dog	  dodo	  mouse	  worm	  cardinal	  beluga	  crab	  hawk	  cattle	  mole	  cat	  water snake	  sponge	  eel	  bat	  ant	  starfish	  spider monkey	  pig	  devil	  woodpecker	  raptor	  hare	  frog	  horse
+deer	  snake	  fisher	  turkey	  chihuahua	  lizard	  groundhog	  buffalo	  cow	  kitten	  ox	  goose	  fish	  falcon	  chipmunk	  hawk	  parrot	  dolphin	  robin	  bull	  piglet	  bear	  cockroach	  squirrel	  ewe	  penguin	  frog	  eagle	  cat	  blue whale	  emu	  bird	  fox	  leopard	  platypus	  dove	  pigeon	  rabbit
+ours1 HS
+nofit
+HS
+SIM BLEUS MEAN: {'bleu1': 0.628, 'bleu2': 0.016, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  antlion	  bengal tiger	  siamese cat	  shih tzu	  pigeon	  sparrow	  goldfinch	  dove	  hornet	  spider monkey	  aardvark	  wombat	  cougar	  malamute	  terrier	  alpaca	  hyena	  mountain lion	  reptile	  boar	  hog	  dalmation	  crocodile	  blue gill	  worm	  mosquito	  python	  golden marmot	  black tailed deer	  flounder	  tilapia	  squid	  sea lion	  pelican	  snow lion
+penguin	  bear	  caribou	  porcupine	  malamute	  alpaca	  mountain lion	  mountain bear	  groundhog	  rooster	  ostrich	  beaver	  crawfish	  catfish	  moth	  scallop	  elk	  stag	  sheep	  lizard	  aardvark	  chipmunk	  snail	  panda	  manatee	  pheasant	  water snake	  hammerhead shark	  starfish	  tadpole	  worm	  squid	  cow	  calf	  kiwi	  frog	  lizards	  hornet	  blue footed booby	  pelican
+deer	  snake	  gulls	  crow	  parrot	  macaw	  meerkat	  snow fox	  brown bear	  tilapia	  turkey	  panther	  jaguar	  scorpion	  swordfish	  tuna	  catfish	  sponge	  tadpole	  blowfish	  shrimp	  eel	  lobster	  bonobo	  orca	  bluebird	  owl	  bat	  chimpanzee	  elephant	  penguin	  wolf	  otter	  badger	  crawfish	  mongoose	  grizzly	  toad
+ours1 Freq_HS
+nofit
+Freq_HS
+SIM BLEUS MEAN: {'bleu1': 0.7413333333333333, 'bleu2': 0.037333333333333336, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  horse	  elephant	  cow	  rhino	  squirrel	  jack rabbit	  mountain lion	  mole	  ostrich	  stallion	  bull	  lamb	  swordfish	  gorilla	  buffalo	  leopard	  jaguar	  hen	  lion	  colt	  cardinal	  gerbil	  doe	  buck	  newt	  bullfrog	  bird	  chicken	  crane	  goose	  pike	  giraffe	  bison	  sheep	  cattle
+penguin	  bear	  tiger	  coyote	  gull	  bird	  bee	  wasp	  badger	  groundhog	  chihuahua	  ferret	  dog	  ostrich	  chicken	  blue jay	  eagle	  flamingo	  duck	  turkey	  salmon	  angelfish	  cow	  mule	  boa constrictor	  crow	  falcon	  cobra	  cricket	  ant	  lynx	  viper	  water snake	  scorpion	  hedgehog	  giraffe	  horse	  bronco	  mountain goat	  buffalo
+deer	  snake	  buck	  hare	  bloodhound	  tarantula	  wasp	  moth	  fly	  insect	  reptile	  rattlesnake	  polar bear	  swordfish	  rhinoceros	  elephant	  cobra	  iguana	  angelfish	  bass	  sea monkey	  wolf	  leopard	  eagle	  devil	  wolverine	  blue whale	  lion	  fisher	  brown bear	  caribou	  armadillo	  beaver	  turtle	  platypus	  trout	  mole	  amphibian
+ours1 WeightedHS
+nofit
+WeightedHS
+SIM BLEUS MEAN: {'bleu1': 0.7286666666666667, 'bleu2': 0.043333333333333335, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  kitten	  labrador retriever	  bass	  stingray	  rhino	  snake	  spider monkey	  raven	  turtle	  chameleon	  goat	  giraffe	  hog	  mongoose	  wolf	  bear	  lion	  stick insect	  goldfish	  koi	  squirrel	  reindeer	  lizards	  gecko	  seal	  salmon	  scallop	  cricket	  ram	  goose	  seagull	  chick	  cock	  shark	  clownfish
+penguin	  bear	  brown bear	  snow monkey	  blue jay	  wolf	  wild cat	  hog	  duckbill	  humpback whale	  whale	  shark	  komodo dragon	  kitten	  tarantula	  reptile	  tortoise	  canary	  peacock	  woodpecker	  flamingo	  dingo	  platypus	  shrimp	  fly	  spider monkey	  pheasant	  bird	  killer whale	  porpoise	  snow lion	  mountain goat	  elephant	  ostrich	  zebra	  dolphin	  mule deer	  horse	  ape	  rat
+deer	  snake	  leopard	  siberian husky	  dog	  squirrel	  lizard	  rattlesnake	  water snake	  lizards	  frog	  otter	  orca	  penguin	  bunny	  skunk	  camel	  chick	  duckbill	  emu	  panda	  koala	  porpoise	  sugar glider	  pony	  blowfish	  beetle	  hornet	  toad	  newt	  crawfish	  shrimp	  squid	  blue whale	  baboon	  whale	  ape	  gazelle
+ours1 FreqWeightedHS
+nofit
+FreqWeightedHS
+SIM BLEUS MEAN: {'bleu1': 0.8013333333333335, 'bleu2': 0.07333333333333333, 'bleu3': 0.0, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  ferret	  ram	  mole	  tuna	  walrus	  baboon	  mouse	  lamb	  yak	  cow	  cattle	  bull	  buffalo	  ostrich	  chimpanzee	  peacock	  tiger	  wolf	  cheetah	  mink	  leopard	  horse	  moth	  finch	  eel	  tilapia	  guppy	  fish	  trout	  lion	  viper	  elephant	  bear	  moose	  stag
+penguin	  bear	  brown bear	  mink	  lizards	  turtle	  cobra	  owl	  fisher	  leopard	  cub	  fox	  bat	  puma	  lion	  tapir	  ewe	  lamb	  yak	  bull	  wolf	  jaguar	  elephant	  sea lion	  badger	  rat	  dog	  dingo	  squirrel	  dolphin	  human	  cardinal	  fly	  ostrich	  gecko	  butterfly	  salamander	  mouse	  rabbit	  cat
+deer	  snake	  slug	  bison	  moose	  anaconda	  eel	  blue whale	  whale	  fox	  newt	  catfish	  jellyfish	  starfish	  insect	  lemur	  manatee	  sloth	  chimpanzee	  rat	  minnow	  sponge	  squid	  turtle	  parrot	  canary	  bear	  seal	  otter	  fisher	  chipmunk	  armadillo	  lion	  viper	  squirrel	  possum	  trout	  muskrat
+ours1 WeightedHSdebiased
+nofit
+WeightedHSdebiased
+SIM BLEUS MEAN: {'bleu1': 0.8633333333333333, 'bleu2': 0.12333333333333334, 'bleu3': 0.008666666666666666, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  komodo dragon	  alligator	  bird	  alpaca	  bunny	  mule	  chicken	  parrot	  peacock	  owl	  hippopotamus	  elephant	  lion	  monkey	  snake	  zebra	  bonobo	  bear	  raccoon	  possum	  buffalo	  crane	  fish	  octopus	  crocodile	  rooster	  horse	  giraffe	  marmoset	  rat	  mouse	  mole	  pig	  swan	  turtle
+penguin	  bear	  polar bear	  tiger	  rat	  mouse	  ox	  cow	  horse	  cat	  elephant	  fish	  bee	  frog	  gerbil	  chipmunk	  gorilla	  lion	  chameleon	  snake	  ostrich	  spider monkey	  raccoon	  rabbit	  duck	  alligator	  tree frog	  whale	  dolphin	  bird	  beaver	  panda	  rhino	  cock	  butterfly	  snail	  flea	  python	  salmon	  oyster
+deer	  snake	  turtle	  hornet	  falcon	  lion	  polar bear	  squirrel	  raccoon	  goldfinch	  cock	  chicken	  wolf	  tiger	  elephant	  monkey	  otter	  dolphin	  porpoise	  zebra	  dingo	  bear	  panther	  jaguar	  spider monkey	  chipmunk	  baboon	  chimpanzee	  gorilla	  flamingo	  rabbit	  llama	  goat	  pig	  horse	  lamb	  dog	  cat
+ours1 FreqWeightedHSdebiased
+nofit
+FreqWeightedHSdebiased
+SIM BLEUS MEAN: {'bleu1': 0.8726666666666667, 'bleu2': 0.13533333333333336, 'bleu3': 0.006666666666666667, 'bleu4': 0.0}
+ours1 simulations..................
+cat	  dog	  kitten	  hamster	  mouse	  ferret	  fisher	  bear	  tiger	  elephant	  penguin	  gorilla	  lion	  lioness	  giraffe	  salmon	  ostrich	  rabbit	  goat	  peacock	  camel	  horse	  cheetah	  shark	  fish	  dolphin	  whale	  rat	  spider	  falcon	  chipmunk	  monkey	  bonobo	  chimpanzee	  trout	  leopard	  wild cat
+penguin	  bear	  seal	  raptor	  monkey	  fish	  otter	  cow	  salmon	  shark	  hog	  pig	  horse	  ape	  gorilla	  elephant	  tiger	  lion	  sparrow	  heron	  pigeon	  whale	  dog	  cattle	  cat	  beaver	  squirrel	  alligator	  raccoon	  hamster	  rabbit	  possum	  kangaroo	  platypus	  woodchuck	  groundhog	  cub	  rat	  mouse	  turtle
+deer	  snake	  buck	  rat	  mouse	  cougar	  jaguar	  tiger	  fox	  fish	  duck	  spider	  horse	  elephant	  rhino	  chicken	  octopus	  dolphin	  parrot	  bird	  possum	  lemur	  polar bear	  salmon	  seal	  coral	  kangaroo	  lion	  bear	  reindeer	  gazelle	  hippopotamus	  antelope	  cat	  cow	  alligator	  whale	  trout
+hills OneCueStaticLocal
+nofit
+OneCueStaticLocal
+SIM BLEUS MEAN: {'bleu1': 0.7633333333333333, 'bleu2': 0.03666666666666667, 'bleu3': 0.0, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  cow	  hyena	  elephant	  giraffe	  ant	  bee	  insect	  worm	  swan	  otter	  chipmunk	  bear	  cricket	  bass	  cattle	  goat	  whale	  humpback whale	  wildebeest	  wasp	  bull	  wombat	  beaver	  hamster	  ostrich	  rat	  pig	  rhino	  ox	  bird	  guinea pig	  capybara	  piranha	  hippopotamus	  kangaroo
+penguin	  bear	  dinosaur	  iguana	  salamander	  tadpole	  bengal tiger	  tiger	  butterfly	  dodo	  hog	  human	  ladybug	  cat	  dog	  tick	  sloth	  chimpanzee	  opossum	  toucan	  gorilla	  moth	  mouse	  rabbit	  beetle	  junebug	  rattlesnake	  chipmunk	  squirrel	  salmon	  lizard	  moose	  stork	  warthog	  rhino	  shark	  buffalo	  pony	  pelican	  piranha
+deer	  snake	  seahorse	  dolphin	  snail	  squirrel	  horse	  stallion	  colt	  cat	  tortoise	  crab	  mountain bear	  black bear	  lion	  hawk	  crow	  blue gill	  lizard	  moth	  frog	  tree frog	  bug	  kiwi	  koala	  bear	  swan	  heron	  dingo	  goose	  tick	  bulldog	  warthog	  pheasant	  egret	  caterpillar	  boar	  pig
+hills CombinedCueStatic
+nofit
+CombinedCueStatic
+SIM BLEUS MEAN: {'bleu1': 0.798, 'bleu2': 0.043333333333333335, 'bleu3': 0.0, 'bleu4': 0.0}
+hills simulations..................
+cat	  dog	  dinosaur	  turtle	  frog	  goldfish	  gecko	  duck	  chicken	  cattle	  centipede	  devil	  panther	  badger	  lion	  anaconda	  pelican	  kangaroo	  sheep	  poodle	  bass	  hog	  rooster	  finch	  donkey	  bull	  bear	  sea lion	  monkey	  crane	  goose	  rat	  horse	  dingo	  calf	  reptile	  leech
+penguin	  bear	  rat	  bat	  devil	  skunk	  goose	  camel	  monkey	  chimpanzee	  spider	  scorpion	  python	  crocodile	  alligator	  owl	  dinosaur	  crab	  lobster	  buck	  puppy	  worm	  lizard	  beaver	  raccoon	  rabbit	  sponge	  badger	  panda	  elephant	  human	  dog	  insect	  beetle	  eagle	  shark	  shrimp	  black widow	  gorilla	  tadpole
+deer	  snake	  goldfish	  blue gill	  fish	  bulldog	  penguin	  bug	  human	  ant	  bee	  fox	  gazelle	  ape	  gorilla	  fly	  slug	  mole	  bull	  dolphin	  possum	  turtle	  devil	  goat	  monkey	  groundhog	  tiger	  anaconda	  coral	  caterpillar	  pheasant	  bear	  lion	  wolf	  insect	  stag	  leopard	  sparrow
+heineman Freq_Sim_Subcategory
+nofit
+Freq_Sim_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.7886666666666666, 'bleu2': 0.06133333333333333, 'bleu3': 0.0, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  stag	  pony	  horse	  black widow	  coyote	  wolf	  fisher	  beaver	  raccoon	  penguin	  bird	  groundhog	  bulldog	  bull	  crane	  donkey	  stallion	  cow	  billy goat	  colt	  deer	  rhino	  bass	  oyster	  humpback whale	  crawfish	  butterfly	  snail	  whale	  dolphin	  great white shark	  fish	  guppy	  betta	  coral
+penguin	  bear	  cheetah	  chinchilla	  grizzly	  giraffe	  snail	  rabbit	  devil	  turtle	  lobster	  crab	  ant	  cricket	  rat	  snake	  reptile	  frog	  trout	  walrus	  parrot	  chicken	  whale	  dolphin	  fish	  canary	  toad	  squirrel	  ferret	  orangutan	  chimpanzee	  tapir	  boar	  mountain lion	  cat	  hawk	  bird	  swan	  puppy	  bull
+deer	  snake	  reptile	  lizard	  falcon	  hawk	  snow leopard	  hare	  jack rabbit	  bunny	  mouse	  crow	  bird	  eagle	  rat	  bull	  owl	  cow	  pigeon	  bear	  human	  jaguar	  python	  cobra	  gecko	  dog	  slug	  mosquito	  insect	  crawfish	  crab	  fish	  trout	  jellyfish	  oyster	  dinosaur	  camel	  guppy
+heineman Subcategory
+nofit
+Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.6166666666666667, 'bleu2': 0.013333333333333334, 'bleu3': 0.0, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  moose	  goldfish	  tadpole	  bat	  sea monkey	  great white shark	  trout	  starfish	  moth	  snow monkey	  crocodile	  parakeet	  mule	  ferret	  colt	  antlion	  hammerhead shark	  urchin	  tuna	  clam	  dolphin	  junebug	  scorpion	  fly	  pillbug	  hornet	  praying mantis	  worm	  grasshopper	  boa constrictor	  bloodhound	  egret	  viper	  stork	  lizards
+penguin	  bear	  cheetah	  boar	  lamb	  cardinal	  starfish	  moose	  possum	  eagle	  pheasant	  heron	  puma	  mountain lion	  cougar	  ostrich	  owl	  bird	  turkey	  loon	  wild cat	  cockatiel	  tiger	  otter	  duck	  sheep	  chicken	  ewe	  colt	  llama	  brown bear	  buck	  caiman	  anaconda	  insect	  butterfly	  guinea pig	  bloodhound	  mantaray	  sanddollar
+deer	  snake	  cub	  chihuahua	  caiman	  cockatiel	  shih tzu	  wild cat	  stallion	  cock	  toucan	  mink	  mole	  bird	  bronco	  puma	  bull	  woodchuck	  parrot	  rat	  platypus	  capybara	  cow	  puggle	  great dane	  mountain bear	  groundhog	  rhino	  piglet	  pheasant	  crow	  labrador retriever	  insect	  pillbug	  cockroach	  kangaroo	  devil	  lion
+heineman Freq_Subcategory
+nofit
+Freq_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.732, 'bleu2': 0.03333333333333333, 'bleu3': 0.0, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  woodpecker	  gulls	  swan	  coral	  eel	  fish	  turtle	  porpoise	  tadpole	  orca	  goose	  turkey	  crane	  betta	  bass	  shark	  fisher	  panther	  bird	  robin	  falcon	  possum	  mole	  badger	  mouse	  porcupine	  snake	  salmon	  whale	  tilapia	  pike	  scallop	  trout	  fox	  hare
+penguin	  bear	  calf	  blue jay	  goat	  colt	  horse	  cattle	  crane	  goose	  donkey	  bull	  robin	  bass	  fish	  shark	  manatee	  tadpole	  bird	  hare	  lamb	  chicken	  duck	  ram	  ox	  finch	  dog	  macaw	  whale	  koi	  orca	  kitten	  pig	  snail	  cobra	  toad	  caribou	  coyote	  turkey	  sheep
+deer	  snake	  fish	  clam	  bird	  colt	  turkey	  mountain lion	  wolf	  buffalo	  stork	  rooster	  cow	  horse	  pony	  calf	  chicken	  ox	  lemur	  beaver	  bat	  hawk	  jaguar	  grasshopper	  cock	  alligator	  anteater	  snail	  terrier	  frog	  dog	  kitten	  parrot	  pigeon	  bull	  mule	  ewe	  bronco
+heineman Sim_Subcategory
+nofit
+Sim_Subcategory
+SIM BLEUS MEAN: {'bleu1': 0.752, 'bleu2': 0.048666666666666664, 'bleu3': 0.0, 'bleu4': 0.0}
+heineman simulations..................
+cat	  dog	  bunny	  rabbit	  gerbil	  junebug	  human	  duck	  komodo dragon	  dinosaur	  owl	  goose	  eagle	  seagull	  bird	  swan	  pheasant	  shrimp	  blue whale	  killer whale	  seahorse	  bass	  lobster	  lioness	  lion	  sea lion	  black bear	  black tailed deer	  white tailed deer	  deer	  cow	  ox	  gecko	  shark	  stag	  dodo	  ostrich
+penguin	  bear	  mountain bear	  lion	  deer	  squirrel	  bunny	  frog	  puppy	  chipmunk	  devil	  dog	  cow	  hawk	  woodpecker	  buck	  donkey	  potbellied pig	  bird	  hen	  cock	  chicken	  mountain lion	  prairie dog	  mongoose	  gopher	  fisher	  fish	  lizards	  lizard	  lioness	  wild cat	  goat	  horse	  wolf	  coyote	  camel	  giraffe	  eagle	  scallop
+deer	  snake	  goose	  blue jay	  chicken	  sheep	  bull	  duck	  clam	  fish	  catfish	  minnow	  shark	  oyster	  crab	  iguana	  dog	  cat	  devil	  mouse	  mongoose	  meerkat	  lioness	  lion	  beetle	  cockroach	  platypus	  bird	  dodo	  rhino	  bunny	  rabbit	  eagle	  squirrel	  cheetah	  groundhog	  woodchuck	  chimpanzee

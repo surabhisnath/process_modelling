@@ -62,7 +62,9 @@ class Model:
         except:
             pass
 
-        if config["useallresp"]:
+        if config["usehillsresp"]:
+            self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        else:                               # useallresp
             self.unique_responses = set()
             csv_dir = "../csvs/"
             for file in os.listdir(csv_dir):
@@ -79,8 +81,7 @@ class Model:
                     )
                     self.unique_responses.update(corrected_responses)
             self.unique_responses = list(self.unique_responses)
-        else:
-            self.unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
+        
         
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
@@ -480,7 +481,7 @@ class Model:
                 if model.module.num_weights > 0:
                     print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
-        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_results.pk", "wb"))
+        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits{self.suffix}.pk", "wb"))
 
     # def simulate(self): 
     #     self.simulations = []
@@ -510,8 +511,7 @@ class Model:
         try:
             results = self.results
         except:
-            print("nofit")
-            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_results.pk", "rb"))
+            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits.pk", "rb"))
         self.simulations = []
         self.bleus = []
         print(self.__class__.__name__)
@@ -540,6 +540,8 @@ class Model:
                     forbleu.append(simulated_sequence)
                 self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in test_seqs]))
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
+
+        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")

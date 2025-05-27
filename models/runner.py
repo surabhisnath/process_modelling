@@ -94,16 +94,14 @@ def run(config):
                         modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
                         se_modelnlls.append(models[model_class].models[model_name].results["se_minNLL"])
                     elif config["fitting"] == "group":
-                        modelnlls.append(models[model_class].models[model_name].results["mean_testNLL"])
-                        se_modelnlls.append(models[model_class].models[model_name].results["se_testNLL"])
+                        modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
                 except:
                     results = pk.load(open(f"../fits/{model_name.lower()}_results.pk", "rb"))
                     if config["fitting"] == "individual":
                         modelnlls.append(results["mean_minNLL"])
                         se_modelnlls.append(results["se_minNLL"])
                     elif config["fitting"] == "group":
-                        modelnlls.append(results["mean_testNLL"])
-                        se_modelnlls.append(results["se_testNLL"])
+                        modelnlls.append(sum(results["testNLLs"]))
 
         plt.figure(figsize=(8, 5))
         x = np.arange(len(modelnlls))
@@ -133,14 +131,16 @@ def run(config):
             for model_name_sim in models[model_class_sim].models:
                 if model_name_sim != "FreqWeightedHSdebiased":
                     continue
-
-                simseqs = models[model_class_sim].models[model_name_sim].simulations
-                models[model_class_sim].models[model_name_sim].suffix = "_recovery"
-                models[model_class_sim].models[model_name_sim].splits_recovery = models[model_class_sim].models[model_name_sim].split_sequences(simseqs)
+                try:
+                    simseqs = models[model_class_sim].models[model_name_sim].simulations[::3]
+                except:
+                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations.pk", "rb"))[::3]
                 
                 for model_class in models:
                     for model_name in models[model_class].models:
                         print(model_class, model_name)
+                        models[model_class].models[model_name].suffix = "_recovery"
+                        models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(simseqs)
                         start_time = time.time()
                         models[model_class].models[model_name].fit(simseqs)
                         end_time = time.time()
@@ -173,27 +173,17 @@ if __name__ == "__main__":
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
     parser.add_argument("--nomask", action="store_false", dest="mask", help="don't use mask")
 
-    # parser.add_argument("--repetition", action="store_true", default=True, help="fit repetition (default: True)")
-    # parser.add_argument("--norepetition", action="store_false", dest="repetition", help="don't fit repetition")
+    parser.add_argument("--usehillsresp", action="store_true", default=True, help="use all responses, across datasets (default: True)")
+    parser.add_argument("--useallresp", action="store_false", dest="usehillsresp", help="use hills responses")
+
+    parser.add_argument("--useapifreq", action="store_true", default=True, help="use API frequency (default: True)")
+    parser.add_argument("--usehillsfreq", action="store_false", dest="useapifreq", help="use hills frequency")
 
     parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
     parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
 
-    parser.add_argument("--useallresp", action="store_true", default=True, help="use all responses, across datasets (default: True)")
-    parser.add_argument("--usehillsresp", action="store_false", dest="useallresp", help="use hills responses")
-
-    parser.add_argument("--useapifreq", action="store_true", default=True, help="use API frequency (default: True)")
-    parser.add_argument("--usehillsfreq", action="store_false", dest="useapifreq", help="use hills frequency")
-    # parser.add_argument("--usehillsfreq", type=str2bool, default=False, help="use hills frequency (default: False)")
-
-    # parser.add_argument("--morales", action="store_true", default=True, help="implement morales model (default: True)")
-    # parser.add_argument("--nomorales", action="store_false", dest="morales", help="don't implement morales models")
-
     parser.add_argument("--heineman", action="store_true", default=True, help="implement heineman models (default: True)")
     parser.add_argument("--noheineman", action="store_false", dest="heineman", help="don't implement heineman models")
-
-    # parser.add_argument("--abbott", action="store_true", default=True, help="implement abbott model (default: True)")
-    # parser.add_argument("--noabbott", action="store_false", dest="abbott", help="don't implement abbott model")
 
     parser.add_argument("--ours1", action="store_true", default=True, help="implement our class 1 models (default: True)")
     parser.add_argument("--noours1", action="store_false", dest="ours1", help="don't implement our class 1 models")
@@ -206,11 +196,6 @@ if __name__ == "__main__":
 
     parser.add_argument("--recovery", action="store_true", default=True, help="recover all models (default: True)")
     parser.add_argument("--norecovery", action="store_false", dest="recovery", help="don't recover models")
-
-    parser.add_argument("--preventrepetition", action="store_true", default=True, help="prevent repetition (default: True)")
-    parser.add_argument("--allowrepetition", action="store_false", dest="preventrepetition", help="don't preventrepetition")
-
-    # parser.add_argument("--sensitivity", type=float, default=5, help="sampling sensitivity")
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")

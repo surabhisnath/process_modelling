@@ -97,6 +97,7 @@ class Ours1(Model):
         weightstouse = self.allweights(weightsfromarg)
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
+
             weightstouse[1] * sim_terms +                                                                             # shape: (len_seq - 2, num_resp)
             weightstouse[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
             weightstouse[3] * sim_terms_2step \
@@ -131,6 +132,8 @@ class Freq(Ours1, nn.Module):
         self.weight_indices = torch.tensor([0], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+# class Activity(Ours1, nn.Module):
 
 class HS(Ours1, nn.Module):
     def __init__(self, parent):
@@ -369,6 +372,44 @@ class FreqWeightedHSWeightedPers2(Ours1, nn.Module):
         if weightsfromarg is not None:
             return log_probs
         
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
+
+class debiased(Ours1, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_features
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.onlyforgroup = True
+
+    def get_nll(self, seq, weightsfromarg=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        logits = torch.stack([torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse).unsqueeze(0) for _ in range(len(seq) - 2)], dim=0)         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
+
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll

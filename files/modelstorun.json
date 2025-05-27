@@ -16,8 +16,10 @@
     "FreqWeightedHS": 1,
     "FreqWeightedHSWeightedPers": 0,
     "FreqWeightedHSWeightedPers2": 0,
+    "debiased": 0,
     "WeightedHSdebiased": 1,
     "FreqWeightedHSdebiased": 1,
+    "FreqWeightedHSWeightedPersdebiased": 0,
     
     "OneCueStaticLocal": 1,
     "OneCueStaticLocal_2step": 0,
