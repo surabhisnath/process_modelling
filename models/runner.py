@@ -33,7 +33,6 @@ def run(config):
         for i in range(modelobj.numsubsamples):
             train_sample = random.sample(train_sequences, k=len(test_sequences))
             BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
-    
     print("TRUE BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
         
     if config["ours1"]:
@@ -53,19 +52,6 @@ def run(config):
         heineman.create_models()
         models["heineman"] = heineman
         fit_results["heineman"] = {}
-    
-    # if config["abbott"]:
-    #     abbott = Abbott(config)
-    #     abbott.create_models()
-    #     models["abbott"] = abbott
-    #     fit_results["abbott"] = {}
-    
-    # if config["morales"]:
-    #     morales = Morales(config)
-    #     morales.create_models()
-    #     models["morales"] = morales
-    #     fit_results["morales"] = {}
-
     
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
@@ -129,7 +115,7 @@ def run(config):
         print("--------------------------------RECOVERING MODELS--------------------------------")
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
-                if model_name_sim != "FreqWeightedHSdebiased":
+                if model_name_sim != "WeightedHSdebiased":
                     continue
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations[::3]
