@@ -1,236 +1,141 @@
 from pylab import *
 import numpy as np
+np.random.seed(42)
 import sys
 import os
-import pandas as pd
+import pickle as pk
 from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
-from abc import ABC, abstractmethod
+import torch
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Hills(Model):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_class = self.__class__.__name__
-        self.resp_to_idx = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
-        # self.pers_mat = self.get_embedding_pers_mat()
-
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        self.model_class = "hills"
+        self.num_total_weights = 3
+     
     def create_models(self):
-        self.models = {
-            subclass.__name__: subclass(self.config)
-            for subclass in Hills.__subclasses__()
-        }
-
-    def only_freq(self, response, weights):
-        num = pow(self.freq[response], weights[0])
-        den = sum(pow(self.d2np(self.freq), weights[0])) + 1e-4
-        nll = -np.log(num / den)
-        # print(weights, num, den, nll, response)
-        return nll
+        self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
     
-    def only_sim(self, response, previous_response, weights):
-        num = pow(self.sim_mat[previous_response][response], weights[0])
-        den = sum(
-            pow(self.d2np(self.sim_mat[previous_response]), weights[0])
-        ) # if [a,b,c] is np array then pow([a,b,c],d) returns [a^d, b^d, c^d]
+    def allweights(self, weights=None):
+        """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
+        w = torch.zeros(self.num_total_weights, device=device)
+        if self.num_weights > 0:
+            if weights is None:
+                w[self.weight_indices] = self.weights
+            else:
+                w[self.weight_indices] = weights
+        return w
+
+    def get_nll(self, seq, weightsfromarg=None):
+        nll = 0
+        sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                              # shape: (len_seq - 2, num_resp)
+        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
         
-        nll = -np.log(num / den)
-        return nll
+        sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
+        if self.dynamic:
+            if self.dynamic_cat:
+                sim_terms_mask = torch.tensor([not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
+            elif self.sim_drop:
+                sim1 = torch.tensor([self.sim_mat[seq[i - 2]][seq[i - 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim2 = torch.tensor([self.sim_mat[seq[i - 1]][seq[i]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim3 = torch.tensor([self.sim_mat[seq[i]][seq[i + 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+                sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                   # (len(seq) - 3,)
+                sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
 
-    def both_freq_sim(self, response, previous_response, weights):
-        num = pow(self.freq[response], weights[0]) * pow(
-            self.sim_mat[previous_response][response], weights[1]
-        )
-        den = sum(
-            pow(self.d2np(self.freq), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1])
-        )
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
 
-        nll = -np.log(num / den)
-        return nll
-
-    @abstractmethod
-    def get_nll(self):
-        """Each child must implement this"""
-        pass
-
-class OneCueStaticGlobal(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 1
-
-    def get_nll(self, weights, seq):
-        # print(weights)
-        nll = 0
-        for i in range(len(seq)):
-            temp = self.only_freq(seq[i], weights)
-            nll += temp
-        return nll
-
-class OneCueStaticLocal(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 1
-
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += -np.log(1/len(self.unique_responses))
-            else:
-                nll += self.only_sim(seq[i], seq[i - 1], weights)
-        return nll
-
-class OneCueStaticLocal_2step(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 1
-
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i < 2:
-                nll += -np.log(1/len(self.unique_responses))
-            else:
-                nll += self.only_sim(seq[i], seq[i - 2], weights)
-        return nll
-
-class OneCueStaticLocal_2steps(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 2
-    
-    def only_sim_2steps(self, response, previous_response, previous_previous_response, weights):
-        num = pow(self.sim_mat[previous_previous_response][response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1])
-        den = sum(
-            pow(self.d2np(self.sim_mat[previous_previous_response]), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1])
+        weightstouse = self.allweights(weightsfromarg)
+        logits = (
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                                   # shape: (1, num_resp)
+            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1) +                                                                          # shape: (len_seq - 2, num_resp)
+            weightstouse[2] * sim_terms_2step
         )
         
-        nll = -np.log(num / den)
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)                                                  # shape: (len_seq - 2, num_resp)
+
+        if weightsfromarg is not None:
+            return log_probs
+        
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+
         return nll
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += -np.log(1/len(self.unique_responses))
-            elif i == 1:
-                nll += self.only_sim(seq[i], seq[i - 1], weights)
-            else:
-                nll += self.only_sim_2steps(seq[i], seq[i - 1], seq[i - 2], weights)
-        return nll
+class OneCueStaticLocal(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 1
+        self.weight_indices = torch.tensor([1], device=device)
 
-class CombinedCueStatic(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class OneCueStaticLocal_2step(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 1
+        self.weight_indices = torch.tensor([2], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class OneCueStaticLocal_12step(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
         self.num_weights = 2
+        self.weight_indices = torch.tensor([1, 2], device=device)
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-        return nll
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-# class CombinedCueStaticPers(Hills):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 3
-    
-#     def freq_sim_pers(self, response, previous_response, previous_previous_response, weights):
-#         num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_response][response], weights[1]) * pow(
-#             self.pers_mat[self.resp_to_idx[previous_previous_response]][self.resp_to_idx[previous_response]][self.resp_to_idx[response]], weights[2]
-#         )
-#         den = sum(
-#             pow(self.d2np(self.freq), weights[0]) * pow(self.d2np(self.sim_mat[previous_response]), weights[1]) * pow(self.pers_mat[self.resp_to_idx[previous_previous_response]][self.resp_to_idx[previous_response]], weights[2])
-#         )
+class CombinedCueStatic(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 1], device=device)
 
-#         nll = -np.log(num / den)
-#         return nll
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += self.only_freq(seq[i], weights)
-#             elif i == 1:
-#                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-#             else:
-#                 nll +- self.freq_sim_pers(seq[i], seq[i - 1], seq[i - 2], weights)
-#         return nll
-
-class CombinedCueStatic_2steps(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
+class CombinedCueStatic_12step(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
         self.num_weights = 3
-    
-    def both_freq_sim_2steps(self, response, previous_response, previous_previous_response, weights):
-        num = pow(self.freq[response], weights[0]) * pow(self.sim_mat[previous_previous_response][response], weights[1]) * pow(
-            self.sim_mat[previous_response][response], weights[2]
-        )
-        den = sum(
-            pow(self.d2np(self.freq), weights[0]) * pow(self.d2np(self.sim_mat[previous_previous_response]), weights[1]) * pow(self.d2np(self.sim_mat[previous_response]), weights[2])
-        )
+        self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
-        nll = -np.log(num / den)
-        return nll
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            elif i == 1:
-                nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-            else:
-                nll += self.both_freq_sim_2steps(seq[i], seq[i - 1], seq[i - 2], weights)
-        return nll
-
-# class CombinedCueDynamicCat(Hills):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 2
-
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0 or not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])):  # interestingly, this line does not throw error in python as if first part is true, it does not evaluate second part of or.
-#                 nll += self.only_freq(seq[i], weights)
-#             else:
-#                 nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-#         return nll
-
-class CombinedCueDynamicSimdrop(Hills):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
+class CombinedCueDynamicCat(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
         self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 1], device=device)
+        self.dynamic = True
+        self.dynamic_cat = True
 
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
-            else:
-                try:
-                    sim1 = self.sim_mat[seq[i - 2]][seq[i - 1]]
-                    sim2 = self.sim_mat[seq[i - 1]][seq[i]]
-                    sim3 = self.sim_mat[seq[i]][seq[i + 1]]
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-                    if sim1 > sim2 < sim3:
-                        nll += self.only_freq(seq[i], weights)
-                    else:
-                        nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-                except:
-                    nll += self.both_freq_sim(seq[i], seq[i - 1], weights)
-            
-        return nll
+class CombinedCueDynamicSimdrop(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 1], device=device)
+        self.dynamic = True
+        self.sim_drop = True
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))

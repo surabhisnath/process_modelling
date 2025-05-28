@@ -14,10 +14,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class Ours1(Model):
+class Ours(Model):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
-        self.model_class = "ours1"
+        self.model_class = "ours"
         self.feature_names, self.features = self.get_features()
         print(self.feature_names)
         self.num_features = len(self.feature_names)
@@ -29,11 +29,11 @@ class Ours1(Model):
 
     def create_models(self):
         if self.config["fitting"] == "individual":
-            subclasses = [subclass for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
-            # self.models = {subclass.__name__: instance for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
+            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
+            # self.models = {subclass.__name__: instance for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
         elif self.config["fitting"] == "group":
-            subclasses = [subclass for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1]
-            # self.models = {subclass.__name__: subclass(self) for subclass in Ours1.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1]
+            # self.models = {subclass.__name__: subclass(self) for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
         ref_name = self.config["refnll"]
         ordered_subclasses = sorted(subclasses, key=lambda cls: 0 if cls.__name__.lower() == ref_name else 1)
         self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
@@ -117,14 +117,14 @@ class Ours1(Model):
 
         return nll
       
-class Random(Ours1, nn.Module):
+class Random(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 0
         self.weight_indices = torch.tensor([], device=device)
 
-class Freq(Ours1, nn.Module):
+class Freq(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -133,9 +133,9 @@ class Freq(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-# class Activity(Ours1, nn.Module):
+# class Activity(Ours, nn.Module):
 
-class HS(Ours1, nn.Module):
+class HS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -144,7 +144,7 @@ class HS(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS2step(Ours1, nn.Module):
+class HS2step(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -153,7 +153,7 @@ class HS2step(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Pers(Ours1, nn.Module):
+class Pers(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -162,7 +162,7 @@ class Pers(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_HS(Ours1, nn.Module):
+class Freq_HS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -171,7 +171,7 @@ class Freq_HS(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS_HS2step(Ours1, nn.Module):
+class HS_HS2step(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -180,7 +180,7 @@ class HS_HS2step(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS_Pers(Ours1, nn.Module):
+class HS_Pers(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -189,7 +189,7 @@ class HS_Pers(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_Pers(Ours1, nn.Module):
+class Freq_Pers(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -198,7 +198,7 @@ class Freq_Pers(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_HS_HS2step(Ours1, nn.Module):
+class Freq_HS_HS2step(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -207,7 +207,7 @@ class Freq_HS_HS2step(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class Freq_HS_Pers(Ours1, nn.Module):
+class Freq_HS_Pers(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -216,7 +216,7 @@ class Freq_HS_Pers(Ours1, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class WeightedHS(Ours1, nn.Module):
+class WeightedHS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -254,7 +254,7 @@ class WeightedHS(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
     
-class FreqWeightedHS(Ours1, nn.Module):
+class FreqWeightedHS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -292,7 +292,7 @@ class FreqWeightedHS(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class FreqWeightedHSWeightedPers(Ours1, nn.Module):
+class FreqWeightedHSWeightedPers(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -334,7 +334,7 @@ class FreqWeightedHSWeightedPers(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class FreqWeightedHSWeightedPers2(Ours1, nn.Module):
+class FreqWeightedHSWeightedPers2(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -376,7 +376,7 @@ class FreqWeightedHSWeightedPers2(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class debiased(Ours1, nn.Module):
+class debiased(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -414,7 +414,7 @@ class debiased(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class WeightedHSdebiased(Ours1, nn.Module):
+class WeightedHSdebiased(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -452,7 +452,7 @@ class WeightedHSdebiased(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class FreqWeightedHSdebiased(Ours1, nn.Module):
+class FreqWeightedHSdebiased(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -490,7 +490,7 @@ class FreqWeightedHSdebiased(Ours1, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
     
-class FreqWeightedHSWeightedPersdebiased(Ours1, nn.Module):
+class FreqWeightedHSWeightedPersdebiased(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)

@@ -3,11 +3,9 @@ import argparse
 import sys
 import os 
 from Model import Model
-from Ours1_Pytorch import Ours1
-from Hills_Pytorch import Hills
-from Heineman_Pytorch import Heineman
-# from Abbott import Abbott
-# from Morales import Morales
+from Ours import Ours
+from Hills import Hills
+from Heineman import Heineman
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 from metrics import *
@@ -35,11 +33,11 @@ def run(config):
             BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
     print("TRUE BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
         
-    if config["ours1"]:
-        ours1 = Ours1(modelobj)
-        ours1.create_models()
-        models["ours1"] = ours1
-        fit_results["ours1"] = {}
+    if config["ours"]:
+        ours = Ours(modelobj)
+        ours.create_models()
+        models["ours"] = ours
+        fit_results["ours"] = {}
     
     if config["hills"]:
         hills = Hills(modelobj)
@@ -171,8 +169,8 @@ if __name__ == "__main__":
     parser.add_argument("--heineman", action="store_true", default=True, help="implement heineman models (default: True)")
     parser.add_argument("--noheineman", action="store_false", dest="heineman", help="don't implement heineman models")
 
-    parser.add_argument("--ours1", action="store_true", default=True, help="implement our class 1 models (default: True)")
-    parser.add_argument("--noours1", action="store_false", dest="ours1", help="don't implement our class 1 models")
+    parser.add_argument("--ours", action="store_true", default=True, help="implement our models (default: True)")
+    parser.add_argument("--noours", action="store_false", dest="ours", help="don't implement our models")
 
     parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
     parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")

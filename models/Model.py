@@ -82,7 +82,6 @@ class Model:
                     self.unique_responses.update(corrected_responses)
             self.unique_responses = list(self.unique_responses)
         
-        
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         if config["useapifreq"]: 
@@ -90,7 +89,6 @@ class Model:
             for k, v in self.freq.items():
                 if pd.isna(v):
                     print(k)
-
             self.freq2 = self.get_frequencies_hills()
             common_keys = set(self.freq) & set(self.freq2)
             values1 = [self.freq[k] for k in common_keys]
@@ -482,30 +480,6 @@ class Model:
                     print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
         pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits{self.suffix}.pk", "wb"))
-
-    # def simulate(self): 
-    #     self.simulations = []
-    #     print(self.__class__.__name__)
-    #     for i in tqdm(range(self.num_sequences)):
-    #         simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
-    #         for j in range(self.sequence_lengths[i] - 2):
-    #             candidates = list(set(self.unique_responses) - set(simulated_sequence))
-    #             if self.__class__.__name__ == "Random":
-    #                 prob_dist = torch.ones(len(self.unique_responses))
-    #             elif self.config["fitting"] == "individual":
-    #                 ll = self.get_nll(simulated_sequence[-2:] + [""], self.results[f"seq{i+1}"]["weights"]).squeeze(0)
-    #                 prob_dist = torch.exp(ll)
-    #             elif self.config["fitting"] == "group":
-    #                 ll = self.get_nll(simulated_sequence[-2:] + [""], self.results["mean_weights"]).squeeze(0)
-    #                 prob_dist = torch.exp(ll)
-    #             inds = [self.unique_response_to_index[c] for c in candidates]
-    #             prob_dist = prob_dist[inds]
-    #             prob_dist /= prob_dist.sum()
-    #             # next_response = np.random.choice(candidates, p=prob_dist)
-    #             indices = torch.multinomial(prob_dist, 1, replacement=True)
-    #             next_response = candidates[indices]
-    #             simulated_sequence.append(next_response)
-    #         self.simulations.append(simulated_sequence)
 
     def simulate(self): 
         try:

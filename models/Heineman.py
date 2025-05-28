@@ -1,40 +1,65 @@
+from pylab import *
 import numpy as np
+np.random.seed(42)
 import sys
 import os
-from Model import Model
+import pickle as pk
+from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
-# from transformers import AutoTokenizer, AutoModelForCausalLM
-# from transformers import LlamaForCausalLM, LlamaTokenizer
-# import torch
-# import torch.nn.functional as F
+import torch
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class Heineman(Model):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
         self.model_class = "heineman"
-        self.cat_trans = self.get_category_transition_matrix()
-    
+        self.cat_trans = self.get_category_transition_matrices()
+        self.num_total_weights = 3
+        self.cat_trans_terms = {}
+        self.split_ind = 0
+     
     def create_models(self):
-        self.models = {
-            subclass.__name__: subclass(self.config)
-            for subclass in Heineman.__subclasses__()
-        }
+        self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+    
+    def get_category_transition_matrices(self):
+        normalized_transition_matrices = np.zeros((self.config["cv"], self.num_categories, self.num_categories))
+        if self.config["fitting"] == "group":
+            for i, (train_seqs, _) in enumerate(self.splits):
+                transition_matrix = np.zeros((self.num_categories, self.num_categories))
+                for seq in train_seqs:
+                    for r in range(1, len(seq)):
+                        previous_categories = self.response_to_category[seq[r - 1]]
+                        categories = self.response_to_category[seq[r]]
+                        
+                        for prev in previous_categories:
+                            for curr in categories:
+                                try:
+                                    transition_matrix[prev, curr] += 1
+                                except:
+                                    continue  # when NaN
+                normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+                normalized_transition_matrices[i] = normalized_transition_matrix
 
-    def get_category_transition_matrix(self):
-        transition_matrix = np.zeros((self.num_categories, self.num_categories))
-        self.data["categories"] = self.data["response"].map(self.response_to_category)
-        self.data["previous_categories"] = self.data.groupby("pid")["categories"].shift()
-        data_of_interest = self.data.dropna(subset=["previous_categories"])
-        for _, row in data_of_interest.iterrows():
-            for prev in row["previous_categories"]:
-                for curr in row["categories"]:
-                    try:
-                        transition_matrix[prev, curr] += 1
-                    except:
-                        continue  # when NaN
-        normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
-        return normalized_transition_matrix
+        else:
+            transition_matrix = np.zeros((self.num_categories, self.num_categories))
+            self.data["categories"] = self.data["response"].map(self.response_to_category)
+            self.data["previous_categories"] = self.data.groupby("pid")["categories"].shift()
+            data_of_interest = self.data.dropna(subset=["previous_categories"])
+            for _, row in data_of_interest.iterrows():
+                for prev in row["previous_categories"]:
+                    for curr in row["categories"]:
+                        try:
+                            transition_matrix[prev, curr] += 1
+                        except:
+                            continue  # when NaN
+            normalized_transition_matrix = transition_matrix / transition_matrix.sum(axis=1, keepdims=True)
+            normalized_transition_matrices[0] = normalized_transition_matrix
+        
+        return normalized_transition_matrices
     
     def get_category_cue(self, response, previous_response):
         cats_prev = set(self.response_to_category[previous_response])
@@ -42,174 +67,86 @@ class Heineman(Model):
         cats_intersection = cats_prev.intersection(cats_curr)
 
         if len(cats_intersection) != 0:
-            return max([self.cat_trans[c, c] for c in cats_intersection])
+            return max([self.cat_trans[self.split_ind, c, c] for c in cats_intersection])
         else:
-            return max([self.cat_trans[c1, c2] for c1 in cats_prev for c2 in cats_curr])
+            return max([self.cat_trans[self.split_ind, c1, c2] for c1 in cats_prev for c2 in cats_curr])
 
-    def only_freq(self, response, weights):
-        num = pow(self.freq[response], weights[0])
-        den = sum(pow(self.d2np(self.freq), weights[0]))
-        if den == 0:
-            return np.inf
-        nll = -np.log(num / den)
-        return nll
-    
-    def all_freq_sim_cat(self, response, previous_response, weights):
-        num = pow(self.freq[response], weights[0]) * pow(
-            self.sim_mat[previous_response][response], weights[1]) * pow(self.get_category_cue(response, previous_response), weights[2])
-        freq = np.array([self.freq[resp] for resp in self.unique_responses])
-        sim = np.array([self.sim_mat[previous_response][resp] for resp in self.unique_responses])
-        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.unique_responses])
-        den = np.sum(
-            (freq ** weights[0]) * (sim ** weights[1]) * (category_cue ** weights[2])
-        )
-
-        nll = -np.log(num / den)
-        return nll
-
-    def only_cat(self, response, previous_response, weights):
-        num = pow(self.get_category_cue(response, previous_response), weights[0])
-        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.unique_responses])
-        den = np.sum(
-            (category_cue ** weights[0])
-        )
-        nll = -np.log(num / den)
-        return nll
-
-    def sim_cat(self, response, previous_response, weights):
-        num = pow(
-            self.sim_mat[previous_response][response], weights[0]) * pow(self.get_category_cue(response, previous_response), weights[1])
-        sim = np.array([self.sim_mat[previous_response][resp] for resp in self.unique_responses])
-        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.unique_responses])
-        den = np.sum(
-            (sim ** weights[0]) * (category_cue ** weights[1])
-        )
-
-        nll = -np.log(num / den)
-        return nll
-    
-    def freq_cat(self, response, previous_response, weights):
-        num = pow(self.freq[response], weights[0]) * pow(self.get_category_cue(response, previous_response), weights[1])
-        freq = np.array([self.freq[resp] for resp in self.unique_responses])
-        category_cue = np.array([self.get_category_cue(resp, previous_response) for resp in self.unique_responses])
-        den = np.sum(
-            (freq ** weights[0]) * (category_cue ** weights[1])
-        )
-
-        nll = -np.log(num / den)
-        return nll
-
-# class OnlySubcategoryCue(Heineman):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 1
-
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += -np.log(1/len(self.unique_responses))
-#             else:
-#                 nll += self.only_cat(seq[i], seq[i - 1], weights)
-#         return nll
-
-# class FreqSubcategoryCue(Heineman):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 2
-
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += self.only_freq(seq[i], weights)
-#             else:
-#                 nll += self.freq_cat(seq[i], seq[i - 1], weights)
-#         return nll
-
-# class SimSubcategoryCue(Heineman):
-#     def __init__(self, config):
-#         super().__init__(config)
-#         self.model_name = self.__class__.__name__
-#         self.num_weights = 2
-
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(len(seq)):
-#             if i == 0:
-#                 nll += -np.log(1/len(self.unique_responses))
-#             else:
-#                 nll += self.sim_cat(seq[i], seq[i - 1], weights)
-#         return nll
-
-class SubcategoryCue(Heineman):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model_name = self.__class__.__name__
-        self.num_weights = 3
-
-    def get_nll(self, weights, seq):
-        nll = 0
-        for i in range(len(seq)):
-            if i == 0:
-                nll += self.only_freq(seq[i], weights)
+    def allweights(self, weights=None):
+        """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
+        w = torch.zeros(self.num_total_weights, device=device)
+        if self.num_weights > 0:
+            if weights is None:
+                w[self.weight_indices] = self.weights
             else:
-                nll += self.all_freq_sim_cat(seq[i], seq[i - 1], weights)
+                w[self.weight_indices] = weights
+        return w
+    
+    def get_nll(self, seq, weightsfromarg=None):
+        nll = 0
+        sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
+        try:
+            cat_trans_terms = self.cat_trans_terms[' '.join(seq)]
+        except:
+            cat_trans_terms = torch.stack([torch.tensor([self.get_category_cue(r_, r) for r_ in self.unique_responses], dtype=float, device=device) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
+            self.cat_trans_terms[' '.join(seq)] = cat_trans_terms
+
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        weightstouse = self.allweights(weightsfromarg)
+        logits = (
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
+            weightstouse[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)
+            weightstouse[2] * cat_trans_terms
+        ) 
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')                                                                                                    # shape: (len_seq - 2, num_resp)
+        log_probs = F.log_softmax(logits, dim=1)                                                                        # shape: (len_seq - 2, num_resp)
+        
+        if weightsfromarg is not None:
+            return log_probs
+        
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+
         return nll
 
-# class LLM(Heineman):
-#     # def LLM_prob(self, response, previous_responses, weights):
-#     #     animal_probs = {}
-#     #     for animal in self.unique_responses:
-#     #         previous_responses.append(animal)
-#     #         inputs = self.tokenizer(", ".join(previous_responses), return_tensors="pt")
-#     #         # with torch.no_grad():
-#     #         #     outputs = self.model(**context_tokens)
-#     #         #     logits = outputs.logits
-#     #         # next_token_logits = logits[0, -1]
-#     #         # probs = F.softmax(next_token_logits, dim=-1)
-#     #         # animal_probs[animal] = probs.item()
-#     #         res = self.model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'], labels=inputs['input_ids'])
-#     #         prob = np.exp(-res.loss.item())
-#     #         animal_probs[animal] = prob
-#     #     total_prob = sum(list(animal_probs.values()))
-#     #     relative_probs = {k: v / total_prob for k, v in animal_probs.items()}
-#     #     return -np.log(relative_probs[response])
-    
-#     def LLM_prob(self, candidate, context, weights):
-#         text = ", ".join(context) + ", " + candidate
-#         inputs = self.tokenizer(text, return_tensors="pt")
-#         input_ids = inputs["input_ids"]
-        
-#         with torch.no_grad():
-#             outputs = self.model(**inputs)
-#             logits = outputs.logits[:, :-1, :]
-#             labels = input_ids[:, 1:]
-#             log_probs = torch.nn.functional.log_softmax(logits, dim=-1)
-#             selected_log_probs = log_probs.gather(2, labels.unsqueeze(-1)).squeeze(-1)
-#             avg_nll = -selected_log_probs.mean().item()
-#             perplexity = torch.exp(-selected_log_probs.mean()).item()
-        
-#         return avg_nll
+class Freq_Sim_Subcategory(Heineman, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 3
+        self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(0, len(seq)):
-#             if i == 0:
-#                 nll += self.only_freq(seq[i], weights)
-#             else:
-#                 nll += self.LLM_prob(seq[i], seq[:i], weights)
-#                 print(seq[i], seq[:i], nll)
-#         return nll
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        
+class Subcategory(Heineman, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 1
+        self.weight_indices = torch.tensor([2], device=device)
 
-# class LLMasLocalCue(Heineman):
-#     def get_nll(self, weights, seq):
-#         nll = 0
-#         for i in range(0, len(seq)):
-#             if i == 0:
-#                 nll += self.only_freq(seq[i], weights)
-#             else:
-#                 nll += self.freq_LLM(seq[i], seq[i - 1], weights)
-#         return nll
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class Freq_Subcategory(Heineman, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([0, 2], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+class Sim_Subcategory(Heineman, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = 2
+        self.weight_indices = torch.tensor([1, 2], device=device)
+
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
