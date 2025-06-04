@@ -119,6 +119,7 @@ class Model:
         self.sim_drop = False
 
         self.suffix = ""
+        self.random_weight_changes = None
          
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
@@ -203,8 +204,8 @@ class Model:
     def get_embeddings(self): 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         if self.config["representation"] == "clip":
-            model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14").to(device)
-            tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14")
+            model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True).to(device)
+            tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True)
             inputs = tokenizer(self.unique_responses, padding=True, return_tensors="pt").to(device)
             with torch.no_grad():
                 outputs = model(**inputs)
@@ -481,6 +482,13 @@ class Model:
 
         pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits{self.suffix}.pk", "wb"))
 
+    def wrapper(self, weights):
+        if self.config["fakeweightssimulate"]:
+            if self.random_weight_changes is None:
+                self.random_weight_changes = np.random.choice([1, -1], size=self.num_weights, replace=True)
+            weights = weights + self.random_weight_changes
+        return weights
+    
     def simulate(self): 
         try:
             results = self.results
@@ -499,10 +507,10 @@ class Model:
                         if self.__class__.__name__ == "Random":
                             prob_dist = torch.ones(len(self.unique_responses))
                         elif self.config["fitting"] == "individual":
-                            ll = self.get_nll(simulated_sequence[-2:] + [""], results[f"seq{i+1}"]["weights"]).squeeze(0)
+                            ll = self.get_nll(simulated_sequence[-2:] + [""], self.wrapper(results[f"seq{i+1}"]["weights"])).squeeze(0)
                             prob_dist = torch.exp(ll)
                         elif self.config["fitting"] == "group":
-                            ll = self.get_nll(simulated_sequence[-2:] + [""], results[f"weights_fold{split_ind + 1}"]).squeeze(0)
+                            ll = self.get_nll(simulated_sequence[-2:] + [""], self.wrapper(results[f"weights_fold{split_ind + 1}"])).squeeze(0)
                             prob_dist = torch.exp(ll)
                         inds = [self.unique_response_to_index[c] for c in candidates]
                         prob_dist = prob_dist[inds]

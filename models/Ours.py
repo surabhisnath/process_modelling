@@ -19,7 +19,7 @@ class Ours(Model):
         self.__dict__.update(parent.__dict__)
         self.model_class = "ours"
         self.feature_names, self.features = self.get_features()
-        print(self.feature_names)
+        # print(self.feature_names)
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
         self.pers_mat = self.get_feature_pers_mat()
@@ -42,10 +42,7 @@ class Ours(Model):
         featuredict = pk.load(open(f"../files/{self.config['featurestouse']}.pk", "rb"))
         feature_names = next(iter(featuredict.values())).keys()
         # feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
-        if self.config["featurestouse"] == "vf_features":
-            return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
-        elif self.config["featurestouse"] == "vf_features_updated":
-            return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "") == 1 else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
+        return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
 
     def get_feature_sim_mat(self):
         sim_matrix = {response: {} for response in self.unique_responses}

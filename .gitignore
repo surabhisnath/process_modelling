@@ -5,4 +5,5 @@ __pycache__
 ./models
 ./models/*
 scripts/keys.json
+scripts/LLM_features/keys.json
 category-fluency

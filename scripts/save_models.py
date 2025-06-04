@@ -19,14 +19,15 @@
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
-save_dir = "../../models/meta-llama-3.1-8B-instruct/"  # Directory to save the model
+# model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
+# save_dir = "../../models/meta-llama-3.1-8B-instruct/"  # Directory to save the model
 
-# Download and save the model and tokenizer
+model_id = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
+save_dir = "../../models/DeepSeek-R1-0528-Qwen3-8B/"
+
 model = AutoModelForCausalLM.from_pretrained(model_id)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 
-# Save the model and tokenizer locally
 model.save_pretrained(save_dir)
 tokenizer.save_pretrained(save_dir)
 

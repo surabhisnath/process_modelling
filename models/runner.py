@@ -113,7 +113,7 @@ def run(config):
         print("--------------------------------RECOVERING MODELS--------------------------------")
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
-                if model_name_sim != "WeightedHSdebiased":
+                if model_name_sim != "FreqWeightedHSdebiased_fake":
                     continue
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations[::3]
@@ -123,7 +123,7 @@ def run(config):
                 for model_class in models:
                     for model_name in models[model_class].models:
                         print(model_class, model_name)
-                        models[model_class].models[model_name].suffix = "_recovery"
+                        models[model_class].models[model_name].suffix = f"_recovery_{model_name_sim.lower()}"
                         models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(simseqs)
                         start_time = time.time()
                         models[model_class].models[model_name].fit(simseqs)
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
     parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
-    parser.add_argument("--featurestouse", type=str, default="vf_features", help="features to use: vf_features or vf_features_updated")
+    parser.add_argument("--featurestouse", type=str, default="features_gpt4omini", help="features to use: features_gpt4omini or features_llama")
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
     parser.add_argument("--nomask", action="store_false", dest="mask", help="don't use mask")
 
@@ -177,6 +177,8 @@ if __name__ == "__main__":
 
     parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
     parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
+    parser.add_argument("--nofakeweightssimulate", action="store_true", default=True, help="don't simulate fake weights (default: True)")
+    parser.add_argument("--fakeweightssimulate", action="store_false", dest="nofakeweightssimulate", help="simulate fake weights")
 
     parser.add_argument("--recovery", action="store_true", default=True, help="recover all models (default: True)")
     parser.add_argument("--norecovery", action="store_false", dest="recovery", help="don't recover models")
