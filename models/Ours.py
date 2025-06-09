@@ -19,27 +19,28 @@ class Ours(Model):
         self.__dict__.update(parent.__dict__)
         self.model_class = "ours"
         self.feature_names, self.features = self.get_features()
+        # print(self.features)
         # print(self.feature_names)
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
         self.pers_mat = self.get_feature_pers_mat()
         self.all_features = torch.stack([self.features[r] for r in self.unique_responses])  # shape: [R, D]
-        self.num_total_weights = 5
+        self.num_total_weights = 2
         self.onlyforgroup = False
 
     def create_models(self):
         if self.config["fitting"] == "individual":
-            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
-            # self.models = {subclass.__name__: instance for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
+            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
+            # self.models = {subclass.__name__: instance for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
         elif self.config["fitting"] == "group":
-            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1]
-            # self.models = {subclass.__name__: subclass(self) for subclass in Ours.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+            subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1]
+            # self.models = {subclass.__name__: subclass(self) for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
         ref_name = self.config["refnll"]
         ordered_subclasses = sorted(subclasses, key=lambda cls: 0 if cls.__name__.lower() == ref_name else 1)
         self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
 
     def get_features(self):
-        featuredict = pk.load(open(f"../files/{self.config['featurestouse']}.pk", "rb"))
+        featuredict = pk.load(open(f"../files/features_{self.config['featurestouse']}.pk", "rb"))
         feature_names = next(iter(featuredict.values())).keys()
         # feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
         return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
@@ -94,10 +95,7 @@ class Ours(Model):
         weightstouse = self.allweights(weightsfromarg)
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
-
-            weightstouse[1] * sim_terms +                                                                             # shape: (len_seq - 2, num_resp)
-            weightstouse[2] * self.np2ts(pers_terms) +                                                                # shape: (len_seq - 2, num_resp)
-            weightstouse[3] * sim_terms_2step \
+            weightstouse[1] * sim_terms                                                                          # shape: (len_seq - 2, num_resp)
             # + weightstouse[4] * torch.tensor(repeated, device=device)
         )
 
@@ -130,8 +128,6 @@ class Freq(Ours, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-# class Activity(Ours, nn.Module):
-
 class HS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
@@ -141,75 +137,12 @@ class HS(Ours, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-class HS2step(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([3], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class Pers(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 1
-        self.weight_indices = torch.tensor([2], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
 class Freq_HS(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 1], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class HS_HS2step(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 3], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class HS_Pers(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([1, 2], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class Freq_Pers(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 2
-        self.weight_indices = torch.tensor([0, 2], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class Freq_HS_HS2step(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 3], device=device)
-
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-class Freq_HS_Pers(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = 3
-        self.weight_indices = torch.tensor([0, 1, 2], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
@@ -289,91 +222,7 @@ class FreqWeightedHS(Ours, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class FreqWeightedHSWeightedPers(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = self.num_features + 1
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-        self.onlyforgroup = True
-
-    def get_nll(self, seq, weightsfromarg=None):
-        if weightsfromarg is not None:
-            weightstouse = weightsfromarg.to(device=device)
-        else:
-            weightstouse = self.weights
-
-        nll = 0
-        prev_prev_feats = torch.stack([self.features[r] for r in seq[:-2]])         # Shape: (L, D) where L = len(seq) - 2
-        prev_feats = torch.stack([self.features[r] for r in seq[1:-1]])             # Shape: (L, D) where L = len(seq) - 2
-        prev_diffs = (prev_prev_feats == prev_feats).float()                        # not_change_1 = L, D
-        all_feats = torch.stack([self.features[r] for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
-        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)        
-        
-        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
-        for i in range(2, len(seq)):
-            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
-            mask[i - 2, visited_responses] = 0
-
-        logits = weightstouse[0] * self.d2ts(self.freq).to(device).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:])                                                                        # Shape: (L, N)
-        logits_add = torch.einsum('ld,lnd,d->ln', prev_diffs, all_diffs, weightstouse[1:]) / (prev_diffs.sum(dim=1).unsqueeze(1) + 1e-6)
-        logits += logits_add
-
-        if self.config["mask"]:
-            mask = torch.tensor(mask, dtype=torch.bool, device=device)
-            logits[mask == 0] = float('-inf')
-        log_probs = F.log_softmax(logits, dim=1)
-
-        if weightsfromarg is not None:
-            return log_probs
-        
-        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
-        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
-        return nll
-
-class FreqWeightedHSWeightedPers2(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = self.num_features * 2 + 1
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-        self.onlyforgroup = True
-
-    def get_nll(self, seq, weightsfromarg=None):
-        if weightsfromarg is not None:
-            weightstouse = weightsfromarg.to(device=device)
-        else:
-            weightstouse = self.weights
-
-        nll = 0
-        prev_prev_feats = torch.stack([self.features[r] for r in seq[:-2]])         # Shape: (L, D) where L = len(seq) - 2
-        prev_feats = torch.stack([self.features[r] for r in seq[1:-1]])             # Shape: (L, D) where L = len(seq) - 2
-        prev_diffs = (prev_prev_feats == prev_feats).float()                        # not_change_1 = L, D
-        all_feats = torch.stack([self.features[r] for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
-        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)        
-        
-        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
-        for i in range(2, len(seq)):
-            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
-            mask[i - 2, visited_responses] = 0
-
-        logits = weightstouse[0] * self.d2ts(self.freq).to(device).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightstouse[1: 1 + self.num_features])                                                                        # Shape: (L, N)
-        logits_add = torch.einsum('ld,lnd,d->ln', prev_diffs, all_diffs, weightstouse[1 + self.num_features:]) / (prev_diffs.sum(dim=1).unsqueeze(1) + 1e-6)
-        logits += logits_add
-
-        if self.config["mask"]:
-            mask = torch.tensor(mask, dtype=torch.bool, device=device)
-            logits[mask == 0] = float('-inf')
-        log_probs = F.log_softmax(logits, dim=1)
-
-        if weightsfromarg is not None:
-            return log_probs
-        
-        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
-        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
-        return nll
-
-class debiased(Ours, nn.Module):
+class Activity(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -397,8 +246,8 @@ class debiased(Ours, nn.Module):
             visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
             mask[i - 2, visited_responses] = 0
 
-        logits = torch.stack([torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse).unsqueeze(0) for _ in range(len(seq) - 2)], dim=0)         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
-        
+        logits = torch.stack([torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse) for _ in range(len(seq) - 2)], dim=0)         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
+
         if self.config["mask"]:
             mask = torch.tensor(mask, dtype=torch.bool, device=device)
             logits[mask == 0] = float('-inf')
@@ -411,7 +260,7 @@ class debiased(Ours, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class WeightedHSdebiased(Ours, nn.Module):
+class WeightedHSActivity(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -449,7 +298,7 @@ class WeightedHSdebiased(Ours, nn.Module):
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
 
-class FreqWeightedHSdebiased(Ours, nn.Module):
+class FreqWeightedHSActivity(Ours, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
         nn.Module.__init__(self)
@@ -475,48 +324,6 @@ class FreqWeightedHSdebiased(Ours, nn.Module):
 
         logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:1 + self.num_weights//2]) + torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse[1 + self.num_weights//2:]).unsqueeze(0)         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
         
-        if self.config["mask"]:
-            mask = torch.tensor(mask, dtype=torch.bool, device=device)
-            logits[mask == 0] = float('-inf')
-        log_probs = F.log_softmax(logits, dim=1)
-
-        if weightsfromarg is not None:
-            return log_probs
-
-        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
-        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
-        return nll
-    
-class FreqWeightedHSWeightedPersdebiased(Ours, nn.Module):
-    def __init__(self, parent):
-        self.__dict__.update(parent.__dict__)
-        nn.Module.__init__(self)
-        self.num_weights = self.num_features * 3 + 1
-        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-        self.onlyforgroup = True
-
-    def get_nll(self, seq, weightsfromarg=None):
-        if weightsfromarg is not None:
-            weightstouse = weightsfromarg
-        else:
-            weightstouse = self.weights
-
-        nll = 0
-        prev_prev_feats = torch.stack([self.features[r] for r in seq[:-2]])         # Shape: (L, D) where L = len(seq) - 2
-        prev_feats = torch.stack([self.features[r] for r in seq[1:-1]])             # Shape: (L, D) where L = len(seq) - 2
-        prev_diffs = (prev_prev_feats == prev_feats).float()                        # not_change_1 = L, D
-        all_feats = torch.stack([self.features[r] for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
-        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()
-
-        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
-        for i in range(2, len(seq)):
-            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
-            mask[i - 2, visited_responses] = 0
-
-        logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:1 + self.num_features]) + torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse[1 + self.num_features: 1 + 2*self.num_features]).unsqueeze(0)         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
-        logits_add = torch.einsum('ld,lnd,d->ln', prev_diffs, all_diffs, weightstouse[1 + 2*self.num_features:]) / (prev_diffs.sum(dim=1).unsqueeze(1) + 1e-6)
-        logits += logits_add
-
         if self.config["mask"]:
             mask = torch.tensor(mask, dtype=torch.bool, device=device)
             logits[mask == 0] = float('-inf')

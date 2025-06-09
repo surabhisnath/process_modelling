@@ -182,7 +182,7 @@ for path in ["../../csvs/divergent.csv", "../../csvs/similar.csv", "../../csvs/n
 texts = sorted(list(texts))
 print(len(texts), texts[:5])
 
-for idx, response in enumerate(texts[:200]):
+for idx, response in enumerate(texts):
     print(response, idx / len(texts))
     if response not in features_dict:
         features_dict[response] = {}

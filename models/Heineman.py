@@ -23,7 +23,7 @@ class Heineman(Model):
         self.split_ind = 0
      
     def create_models(self):
-        self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+        self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
     
     def get_category_transition_matrices(self):
         normalized_transition_matrices = np.zeros((self.config["cv"], self.num_categories, self.num_categories))

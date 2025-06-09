@@ -10,7 +10,7 @@ def out_to_binary(out):
         return 0
 
 llama_features = pk.load(open("../files/features_llama.pk", "rb"))
-gpt4omini_features = pk.load(open("../files/features_gpt4omini_all.pk", "rb"))
+gpt4omini_features = pk.load(open("../files/features_gpt41.pk", "rb"))
 
 common_features = list(set(next(iter(llama_features.values()))).intersection(set(next(iter(gpt4omini_features.values())))))
 
@@ -178,10 +178,12 @@ data2 = {outer_k: {k: out_to_binary(inner_v[k]) for k in common if k in inner_v}
          for outer_k, inner_v in gpt4omini_features.items()}
 
 df1 = pd.DataFrame.from_dict(data1, orient='index')
+df1 = df1.sort_index(ascending=True)
 df2 = pd.DataFrame.from_dict(data2, orient='index')
+df2 = df2.sort_index(ascending=True)
 
-# print(df1)
-# print(df2)
+print(df1)
+print(df2)
 
 agreement = (df1 == df2).astype(int)
 # print(agreement, type(agreement))

@@ -20,7 +20,7 @@ class Hills(Model):
         self.num_total_weights = 3
      
     def create_models(self):
-        self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun[subclass.__name__] == 1}
+        self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
     
     def allweights(self, weights=None):
         """Returns a vector of all weights, with 0s or constants in non-trainable positions."""

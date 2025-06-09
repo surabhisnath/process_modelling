@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
     parser.add_argument("--tol", type=float, default=1e-6, help="gradient and function/param tolerance")
-    parser.add_argument("--maxiter", type=int, default=5000, help="maximum number of training iterations")
+    parser.add_argument("--maxiter", type=int, default=1500, help="maximum number of training iterations")
 
     parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
     parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
     parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
-    parser.add_argument("--featurestouse", type=str, default="features_gpt4omini", help="features to use: features_gpt4omini or features_llama")
+    parser.add_argument("--featurestouse", type=str, default="gpt41", help="features to use: gpt41 or gpt4omini or llama")
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
     parser.add_argument("--nomask", action="store_false", dest="mask", help="don't use mask")
 

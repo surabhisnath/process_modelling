@@ -480,7 +480,7 @@ class Model:
                 if model.module.num_weights > 0:
                     print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
-        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits{self.suffix}.pk", "wb"))
+        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
     def wrapper(self, weights):
         if self.config["fakeweightssimulate"]:
