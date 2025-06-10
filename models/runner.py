@@ -116,20 +116,21 @@ def run(config):
                 if model_name_sim != "FreqWeightedHSdebiased_fake":
                     continue
                 try:
-                    simseqs = models[model_class_sim].models[model_name_sim].simulations[::3]
+                    simseqs = models[model_class_sim].models[model_name_sim].simulations
                 except:
-                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations.pk", "rb"))[::3]
+                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations.pk", "rb"))
                 
                 for model_class in models:
                     for model_name in models[model_class].models:
-                        print(model_class, model_name)
-                        models[model_class].models[model_name].suffix = f"_recovery_{model_name_sim.lower()}"
-                        models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(simseqs)
-                        start_time = time.time()
-                        models[model_class].models[model_name].fit(simseqs)
-                        end_time = time.time()
-                        elapsed_time = end_time - start_time
-                        print(f"{model_name} completed in {elapsed_time:.2f} seconds")
+                        for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
+                            print(model_class, model_name)
+                            models[model_class].models[model_name].suffix = f"_recovery_{model_name_sim.lower()}_{ssid + 1}"
+                            models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(ss)
+                            start_time = time.time()
+                            models[model_class].models[model_name].fit(ss)
+                            end_time = time.time()
+                            elapsed_time = end_time - start_time
+                            print(f"{model_name} completed in {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
 

@@ -493,7 +493,7 @@ class Model:
         try:
             results = self.results
         except:
-            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits.pk", "rb"))
+            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}.pk", "rb"))
         self.simulations = []
         self.bleus = []
         print(self.__class__.__name__)

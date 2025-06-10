@@ -23,7 +23,6 @@ class Ours(Model):
         # print(self.feature_names)
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
-        self.pers_mat = self.get_feature_pers_mat()
         self.all_features = torch.stack([self.features[r] for r in self.unique_responses])  # shape: [R, D]
         self.num_total_weights = 2
         self.onlyforgroup = False
@@ -59,10 +58,6 @@ class Ours(Model):
                 self.not_change_mat[i, j] = equal_feats  # (D,)
         return sim_matrix
 
-    def get_feature_pers_mat(self):
-        return torch.einsum('ijd,jkd->ijk', self.not_change_mat, self.not_change_mat)  / (self.not_change_mat.sum(dim=2).unsqueeze(2) + 1e-6)   # (N, N, N) / (N, N, 1) = (N, N, N)
-        # return np.einsum('ijd,jkd->ijk', self.not_change_mat, self.not_change_mat) / np.expand_dims(self.not_change_mat.sum(axis=2), 2)
-    
     def allweights(self, weights=None):
         """Returns a vector of all weights, with 0s or constants in non-trainable positions."""
         w = torch.zeros(self.num_total_weights, device=device)
@@ -76,12 +71,7 @@ class Ours(Model):
     def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
-        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
 
-        previous_responses = [self.unique_response_to_index[r] for r in seq[1:-1]]
-        previous_previous_responses = [self.unique_response_to_index[r] for r in seq[:-2]]
-        pers_terms = self.pers_mat[previous_previous_responses, previous_responses]                                     # shape: (len_seq - 2, num_resp)
-        
         # repeated = np.zeros((len(seq) - 2, len(self.unique_responses)))
         # for i in range(2, len(seq)):
         #     repeated_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
