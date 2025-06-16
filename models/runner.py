@@ -113,8 +113,8 @@ def run(config):
         print("--------------------------------MODEL RECOVERY--------------------------------")
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
-                # if model_name_sim != "FreqWeightedHSdebiased":
-                #     continue
+                if model_name_sim != "Freq_HS":
+                    continue
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations
                 except:

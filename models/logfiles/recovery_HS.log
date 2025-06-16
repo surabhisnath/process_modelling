@@ -1,0 +1,35 @@
+nohup: ignoring input
+cuda
+CUDA available: True
+GPU count: 1
+{'dataset': 'hills', 'representation': 'clip', 'fit': False, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 1500, 'plot': True, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'gpt41', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours': True, 'print': True, 'simulate': False, 'recovery': True, 'parameterrecovery': False, 'test': True}
+PearsonRResult(statistic=0.8111776779971025, pvalue=4.3609784880370466e-83)
+SignificanceResult(statistic=0.8315043648483255, pvalue=7.335546720418129e-91)
+TRUE BLEUS MEAN: {'bleu1': 0.9086666666666667, 'bleu2': 0.242, 'bleu3': 0.030000000000000002, 'bleu4': 0.0006666666666666666}
+--------------------------------PLOTTING MODELS--------------------------------
+ours Random
+ours Freq
+ours HS
+ours Freq_HS
+ours WeightedHS
+ours FreqWeightedHS
+ours Activity
+ours WeightedHSActivity
+ours FreqWeightedHSActivity
+hills OneCueStaticLocal
+hills CombinedCueStatic
+heineman Freq_Sim_Subcategory
+--------------------------------MODEL RECOVERY--------------------------------
+Freq_HS ours Random 0
+Mean +- SE trainNLL over 5 fold(s) 22216.364453125 +- 136.9670852979543
+Sum testNLL over 5 fold(s) 27770.4541015625
+Random completed in 1.56 seconds
+Freq_HS ours Random 1
+Mean +- SE trainNLL over 5 fold(s) 22216.36796875 +- 92.47427211882368
+Sum testNLL over 5 fold(s) 27770.4541015625
+Random completed in 1.52 seconds
+Freq_HS ours Random 2
+Mean +- SE trainNLL over 5 fold(s) 22216.3625 +- 167.61523120344484
+Sum testNLL over 5 fold(s) 27770.45166015625
+Random completed in 1.52 seconds
+Freq_HS ours Freq 0
