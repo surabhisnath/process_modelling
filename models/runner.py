@@ -80,7 +80,7 @@ def run(config):
                     elif config["fitting"] == "group":
                         modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
                 except:
-                    results = pk.load(open(f"../fits/{model_name.lower()}_results.pk", "rb"))
+                    results = pk.load(open(f"../fits/{model_name.lower()}_fits_{config["featurestouse"]}.pk", "rb"))
                     if config["fitting"] == "individual":
                         modelnlls.append(results["mean_minNLL"])
                         se_modelnlls.append(results["se_minNLL"])
@@ -110,20 +110,20 @@ def run(config):
                 #     models[model_class].models[model_name].test()
          
     if config["recovery"]:
-        print("--------------------------------RECOVERING MODELS--------------------------------")
+        print("--------------------------------MODEL RECOVERY--------------------------------")
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
-                if model_name_sim != "FreqWeightedHSdebiased_fake":
-                    continue
+                # if model_name_sim != "FreqWeightedHSdebiased":
+                #     continue
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations
                 except:
-                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations.pk", "rb"))
+                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations_{config["featurestouse"]}.pk", "rb"))
                 
                 for model_class in models:
                     for model_name in models[model_class].models:
                         for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
-                            print(model_class, model_name)
+                            print(model_name_sim, model_class, model_name, ssid)
                             models[model_class].models[model_name].suffix = f"_recovery_{model_name_sim.lower()}_{ssid + 1}"
                             models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(ss)
                             start_time = time.time()
@@ -131,6 +131,12 @@ def run(config):
                             end_time = time.time()
                             elapsed_time = end_time - start_time
                             print(f"{model_name} completed in {elapsed_time:.2f} seconds")
+    
+    if config["parameterrecovery"]:
+        print("--------------------------------PARAMETER RECOVERY--------------------------------")
+        best_model_class = "ours"
+        best_model_name = "FreqWeightedHSActivity"
+        models[best_model_class].models[best_model_name].simulate()
 
 if __name__ == "__main__":
 
@@ -178,11 +184,10 @@ if __name__ == "__main__":
 
     parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
     parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
-    parser.add_argument("--nofakeweightssimulate", action="store_true", default=True, help="don't simulate fake weights (default: True)")
-    parser.add_argument("--fakeweightssimulate", action="store_false", dest="nofakeweightssimulate", help="simulate fake weights")
 
-    parser.add_argument("--recovery", action="store_true", default=True, help="recover all models (default: True)")
-    parser.add_argument("--norecovery", action="store_false", dest="recovery", help="don't recover models")
+    parser.add_argument("--recovery", action="store_true", help="recover all models (default: False)")
+    parser.add_argument("--parameterrecovery", action="store_true", help="simulate fake weights (default: False)")
+
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
