@@ -119,7 +119,7 @@ class Model:
         self.sim_drop = False
 
         self.suffix = ""
-        self.random_weight_changes = None
+        self.custom_splits = None
          
     def d2ts(self, some_dict):
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
@@ -296,11 +296,11 @@ class Model:
         plt.savefig(os.path.join(plot_dir, f"params_{self.__class__.__name__}.png"))
         plt.close()
 
-    def fit(self, sequencesfromarg=None):
-        if sequencesfromarg is None:
+    def fit(self, customsequences=None):
+        if customsequences is None:
             splitstofit = self.splits
         else:
-            splitstofit = self.splits_recovery
+            splitstofit = self.custom_splits
         
         refnll = self.config["refnll"].lower()
 
@@ -377,23 +377,21 @@ class Model:
                 print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
         pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
-
-    def wrapper(self, weights):
-        if self.config["parameterrecovery"]:
-            if self.random_weight_changes is None:
-                self.random_weight_changes = np.random.choice([1, -1], size=self.num_weights, replace=True)
-            weights = weights + self.random_weight_changes
-        return weights
     
-    def simulate(self): 
+    def simulate(self, customsequences=None):
+        if customsequences is None:
+            splitstofit = self.splits
+        else:
+            splitstofit = self.custom_splits
+
         try:
             results = self.results
         except:
-            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}.pk", "rb"))
+            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "rb"))
         self.simulations = []
         self.bleus = []
         print(self.__class__.__name__)
-        for split_ind, (train_seqs, test_seqs) in enumerate(self.splits):
+        for split_ind, (train_seqs, test_seqs) in enumerate(splitstofit):
             for _ in range(self.numsubsamples):
                 forbleu = []
                 for i in range(len(test_seqs)):
@@ -416,12 +414,41 @@ class Model:
                 self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in test_seqs]))
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
-        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}.pk", "wb"))
+        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
     
+    def simulateweights(self, weights):
+        self.simulations = []
+        self.bleus = []
+        print(self.__class__.__name__)
+        for _ in range(self.numsubsamples):
+            forbleu = []
+            for i in range(len(self.sequences)):
+                simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
+                for l in range(len(self.sequences[i]) - 2):
+                    candidates = list(set(self.unique_responses) - set(simulated_sequence))
+                    ll = self.get_nll(simulated_sequence[-2:] + [""], weights).squeeze(0)
+                    prob_dist = torch.exp(ll)
+                    inds = [self.unique_response_to_index[c] for c in candidates]
+                    prob_dist = prob_dist[inds]
+                    prob_dist /= prob_dist.sum()
+                    indices = torch.multinomial(prob_dist, 1, replacement=True)
+                    next_response = candidates[indices]
+                    simulated_sequence.append(next_response)
+                self.simulations.append(simulated_sequence)
+                forbleu.append(simulated_sequence)
+            self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in self.sequences]))
+        print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
+
+        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+
+        if self.config["print"]:
+            print(self.model_class, "simulations..................")
+            print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
+
     def test(self):
         model_bleu = calculate_bleu([sim[2:] for sim in self.simulations], [seq[2:] for seq in self.sequences])     # only calc overlap from 3 onwards
         print(model_bleu)

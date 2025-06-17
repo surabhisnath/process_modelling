@@ -21,6 +21,11 @@ import random
 random.seed(42)
 import pickle as pk
 
+def changeweights(weights, i):
+    random_weight_changes = np.random.choice([1, -1], size=self.num_weights, replace=True)
+    weights = weights + random_weight_changes
+    return weights
+
 def run(config):
     models = {}
     fit_results = {}
@@ -113,7 +118,7 @@ def run(config):
         print("--------------------------------MODEL RECOVERY--------------------------------")
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
-                if model_name_sim != "Freq_HS":
+                if model_name_sim != "HS":
                     continue
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations
@@ -125,18 +130,44 @@ def run(config):
                         for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
                             print(model_name_sim, model_class, model_name, ssid)
                             models[model_class].models[model_name].suffix = f"_recovery_{model_name_sim.lower()}_{ssid + 1}"
-                            models[model_class].models[model_name].splits_recovery = models[model_class].models[model_name].split_sequences(ss)
+                            models[model_class].models[model_name].custom_splits = models[model_class].models[model_name].split_sequences(ss)
                             start_time = time.time()
-                            models[model_class].models[model_name].fit(ss)
+                            models[model_class].models[model_name].fit(customsequences=True)
                             end_time = time.time()
                             elapsed_time = end_time - start_time
                             print(f"{model_name} completed in {elapsed_time:.2f} seconds")
     
     if config["parameterrecovery"]:
         print("--------------------------------PARAMETER RECOVERY--------------------------------")
+        # fit on full data, get weights, simulate, recover
+        # modulate original weights, simulate, recover (repeat 10 times)
         best_model_class = "ours"
         best_model_name = "FreqWeightedHSActivity"
-        models[best_model_class].models[best_model_name].simulate()
+        suffix = f"_fulldata"
+        try:
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        
+        weights = results[f"weights_fold1{suffix}"]
+
+        for i in range(11):
+            models[best_model_class].models[best_model_name].suffix = suffix + f"fakeweights_{i}"
+            models[best_model_class].models[best_model_name].simulateweights(weights)
+            simseqs = models[best_model_class].models[best_model_name].simulations
+            for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
+                print(model_name_sim, model_class, model_name, ssid)
+                models[best_model_class].models[best_model_name].suffix = f"_paramrecovery_{ssid + 1}_{i + 1}"
+                models[best_model_class].models[best_model_name].custom_splits = [(ss, [])]
+                start_time = time.time()
+                models[best_model_class].models[best_model_name].fit(customsequences=True)
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                print(f"{model_name} completed in {elapsed_time:.2f} seconds")
+            weights = changeweights(weights, i)
 
 if __name__ == "__main__":
 
