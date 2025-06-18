@@ -20,11 +20,58 @@ import matplotlib.pyplot as plt
 import random
 random.seed(42)
 import pickle as pk
+np.random.seed(42)
+import pickle as pk
+import os
+torch.manual_seed(42)
 
 def changeweights(weights, i):
-    random_weight_changes = np.random.choice([1, -1], size=self.num_weights, replace=True)
-    weights = weights + random_weight_changes
-    return weights
+    device = weights.device
+    shape = weights.shape
+    print(i)
+    if i == 0:
+        return weights
+    if i == 1:
+        # Variation 1: Add small Gaussian noise (std=0.1)
+        noise = torch.randn(shape, device=device) * 0.1
+        fakeweights = weights + noise
+    elif i == 2:
+        # Variation 2: Add larger Gaussian noise (std=0.3)
+        noise = torch.randn(shape, device=device) * 0.3
+        fakeweights = weights + noise
+    elif i == 3:
+        # Variation 3: Scale weights by small multiplicative noise (mean=1.0, std=0.05)
+        scale = torch.normal(mean=1.0, std=0.05, size=shape).to(device)
+        fakeweights = weights * scale
+    elif i == 4:
+        # Variation 4: Add constant upward shift (+0.2)
+        fakeweights = weights + 0.2
+    elif i == 5:
+        # Variation 5: Add constant downward shift (−0.2)
+        fakeweights = weights - 0.2
+    elif i == 6:
+        # Variation 6: Resample new weights from original distribution (mean=0.15, std=0.63)
+        fakeweights = torch.normal(mean=0.15, std=0.63, size=shape).to(device)
+    elif i == 7:
+        # Variation 7: Flip the sign of 10% of the weights
+        fakeweights = weights.clone()
+        idx = torch.randperm(len(weights))[:int(0.1 * len(weights))].to(device)
+        fakeweights[idx] *= -1
+    elif i == 8:
+        # Variation 8: Zero out 15% of the weights to introduce sparsity
+        fakeweights = weights.clone()
+        idx = torch.randperm(len(weights))[:int(0.15 * len(weights))].to(device)
+        fakeweights[idx] = 0
+    elif i == 9:
+        # Variation 9: Truncate weights to be within 1 std deviation around the mean
+        fakeweights = torch.clamp(weights, 0.15 - 0.63, 0.15 + 0.63)
+    elif i == 10:
+        # Variation 10: Reverse weights and add small Gaussian noise (std=0.1)
+        noise = torch.randn(shape, device=device) * 0.1
+        fakeweights = weights.flip(0) + noise
+
+    pk.dump(fakeweights, open(f"../fits/fakeweights{i}.pk", "wb"))
+    return fakeweights
 
 def run(config):
     models = {}
@@ -145,6 +192,7 @@ def run(config):
         best_model_name = "FreqWeightedHSActivity"
         suffix = f"_fulldata"
         try:
+            print("Loading weights on full dataset...")
             results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
@@ -152,22 +200,29 @@ def run(config):
             models[best_model_class].models[best_model_name].fit(customsequences=True)
             results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         
-        weights = results[f"weights_fold1{suffix}"]
+        original_weights = results[f"weights_fold1{suffix}"]
 
         for i in range(11):
-            models[best_model_class].models[best_model_name].suffix = suffix + f"fakeweights_{i}"
-            models[best_model_class].models[best_model_name].simulateweights(weights)
-            simseqs = models[best_model_class].models[best_model_name].simulations
+            try:
+                simseqs = pk.load(open(f"../simulations/{best_model_name.lower()}_simulations_gpt41_fulldata_fakeweights_{i}.pk", "rb"))
+            except:
+                print(f"Modifying weights... {i}")
+                weights = changeweights(original_weights, i)
+                models[best_model_class].models[best_model_name].suffix = suffix + f"_fakeweights_{i}"
+                models[best_model_class].models[best_model_name].simulateweights(weights)
+                simseqs = models[best_model_class].models[best_model_name].simulations
+
             for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
-                print(model_name_sim, model_class, model_name, ssid)
-                models[best_model_class].models[best_model_name].suffix = f"_paramrecovery_{ssid + 1}_{i + 1}"
-                models[best_model_class].models[best_model_name].custom_splits = [(ss, [])]
-                start_time = time.time()
-                models[best_model_class].models[best_model_name].fit(customsequences=True)
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                print(f"{model_name} completed in {elapsed_time:.2f} seconds")
-            weights = changeweights(weights, i)
+                suffix2 = f"_paramrecovery_{i}_{ssid + 1}"
+                if not os.path.exists(f"../fits/{best_model_name.lower()}_fits_gpt41{suffix2}.pk"):
+                    print(best_model_class, best_model_name, i, ssid)
+                    models[best_model_class].models[best_model_name].suffix = suffix2
+                    models[best_model_class].models[best_model_name].custom_splits = [(ss, [])]
+                    start_time = time.time()
+                    models[best_model_class].models[best_model_name].fit(customsequences=True)
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
+                    print(f"{best_model_name} completed in {elapsed_time:.2f} seconds")
 
 if __name__ == "__main__":
 
