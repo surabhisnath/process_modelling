@@ -40,7 +40,7 @@ class Ours(Model):
 
     def get_features(self):
         featuredict = pk.load(open(f"../files/features_{self.config['featurestouse']}.pk", "rb"))
-        feature_names = next(iter(featuredict.values())).keys()
+        feature_names = list(next(iter(featuredict.values())).keys())
         # feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
         return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
 
@@ -68,7 +68,7 @@ class Ours(Model):
                 w[self.weight_indices] = weights
         return w
     
-    def get_nll(self, seq, weightsfromarg=None):
+    def get_nll(self, seq, weightsfromarg=None, getnll=None):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
 
@@ -94,7 +94,7 @@ class Ours(Model):
             logits[mask == 0] = float('-inf')
         log_probs = F.log_softmax(logits, dim=1)
 
-        if weightsfromarg is not None:
+        if weightsfromarg is not None and getnll is None:
             return log_probs
         
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
@@ -296,7 +296,7 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
 
-    def get_nll(self, seq, weightsfromarg=None):
+    def get_nll(self, seq, weightsfromarg=None, getnll=None):
         if weightsfromarg is not None:
             weightstouse = weightsfromarg
         else:
@@ -319,9 +319,35 @@ class FreqWeightedHSActivity(Ours, nn.Module):
             logits[mask == 0] = float('-inf')
         log_probs = F.log_softmax(logits, dim=1)
 
-        if weightsfromarg is not None:
+        if weightsfromarg is not None and getnll is None:
             return log_probs
 
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         return nll
+    
+    def get_nll_withoutmasking(self, seq, weightsfromarg=None, getnll=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+
+        freq_logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0)
+        HS_logits = torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:1 + self.num_weights//2])
+        Activity_logits = torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse[1 + self.num_weights//2:]).unsqueeze(0)
+        logits = freq_logits + HS_logits + Activity_logits         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
+        log_probs = F.log_softmax(logits, dim=1)
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+
+        if weightsfromarg is not None:
+            return log_probs, -F.nll_loss(log_probs, targets[2:], reduction='none'), freq_logits[torch.arange(freq_logits.size(0)), targets[2:]], HS_logits[torch.arange(HS_logits.size(0)), targets[2:]], Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]
+
+        else:
+            nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+            return nll

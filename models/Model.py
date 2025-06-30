@@ -1,5 +1,4 @@
 import os
-
 from sympy import sequence
 import numpy as np
 import pandas as pd
@@ -93,8 +92,8 @@ class Model:
             common_keys = set(self.freq) & set(self.freq2)
             values1 = [self.freq[k] for k in common_keys]
             values2 = [self.freq2[k] for k in common_keys]
-            print(pearsonr(values1, values2))          # 0.37
-            print(spearmanr(values1, values2))         # 0.83
+            # print(pearsonr(values1, values2))          # 0.37
+            # print(spearmanr(values1, values2))         # 0.83
         elif config["dataset"] == "hills":      # ie --usehillsfreq
             self.freq = self.get_frequencies_hills()
         
@@ -104,12 +103,13 @@ class Model:
         self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
         if self.config["dataset"] == "hills":
             self.response_to_category, self.num_categories = self.get_categories()
-        
+
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
-
-        self.splits = self.split_sequences(self.sequences)     # perform CV, only used in gorup fitting
+        self.RTs = self.data.groupby("pid").agg(list)["RT"].tolist()
+        
+        self.splits = self.split_sequences(self.sequences.copy())     # perform CV, only used in gorup fitting
 
         self.start = 2
         self.init_val = self.config["initval"]
@@ -401,7 +401,7 @@ class Model:
                         if self.__class__.__name__ == "Random":
                             prob_dist = torch.ones(len(self.unique_responses))
                         else:
-                            ll = self.get_nll(simulated_sequence[-2:] + [""], self.wrapper(results[f"weights_fold{split_ind + 1}"])).squeeze(0)
+                            ll = self.get_nll(simulated_sequence[-2:] + [""], results[f"weights_fold{split_ind + 1}"]).squeeze(0)
                             prob_dist = torch.exp(ll)
                         inds = [self.unique_response_to_index[c] for c in candidates]
                         prob_dist = prob_dist[inds]
@@ -448,7 +448,7 @@ class Model:
         if self.config["print"]:
             print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
-
+        
     def test(self):
         model_bleu = calculate_bleu([sim[2:] for sim in self.simulations], [seq[2:] for seq in self.sequences])     # only calc overlap from 3 onwards
         print(model_bleu)

@@ -25,3 +25,4 @@ pybads
 pymc
 arviz
 numba
+statsmodels

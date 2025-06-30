@@ -8,7 +8,6 @@ from Model import *
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
 from utils import *
 import torch
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -54,9 +53,18 @@ class Hills(Model):
             mask[i - 2, visited_responses] = 0
 
         weightstouse = self.allweights(weightsfromarg)
+        
+        # a = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0)
+        # b = weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1).float()
+        # c = weightstouse[2] * sim_terms_2step
+        
+        # print(dict(zip(seq[1:], [self.response_to_category[seq[i]] for i in range(1,len(seq))])))
+        # print("b vector")
+        # print(b)
+        
         logits = (
-            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                                   # shape: (1, num_resp)
-            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1) +                                                                          # shape: (len_seq - 2, num_resp)
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +
+            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1).float() +
             weightstouse[2] * sim_terms_2step
         )
         
