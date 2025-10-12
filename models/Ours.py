@@ -20,7 +20,7 @@ class Ours(Model):
         self.model_class = "ours"
         self.feature_names, self.features = self.get_features()
         # print(self.features)
-        # print(self.feature_names)
+        # print(self.feature_names) 
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
         self.all_features = torch.stack([self.features[r] for r in self.unique_responses])  # shape: [R, D]

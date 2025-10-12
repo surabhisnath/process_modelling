@@ -3,21 +3,25 @@
 
     "Freq": 1,
     
-    "HS": 1,
-    "Freq_HS": 1,
-    "WeightedHS": 1,
-    "FreqWeightedHS": 1,
-    "Activity": 1,
-    "WeightedHSActivity": 1,
-    "FreqWeightedHSActivity": 1,
+    "HS": 0,
+    "Freq_HS": 0,
+    "WeightedHS": 0,
+    "FreqWeightedHS": 0,
+    "Activity": 0,
+    "WeightedHSActivity": 0,
+    "FreqWeightedHSActivity": 0,
     
-    "OneCueStaticLocal": 1,
+    "OneCueStaticLocal": 0,
+    "OneCueStaticLocalWeighted": 0,
+    "OneCueStaticLocalWeightedActivity": 0,
     "CombinedCueStatic": 1,
+    "CombinedCueStaticWeighted": 1,
+    "CombinedCueStaticWeightedActivity": 1,
     "CombinedCueDynamicCat": 0,
     "CombinedCueDynamicSimdrop": 0,
 
     "Subcategory": 0,
     "Freq_Subcategory": 0,
     "Sim_Subcategory": 0,
-    "Freq_Sim_Subcategory": 1
+    "Freq_Sim_Subcategory": 0
 }

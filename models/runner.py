@@ -100,6 +100,7 @@ def run(config):
         
     if config["ours"]:
         ours = Ours(modelobj)
+        print(ours.feature_names, len(ours.feature_names))
         ours.create_models()
         models["ours"] = ours
         fit_results["ours"] = {}
@@ -380,6 +381,14 @@ def run(config):
             plt.close()
 
         df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid})
+        df["prev_freq"] = df.groupby("pid")["freq"].shift(1)
+        df["prev_HS"] = df.groupby("pid")["HS"].shift(1)
+        df["prev_activity"] = df.groupby("pid")["activity"].shift(1)
+
+        df["prev_prev_freq"] = df.groupby("pid")["prev_freq"].shift(1)
+        df["prev_prev_HS"] = df.groupby("pid")["prev_HS"].shift(1)
+        df["prev_prev_activity"] = df.groupby("pid")["prev_activity"].shift(1)
+
         # df = df.dropna()
 
         # data1 = sm.add_constant(df[["chosen", "logPrej"]])
@@ -435,14 +444,25 @@ def run(config):
         print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
         print(model.summary())
-        
 
+        df = df.dropna(subset=["prev_freq"])
+
+        print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        df = df.dropna(subset=["prev_prev_freq"])
+
+        print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity", df, groups=df["pid"]).fit()
+        print(model.summary())
+        
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")
 
     parser.add_argument("--dataset", type=str, default="hills", help="claire or hills or divergent")
-    parser.add_argument("--representation", type=str, default="clip", help="representation to use for embedding responses: ours, beagle, clip, gtelarge")
+    parser.add_argument("--representation", type=str, default="clip", help="representation to use for embedding responses: clip (768), gtelarge (1024), minilm (348), potion_256 (256), potion_128 (128), potion_64 (64)")
     
     parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
     parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
@@ -459,7 +479,7 @@ if __name__ == "__main__":
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
     parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
-    parser.add_argument("--featurestouse", type=str, default="gpt41", help="features to use: gpt41 or gpt4omini or llama")
+    parser.add_argument("--featurestouse", type=str, default="gpt41", help="features to use: gpt41, llama or random")
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
     parser.add_argument("--nomask", action="store_false", dest="mask", help="don't use mask")
 

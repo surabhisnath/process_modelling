@@ -34,7 +34,7 @@ class Hills(Model):
     def get_nll(self, seq, weightsfromarg=None):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                              # shape: (len_seq - 2, num_resp)
-        sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
+        # sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
         
         sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
         if self.dynamic:
@@ -64,8 +64,8 @@ class Hills(Model):
         
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +
-            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1).float() +
-            weightstouse[2] * sim_terms_2step
+            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1).float() #+
+            # weightstouse[2] * sim_terms_2step
         )
         
         if self.config["mask"]:
@@ -90,6 +90,82 @@ class OneCueStaticLocal(Hills, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
+class OneCueStaticLocalWeighted(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_embedding_dims
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.onlyforgroup = True
+
+    def get_nll(self, seq, weightsfromarg=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_dots = (prev_embeddings.unsqueeze(1) * all_embeddings.unsqueeze(0)).float()  # Shape: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        logits = torch.einsum("lnd,d->ln", all_dots, weightstouse)                                                                        # Shape: (L, N)
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
+
+class OneCueStaticLocalWeightedActivity(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_embedding_dims * 2
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.onlyforgroup = True
+
+    def get_nll(self, seq, weightsfromarg=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_dots = (prev_embeddings.unsqueeze(1) * all_embeddings.unsqueeze(0)).float()  # Shape: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        logits = torch.einsum("lnd,d->ln", all_dots, weightstouse[:self.num_weights//2]) + torch.einsum("nd,d->n", all_embeddings.to(torch.float), weightstouse[self.num_weights//2:]).unsqueeze(0)                                                                       # Shape: (L, N)
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
+
 class OneCueStaticLocal_2step(Hills, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
@@ -108,6 +184,83 @@ class OneCueStaticLocal_12step(Hills, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
+
+class CombinedCueStaticWeightedActivity(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_embedding_dims * 2 + 1
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.onlyforgroup = True
+
+    def get_nll(self, seq, weightsfromarg=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_dots = (prev_embeddings.unsqueeze(1) * all_embeddings.unsqueeze(0)).float()  # Shape: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_dots, weightstouse[1:1 + self.num_weights//2]) + torch.einsum("nd,d->n", all_embeddings.to(torch.float), weightstouse[1 + self.num_weights//2:]).unsqueeze(0)                                                                       # Shape: (L, N)
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
+
+class CombinedCueStaticWeighted(Hills, nn.Module):
+    def __init__(self, parent):
+        self.__dict__.update(parent.__dict__)
+        nn.Module.__init__(self)
+        self.num_weights = self.num_embedding_dims + 1
+        self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+        self.onlyforgroup = True
+
+    def get_nll(self, seq, weightsfromarg=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_embeddings = torch.stack([torch.tensor(self.embeddings[r], device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_dots = (prev_embeddings.unsqueeze(1) * all_embeddings.unsqueeze(0)).float()  # Shape: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) + torch.einsum("lnd,d->ln", all_dots, weightstouse[1:])                                                                        # Shape: (L, N)
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+        log_probs = F.log_softmax(logits, dim=1)
+
+        if weightsfromarg is not None:
+            return log_probs
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+        return nll
+
 class CombinedCueStatic(Hills, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
@@ -116,6 +269,8 @@ class CombinedCueStatic(Hills, nn.Module):
         self.weight_indices = torch.tensor([0, 1], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
+
+
 
 class CombinedCueStatic_12step(Hills, nn.Module):
     def __init__(self, parent):

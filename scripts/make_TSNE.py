@@ -1,0 +1,157 @@
+# import os
+# import numpy as np
+# import pandas as pd
+# import matplotlib.pyplot as plt
+# import pickle as pk
+# from sklearn.manifold import TSNE
+
+# def make_TSNE(embeddings, responses, clusters=None, show_responses=True):
+#     """Plot TSNE
+#     Args:
+#         embeddings (list): List of embeddings
+#         responses (list): List of responses -- used if show_responses is True
+#     """
+#     tsne = TSNE(n_components=2, perplexity=5, n_iter=3000, random_state=42)
+#     tsne_embeddings = tsne.fit_transform(embeddings)
+
+#     # Visualization
+#     if clusters is not None:
+#         plt.scatter(
+#             tsne_embeddings[:, 0],
+#             tsne_embeddings[:, 1],
+#             alpha=0.3,
+#             s=5,
+#             c=clusters,
+#             cmap="hsv",
+#         )
+#     else:
+#         plt.scatter(
+#             tsne_embeddings[:, 0],
+#             tsne_embeddings[:, 1],
+#             alpha=0.3,
+#             s=5,
+#             c="blue",
+#         )
+
+#     if show_responses:
+#         n = 50
+#         for i, response in enumerate(responses):
+#             if i % n == 0:
+#                 ax.annotate(
+#                     response, (tsne_embeddings[i, 0], tsne_embeddings[i, 1])
+#                 )  # plot every nth text on the TSNE
+#     plt.xlabel("TSNE-1")
+#     plt.ylabel("TSNE-2")
+#     plt.grid(False)
+#     plt.axis("off")
+#     plt.savefig("../plots/tsne_plot.png", dpi=300, bbox_inches="tight")
+#     # ax.set_xlabel("TSNE-1")
+#     # ax.set_ylabel("TSNE-2")
+#     # ax.grid(False)
+#     # ax.axis("off")
+
+# featuredict = pk.load(open(f"../files/features_gpt41.pk", "rb"))
+# responses = featuredict.keys()
+# embeddings = np.array([featuredict[response] for response in responses])
+
+
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import pickle as pk
+from sklearn.manifold import TSNE
+import json
+
+def make_TSNE(embeddings, responses, clusters=None, show_responses=True, feature_name=None):
+    """Plot TSNE
+    Args:
+        embeddings (np.ndarray): 2D array of embeddings
+        responses (list): List of responses (used if show_responses is True)
+        clusters (list or np.ndarray): Optional cluster labels
+        show_responses (bool): Whether to annotate responses
+    """
+    assert len(embeddings) == len(responses), "Embeddings and responses must have the same length"
+
+    tsne = TSNE(n_components=2, perplexity=10, n_iter=3000, random_state=42)
+    tsne_embeddings = tsne.fit_transform(embeddings)
+
+    plt.figure(figsize=(2, 2))
+    ax = plt.gca()
+
+    if clusters is not None:
+        cluster_0_mask = (clusters == 0)
+        cluster_1_mask = (clusters == 1)
+        ax.scatter(
+            tsne_embeddings[cluster_0_mask, 0],
+            tsne_embeddings[cluster_0_mask, 1],
+            alpha=0.5,
+            s=17,
+            color="#ED7979",           # light blue
+            edgecolors="#ED3030",         # navy border
+            linewidths=0.6,
+            label='Cluster 0'
+        )
+
+        # Plot cluster 1
+        ax.scatter(
+            tsne_embeddings[cluster_1_mask, 0],
+            tsne_embeddings[cluster_1_mask, 1],
+            alpha=0.5,
+            s=17,
+            color="#75E151",           # light red
+            edgecolors="#3C9120",      # dark red border
+            linewidths=0.6,
+            label='Cluster 1'
+        )
+    else:
+        sc = ax.scatter(
+            tsne_embeddings[:, 0],
+            tsne_embeddings[:, 1],
+            alpha=0.7,
+            s=20,
+            c="#C29DC2",
+            edgecolors="#97449C",      # Add black border
+            linewidths=0.5
+        )
+
+    if show_responses:
+        n = 5  # Plot every nth label
+        for i, response in enumerate(responses):
+            if i % n == 0:
+                ax.annotate(
+                    response, (tsne_embeddings[i, 0], tsne_embeddings[i, 1]),
+                    fontsize=4, alpha=0.7
+                )
+
+    ax.set_xlabel("TSNE-1")
+    ax.set_ylabel("TSNE-2")
+    ax.grid(False)
+    ax.axis("off")
+    plt.tight_layout()
+    plt.savefig(f"../plots/tsne_plot_{feature_name}.png", dpi=300, bbox_inches="tight")
+    plt.close()
+
+# Load data
+featuredict = pk.load(open(f"../files/features_gpt41.pk", "rb"))
+feature_names = list(next(iter(featuredict.values())).keys())
+with open("../files/response_corrections.json", 'r') as f:
+    corrections = json.load(f)
+
+features = {corrections.get(k, k): np.array([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names]) for k, values in featuredict.items()}
+
+responses = list(features.keys())
+embeddings = np.array(list(features.values()))
+
+print(feature_names)
+feature_name_to_ind = dict(zip(feature_names, np.arange(len(feature_names))))
+
+make_TSNE(embeddings, responses, None, True, "all_features")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is mammal']], False, "Is mammal")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is bird']], False, "Is bird")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is domesticated']], False, "Is domesticated")
+# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is a predator']], False, "Is predator")
+# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is native to Asia']], False, "Is native to Asia")
+# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is marsupial']], False, "Is marsupial")
+# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Has less than four limbs']], False, "Has more than four limbs")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is migratory']], False, "Is migratory")

@@ -34,6 +34,7 @@ import time
 from collections import Counter
 from scipy.stats import ttest_ind
 import pickle as pk
+from model2vec import StaticModel
 
 SEED = 42
 np.random.seed(SEED)
@@ -98,6 +99,8 @@ class Model:
             self.freq = self.get_frequencies_hills()
         
         self.embeddings = self.get_embeddings()
+        self.num_embedding_dims = len(next(iter(self.embeddings.values())))
+        print("num embedding dimensions", self.num_embedding_dims)
         self.sim_mat = self.get_embedding_sim_mat()
 
         self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
@@ -203,6 +206,8 @@ class Model:
 
     def get_embeddings(self): 
         device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        #running
         if self.config["representation"] == "clip":
             model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True).to(device)
             tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True)
@@ -213,10 +218,88 @@ class Model:
             embeddings = embeddings.detach().cpu().numpy()
             embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
-        if self.config["representation"] == "gtelarge":
-            model = SentenceTransformer("thenlper/gte-large", device=device)
+
+        #running
+        if self.config["representation"] == "minilm":
+            model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
-            
+        
+
+        #set running
+        if self.config["representation"] == "potion_256":
+            model = StaticModel.from_pretrained("/home/snath/.cache/huggingface/hub/models--minishlab--potion-base-8M/snapshots/3f12147e8ef0407df4e55de29669f79c11c8e2de/") # "minishlab/potion-base-8M"
+            embeddings = model.encode(self.unique_responses, normalize=True)
+        
+        if self.config["representation"] == "potion_128":
+            model = StaticModel.from_pretrained("/home/snath/.cache/huggingface/hub/models--minishlab--potion-base-4M/snapshots/2a69a3f1da737bad10c46a997aab90bb07509d8c/") # "minishlab/potion-base-4M"
+            embeddings = model.encode(self.unique_responses, normalize=True)
+        
+        if self.config["representation"] == "potion_64":
+            model = StaticModel.from_pretrained("/home/snath/.cache/huggingface/hub/models--minishlab--potion-base-2M/snapshots/5da9753bbbe6c6e916cffca02770f9e3f2636e56/") # "minishlab/potion-base-2M"
+            embeddings = model.encode(self.unique_responses, normalize=True)
+        
+
+        #running
+        if self.config["representation"] == "qwen":     #1024
+            model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+
+        #set running
+        if self.config["representation"] == "bgesmall":  #512
+            model = SentenceTransformer("BAAI/bge-small-en-v1.5", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        if self.config["representation"] == "bgebase":  #768
+            model = SentenceTransformer("BAAI/bge-base-en-v1.5", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        if self.config["representation"] == "bgelarge":  #1024
+            model = SentenceTransformer("BAAI/bge-large-en-v1.5", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+
+
+        #set running
+        if self.config["representation"] == "e5small":  #384
+            model = SentenceTransformer("intfloat/e5-small", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        if self.config["representation"] == "e5base":  #768
+            model = SentenceTransformer("intfloat/e5-base", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        if self.config["representation"] == "e5large":  #1024
+            model = SentenceTransformer("intfloat/e5-large", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+
+        #running
+        if self.config["representation"] == "infly":  #1536
+            model = SentenceTransformer("infly/inf-retriever-v1-1.5b", trust_remote_code=True, device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        
+        #running
+        if self.config["representation"] == "rubert":  #312
+            model = SentenceTransformer("cointegrated/rubert-tiny2", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+
+        #running
+        if self.config["representation"] == "gtelarge": #1024
+            model = SentenceTransformer("thenlper/gte-large", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+
+        #running
+        if self.config["representation"] == "gtebert":  #768
+            model = SentenceTransformer("Alibaba-NLP/gte-modernbert-base", device=device, local_files_only=True)
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
+        
+        if self.config["representation"] == "gtemicro":  #384
+            model = SentenceTransformer("Mihaiii/gte-micro")
+            embeddings = model.encode(self.unique_responses, normalize_embeddings=True, local_files_only=True)
+
+        
         return dict(zip(self.unique_responses, embeddings))
 
     def get_embedding_sim_mat(self):

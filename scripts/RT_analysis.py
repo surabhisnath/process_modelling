@@ -6,6 +6,7 @@ import pickle as pk
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+
 csv = pd.read_csv("../csvs/hills.csv")
 
 featuredict = pk.load(open(f"../files/features_gpt41.pk", "rb"))
@@ -31,8 +32,11 @@ IQR = Q3 - Q1
 lower_bound = Q1 - 1.5 * IQR
 upper_bound = Q3 + 1.5 * IQR
 csv = csv[(csv["RT"] >= lower_bound) & (csv["RT"] <= upper_bound)]
+csv["RT"] = np.log(csv["RT"] + 0.001)
 
-HS_important_features = ["feature_Is mammal", "feature_Is domesticated", "feature_Is primate", "feature_Has antlers", "feature_Is feline", "feature_Is rodent", "feature_Is canine", "feature_Is reptile", "feature_Is marsupial", "feature_Has segmented body", "feature_Is a parasite", "feature_Is amphibian", "feature_Is found in zoos", "feature_Is insect"]
+final_csv = pd.DataFrame(columns=["pid", "feature", "mean_logRT", "n", "n_squared"])
+
+HS_important_features = ["feature_Is mammal", "feature_Is domesticated", "feature_Is primate", "feature_Has antlers", "feature_Is feline", "feature_Is rodent", "feature_Is canine", "feature_Is reptile", "feature_Is marsupial", "feature_Has segmented body", "feature_Is a parasite", "feature_Is amphibian"]
 
 for f in HS_important_features:
     csv_ = csv[["pid", "response", "RT", f]]
@@ -48,23 +52,34 @@ for f in HS_important_features:
             remained.append(count)
         return pd.Series(remained, index=group.index)
     csv_["remained1"] = csv_.groupby('pid').apply(compute_remained_1).reset_index(drop=True)
-    csv_["RT"] = np.log(csv_["RT"] + 0.01)
-    means = []
-    ses = []
-    for r in range(int(max(csv_["remained1"]))):
-        print("r", r)
-        grouped_stats = (csv_[csv_["remained1"] == r].dropna(subset=["RT"]).groupby("pid")["RT"].mean().tolist())
-        mean_group_stats = np.mean(grouped_stats)
-        means.append(mean_group_stats)
-        se_group_stats = np.std(grouped_stats) / np.sqrt(len(grouped_stats))
-        ses.append(se_group_stats)
+    
+    for n in range(1, int(max(csv_["remained1"]))):
+        meanRTs = (csv_[csv_["remained1"] == n].groupby("pid")["RT"].mean().tolist())
+        pids = csv_[csv_["remained1"] == n]["pid"].unique()
+        feature = [f] * len(pids)
+        n_values = [n] * len(pids)
+        n_squared = [n**2] * len(pids)
+        final_csv = pd.concat([final_csv, pd.DataFrame({"pid": pids, "feature": feature, "mean_logRT": meanRTs, "n": n_values, "n_squared": n_squared})], ignore_index=True)
+    
+final_csv.to_csv(f"../csvs/RT_finalcsv.csv", index=False)
+print("Saved final CSV at '../csvs/RT_finalcsv.csv'.")
 
-    plt.figure()
-    plt.errorbar(np.arange(max(csv_["remained1"])), means, yerr=ses, fmt='o', ecolor='gray', capsize=4, elinewidth=1.5, marker='o')
-    plt.xlabel("remained 1")
-    plt.ylabel("Mean log(RT) per participant ± SE")
-    plt.title(f)
-    plt.grid(True, linestyle=':', alpha=0.5)
-    plt.tight_layout()
-    plt.savefig(f"../figures/RT_{f}.png")
-    plt.close()
+    # means = []
+    # ses = []
+    # for r in range(int(max(csv_["remained1"]))):
+    #     print("r", r)
+    #     grouped_stats = (csv_[csv_["remained1"] == r].dropna(subset=["RT"]).groupby("pid")["RT"].mean().tolist())
+    #     mean_group_stats = np.mean(grouped_stats)
+    #     means.append(mean_group_stats)
+    #     se_group_stats = np.std(grouped_stats) / np.sqrt(len(grouped_stats))
+    #     ses.append(se_group_stats)
+
+    # plt.figure()
+    # plt.errorbar(np.arange(max(csv_["remained1"])), means, yerr=ses, fmt='o', ecolor='gray', capsize=4, elinewidth=1.5, marker='o')
+    # plt.xlabel("remained 1")
+    # plt.ylabel("Mean log(RT) per participant ± SE")
+    # plt.title(f)
+    # plt.grid(True, linestyle=':', alpha=0.5)
+    # plt.tight_layout()
+    # plt.savefig(f"../figures/RT_{f}.png")
+    # plt.close()
