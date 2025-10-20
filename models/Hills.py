@@ -39,12 +39,14 @@ class Hills(Model):
         sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
         if self.dynamic:
             if self.dynamic_cat:
-                sim_terms_mask = torch.tensor([not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
+                # sim_terms_mask = torch.tensor([not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
+                sim_terms_mask = torch.tensor([ bool(set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
             elif self.sim_drop:
                 sim1 = torch.tensor([self.sim_mat[seq[i - 2]][seq[i - 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
                 sim2 = torch.tensor([self.sim_mat[seq[i - 1]][seq[i]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
                 sim3 = torch.tensor([self.sim_mat[seq[i]][seq[i + 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
-                sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                   # (len(seq) - 3,)
+                # sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                 # (len(seq) - 3,)
+                sim_drops = (~((sim1 > sim2) & (sim2 < sim3))).to(torch.int8)                              
                 sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
 
         mask = np.ones((len(seq) - 2, len(self.unique_responses)))
@@ -299,6 +301,7 @@ class CombinedCueDynamicSimdrop(Hills, nn.Module):
         self.num_weights = 2
         self.weight_indices = torch.tensor([0, 1], device=device)
         self.dynamic = True
+        self.dynamic_cat = False
         self.sim_drop = True
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))

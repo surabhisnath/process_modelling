@@ -169,7 +169,8 @@ def run(config):
         for model_class in models:
             for model_name in models[model_class].models:
                 if models[model_class].models[model_name].dynamic:
-                    continue
+                    if not models[model_class].models[model_name].dynamic_cat:
+                        continue
                 print(model_class, model_name)
                 models[model_class].models[model_name].simulate()                          
                 # if config["test"]:
