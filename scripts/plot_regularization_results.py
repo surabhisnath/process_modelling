@@ -13,8 +13,11 @@ plt.rcParams.update({
     "axes.titlesize": 18,                           # bigger title
     "figure.dpi": 100,                              # higher resolution
 })
+import numpy as np
 
 plt.figure(figsize=(5,5))
+
+features = np.array(['feature_Is mammal', 'feature_Is bird', 'feature_Is insect', 'feature_Is reptile', 'feature_Is amphibian', 'feature_Is fish', 'feature_Is rodent', 'feature_Is primate', 'feature_Is jungle animal', 'feature_Is non-jungle animal', 'feature_Is feline', 'feature_Is canine', 'feature_Is subspecies of an animal', 'feature_Is carnivore', 'feature_Is herbivore', 'feature_Is omnivore', 'feature_Is larger in size compared to other animals', 'feature_Is smaller in size compared to other animals', 'feature_Is average size compared to other animals', 'feature_Is warm-blooded', 'feature_Is cold-blooded', 'feature_Is a predator', 'feature_Is prey for larger animals', 'feature_Is a parasite', 'feature_Is a host for parasites', 'feature_Is nocturnal', 'feature_Is diurnal', 'feature_Has fur', 'feature_Has feathers', 'feature_Has scales', 'feature_Has exoskeleton', 'feature_Has beak', 'feature_Has claws', 'feature_Has whiskers', 'feature_Has horns', 'feature_Has antlers', 'feature_Has tusks', 'feature_Has wings', 'feature_Has tail', 'feature_Has less than four limbs', 'feature_Has exactly four limbs', 'feature_Has more than four limbs', 'feature_Has stripes', 'feature_Has spots', 'feature_Has mane', 'feature_Has crest', 'feature_Has gills', 'feature_Has flippers', 'feature_Has compound eyes', 'feature_Has segmented body', 'feature_Has a long neck', 'feature_Can fly', 'feature_Can swim', 'feature_Can climb', 'feature_Can dig', 'feature_Can jump', 'feature_Can camouflage', 'feature_Can hibernate', 'feature_Can be trained or tamed by humans', 'feature_Is found in zoos', 'feature_Lives in water', 'feature_Lives in trees', 'feature_Lives underground', 'feature_Lives on land', 'feature_Is native to Africa', 'feature_Is native to Asia', 'feature_Is native to North America', 'feature_Is native to South America', 'feature_Is native to Australia', 'feature_Is native to Europe', 'feature_Lives in Arctic/far North', 'feature_Is found in deserts', 'feature_Is found in forests', 'feature_Is found in oceans', 'feature_Is found in grasslands', 'feature_Is found in mountains', 'feature_Lives in burrows', 'feature_Lays eggs', 'feature_Gives birth', 'feature_Is venomous', 'feature_Is domesticated', 'feature_Lives in groups', 'feature_Is solitary', 'feature_Builds nests', 'feature_Is migratory', 'feature_Has social hierarchy', 'feature_Uses tools', 'feature_Shows intelligence', 'feature_Communicates vocally', 'feature_Can change color', 'feature_Is capable of mimicry', 'feature_Has echolocation', 'feature_Is known for speed', 'feature_Is known for strength', 'feature_Is kept as a pet', 'feature_Is used in farming', 'feature_Is hunted by humans', 'feature_Is used for food by humans', 'feature_Is used for transportation', 'feature_Is used in scientific research', 'feature_Has a long lifespan', 'feature_Has regenerative ability', 'feature_Is vertebrate', 'feature_Is invertebrate', 'feature_Is marsupial', 'feature_Is placental', 'feature_Is monotreme', 'feature_Is flightless', 'feature_Has webbed feet', 'feature_Is known for intelligence', 'feature_Is a scavenger', 'feature_Is territorial', 'feature_Is endangered', 'feature_Is bioluminescent', 'feature_Is capable of parental care', 'feature_Is a pollinator', 'feature_Can tolerate extreme temperatures', 'feature_Exhibits seasonal color changes', 'feature_Is active during dawn or dusk (crepuscular)', 'feature_Produces pheromones for communication', 'feature_Lives symbiotically with other species', 'feature_Is bi-parental (both parents care for offspring)', 'feature_Displays mating rituals', 'feature_Has specialized courtship behavior', 'feature_Exhibits territorial marking', 'feature_Is associated with mythology or folklore', 'feature_Exhibits altruistic behavior', 'feature_Is a keystone species in its ecosystem', 'feature_Can regenerate body parts', 'feature_Is raised in captivity or farms', 'feature_Has unique reproductive strategies (e.g., asexual reproduction)', 'feature_Hibernates during winter', 'feature_Has a role in biological pest control', 'feature_Has distinct seasonal breeding cycles', 'feature_Forms a symbiotic relationship with plants (e.g., pollination)', 'feature_Uses specific vocalizations to communicate', 'feature_Is a flagship species (conservation symbol)', 'feature_Displays warning coloration'])
 
 plt.hist([ 1.2177e+00,  5.2574e-02,  2.0691e-01,  7.7909e-02,  5.8386e-01,
          7.5381e-01,  1.2244e-01,  6.5246e-01,  8.7809e-01,  5.9232e-03,
@@ -358,6 +361,150 @@ plt.hist([ 1.1049e+00,  1.9282e-03,  9.1561e-04,  1.8638e-05,  3.3849e-02,
         -1.4485e-04, -1.7079e-05, -2.3565e-01,  2.7631e-04, -1.0625e-04,
          5.7219e-01,  7.2727e-06], alpha=0.3, label="λ=0.5", density=True)
 
+lambda05 = np.array([ 1.9282e-03,  9.1561e-04,  1.8638e-05,  3.3849e-02,
+         8.9262e-05, -2.3248e-04,  2.2475e-01,  4.0007e-01,  4.3755e-05,
+        -3.1808e-04,  3.1132e-01,  1.8320e-01,  8.0071e-02,  3.9724e-04,
+         5.5210e-02,  3.0976e-02,  1.1368e-06,  4.1161e-04,  1.6928e-01,
+         2.8857e-02,  1.4085e-01,  1.2891e-01, -4.4926e-05, -1.3952e-06,
+        -3.3032e-05,  5.5188e-06,  1.2817e-03,  2.3336e-01,  9.1561e-04,
+        -2.8018e-05,  2.1106e-03,  1.1603e-04,  2.7911e-01,  4.6896e-02,
+         1.1832e-01,  1.8805e-01, -2.5800e-04,  5.7126e-03,  1.8934e-01,
+        -2.6878e-05,  1.5597e-01,  2.9995e-04, -1.1749e-03,  2.5671e-05,
+        -1.0336e-05,  1.1962e-03,  8.8972e-05,  1.1210e-04,  9.7217e-02,
+         4.2099e-01, -6.9815e-05,  1.8600e-01,  2.6648e-01,  1.8038e-01,
+         9.2635e-06,  7.6140e-02,  2.8632e-02, -3.7246e-06,  7.9457e-02,
+         4.6533e-06,  1.7310e-01,  1.2105e-01,  1.5684e-04,  1.8762e-01,
+         1.5760e-01,  2.7092e-03,  2.2756e-01,  1.9222e-04, -7.8067e-05,
+         1.5357e-01,  1.0916e-05,  2.4852e-01,  4.6004e-02,  1.6954e-01,
+         3.8733e-01,  1.0534e-01,  2.0643e-01,  9.3385e-05,  1.3141e-01,
+         1.2692e-04,  6.1677e-01,  1.0411e-04,  8.4838e-02,  1.0049e-01,
+         1.1795e-04,  2.2317e-02,  2.1162e-05,  5.3744e-05,  8.2097e-04,
+         1.3793e-01,  4.9182e-05,  7.7929e-07, -5.9286e-05,  7.8984e-02,
+         1.5605e-01,  1.7311e-01,  1.3992e-01,  2.8683e-01,  8.3508e-05,
+         4.4427e-03,  1.4392e-01,  8.1248e-03,  2.9726e-04,  2.7349e-04,
+         2.7952e-05,  1.2980e-02,  1.3282e-05,  1.0920e-01,  1.4499e-01,
+         5.2763e-02,  1.4375e-02,  2.5337e-02, -2.5794e-04, -4.6612e-05,
+         5.9699e-02,  5.7546e-02,  1.7587e-02,  3.0310e-02,  4.2263e-02,
+         4.3400e-02,  1.7233e-05,  1.2202e-01,  1.3919e-04,  1.8558e-04,
+         1.6588e-01,  6.8131e-02,  7.0334e-02,  2.1587e-02,  8.4003e-05,
+         3.5040e-02,  7.0041e-05,  2.2047e-04, -4.7513e-06,  9.9822e-02,
+         1.0576e-04,  1.2649e-01,  1.6798e-01, -5.9254e-06,  2.4465e-02,
+        -8.1441e-05,  6.1578e-05, -8.4306e-07,  5.4527e-06, -4.4811e-05,
+         1.4283e-01, -1.2265e-04,  5.7711e-06, -1.7511e-01,  3.4372e-03,
+        -1.3404e-04,  3.3036e-01,  3.1463e-02, -4.2599e-07,  9.3647e-06,
+         1.8726e-01, -1.1975e-01, -2.2493e-01, -1.3513e-04,  6.9130e-05,
+         4.6440e-05, -6.1584e-02,  7.0651e-05,  5.0052e-05, -2.6398e-01,
+        -2.9040e-01, -2.3845e-05, -8.1441e-05,  1.0333e-01, -1.2116e-05,
+         2.0650e-04, -7.9199e-05,  1.5216e-03, -2.8722e-01,  8.8944e-06,
+         1.2500e-03, -1.4215e-06,  8.1935e-05,  1.6310e-01,  2.0699e-05,
+         4.2753e-05,  4.0652e-02, -2.2732e-01,  1.6099e-01, -2.2266e-05,
+         5.1629e-05,  4.0757e-03, -3.5113e-05, -8.3080e-05,  2.6911e-06,
+        -1.1492e-05,  7.3795e-02, -1.1737e-04, -4.4187e-05, -5.1679e-05,
+         1.3688e-01, -4.4706e-05,  3.7299e-02, -1.1131e-04,  5.5242e-04,
+         4.7609e-01,  5.0672e-04, -1.7949e-04,  3.1938e-01,  4.0953e-04,
+        -1.5284e-01, -4.0078e-03,  5.0038e-02, -1.9012e-01,  6.2111e-05,
+        -2.7642e-02, -4.0044e-01,  1.3411e-03,  7.2173e-04, -3.2624e-05,
+         2.7391e-04,  8.2924e-02,  3.8059e-01, -1.2552e-04,  1.1232e-06,
+         1.6842e-05, -5.3095e-03,  1.1957e-01, -3.0307e-07,  4.9679e-02,
+         7.6396e-02,  1.4238e-04, -9.1179e-02, -1.5761e-01,  1.7023e-04,
+        -4.0951e-06,  1.5891e-01, -3.5245e-01,  4.3729e-01, -3.8576e-04,
+         3.3034e-02, -8.1117e-05, -9.0815e-05,  1.4860e-03, -1.5745e-04,
+        -8.4352e-05,  4.8844e-06,  1.2053e-05, -1.9342e-05, -7.6335e-02,
+         7.4337e-06,  2.1822e-05,  2.8235e-01,  1.4253e-01,  1.6720e-06,
+         3.2901e-05,  4.2843e-05,  7.8552e-05,  3.0114e-01, -1.2993e-04,
+        -5.5087e-03, -8.7433e-04,  1.0352e-01, -2.3083e-04,  8.0475e-02,
+        -4.4227e-01,  3.1316e-01,  1.6544e-01,  9.7219e-02, -5.4121e-05,
+         8.2981e-06, -1.3515e-06, -6.6955e-05,  2.5320e-03,  1.1308e-04,
+        -1.4485e-04, -1.7079e-05, -2.3565e-01,  2.7631e-04, -1.0625e-04,
+         5.7219e-01,  7.2727e-06])
+
 plt.legend()
 plt.xlim(-2,2)
 plt.savefig("../plots/regularization_result.png")
+
+HS_weights = lambda05[:len(lambda05)//2]
+
+print("Lambda = 0.5")
+n = 5
+sorted_indices = np.argsort(HS_weights)
+lowest_indices = sorted_indices[:n]
+print("Lowest weights:")
+for i in lowest_indices:
+    print(f"{features[i]}: {HS_weights[i]:.4f}")
+print("\nHighest weights:")
+highest_indices = sorted_indices[-n:][::-1]
+for i in highest_indices:
+    print(f"{features[i]}: {HS_weights[i]:.4f}")
+print()
+
+
+lambda00 = [ 5.2574e-02,  2.0691e-01,  7.7909e-02,  5.8386e-01,
+         7.5381e-01,  1.2244e-01,  6.5246e-01,  8.7809e-01,  5.9232e-03,
+        -1.8068e-02,  6.5317e-01,  8.7080e-01,  2.0773e-02, -1.1789e-01,
+         1.1105e-01,  1.0918e-02, -6.9095e-02,  4.7445e-02,  1.8493e-01,
+         3.0293e-02, -7.8805e-03,  7.1707e-02,  1.6109e-01,  7.3488e-01,
+        -2.5816e+00, -1.1290e-01,  7.9168e-02,  2.0109e-01,  2.0691e-01,
+        -1.0174e-01, -3.9501e-02, -6.3240e-02,  2.0763e-01,  1.3497e-02,
+         2.5860e-01,  1.0808e+00,  1.7532e-01, -2.9210e-01,  2.4286e-01,
+         1.6367e-01,  1.4450e-01, -1.5695e-01,  5.7041e-02, -1.4699e-01,
+         1.8240e-01,  1.0194e-01,  3.8402e-02,  2.0835e-01,  6.5108e-01,
+         9.8582e-01,  1.8808e-02,  4.1869e-01,  2.7516e-01,  1.3322e-01,
+        -3.9467e-02,  9.4672e-02,  9.0696e-02, -3.1064e-02,  1.1669e-01,
+        -2.1390e-01,  2.1139e-01,  2.2220e-01, -1.1258e-01,  2.6631e-01,
+         2.1709e-01,  4.6156e-02,  2.3443e-01,  1.0973e-02, -5.0720e-02,
+         1.4442e-01, -8.4203e-03,  2.4668e-01,  8.1504e-02,  2.7228e-01,
+         3.3234e-01,  1.3382e-01,  2.2149e-01, -1.4794e-01,  1.6788e-01,
+         4.4645e-01,  6.6848e-01, -9.7567e-03,  1.1359e-01,  1.1761e-01,
+         6.0601e-02,  1.8856e-02,  9.4752e-03, -6.3905e-02,  9.4476e-02,
+         1.7318e-01,  9.2187e-03,  2.7042e-01,  2.8692e-02,  1.0154e-01,
+         1.2040e-01,  1.9320e-01,  1.4716e-01,  4.1904e-01,  6.2614e-02,
+         9.9927e-02,  1.0769e-01,  6.9961e-02, -2.7831e-01, -1.5791e-01,
+         9.2957e-01,  3.7885e-02,  2.3824e-01,  2.8561e-03,  3.6763e-01,
+         6.0534e-02,  7.3076e-02,  2.9031e-02, -2.0133e-01, -7.9010e-01,
+         6.7771e-02,  2.6188e-01,  6.1086e-02,  6.3032e-02,  3.0310e-02,
+         9.6690e-02,  9.2967e-02,  6.8943e-02,  9.0438e-03, -1.8403e-02,
+         1.8849e-01,  2.0906e-01,  7.3553e-02,  1.8591e-02,  1.7406e-02,
+         1.6709e-01, -2.7976e-02,  6.4591e-02, -6.4864e-02,  1.3947e-01,
+        -1.7043e-02,  1.7007e-01,  2.0168e-01, -8.4742e-02,  2.9896e+00,
+         7.6335e-01, -1.7611e+00,  3.0184e+00,  3.6346e+00,  2.9983e+00,
+         9.6362e-01,  1.2018e+00, -1.3062e+00, -1.3769e+00,  6.3828e-01,
+         1.9903e-01,  5.5710e-01,  4.3116e-01,  3.6188e-01,  2.2746e-01,
+         1.6634e-01, -4.9325e-01, -2.4451e-01, -2.0677e-01,  7.5131e-01,
+        -1.7167e-01, -3.7987e-01,  2.2863e+00, -2.5829e+00, -6.9011e-01,
+        -4.7591e-01,  2.8120e-01,  7.6335e-01,  6.4544e-01,  1.1360e-01,
+         5.8384e-01, -2.3332e-01,  5.8058e-01, -2.3776e-01,  6.0398e-01,
+         4.8580e-01,  8.9983e-01, -3.2498e-01,  1.2267e+00,  1.3414e+00,
+         1.6912e+00,  6.1602e-01, -6.8303e-01,  4.9978e-01,  5.2183e-02,
+         4.7443e-01,  2.1893e-01,  4.1458e-02,  6.4964e-01,  2.4672e-01,
+        -3.8888e-01,  2.8057e-01, -1.9691e-01, -1.3606e-01, -3.9673e-02,
+         3.3402e-01,  6.3802e-01, -3.0997e-01, -3.5222e-01,  4.3983e-02,
+         9.3503e-01,  7.3512e-02,  5.8664e-01,  3.9915e-01,  2.1116e-02,
+        -3.2053e-01, -1.9446e-01,  4.3154e-01, -4.5954e-01,  5.1017e-01,
+        -5.1193e-01, -8.5005e-01, -2.1842e-01,  1.7095e-01,  2.0430e-01,
+         3.6688e-02, -2.2384e-01,  1.0872e-01, -2.5344e-01,  6.3886e-01,
+        -7.7928e-02,  4.8087e-02,  2.4898e-01,  3.0565e-02, -1.2778e-01,
+         3.2667e-03,  1.6276e-01, -5.0161e-01, -1.8908e-01,  6.3838e-02,
+         1.5808e+00,  2.8004e-01, -9.4456e-01,  4.5628e-01, -9.1751e-02,
+         6.2631e-02, -8.1940e-02, -1.8854e-01, -2.0044e-01, -3.3221e-01,
+        -1.6646e-01, -1.8494e+00,  9.5229e-01,  1.5170e+00,  1.5935e-01,
+         1.7627e+00, -8.7813e-01,  8.0516e-01,  3.8076e-01,  4.6237e-02,
+         2.3521e-01, -6.7211e-01, -1.3051e+00,  7.5715e-01,  3.1887e-02,
+        -1.2255e-01, -3.7634e-01,  2.1352e-01, -2.4031e-01,  7.2117e-02,
+        -5.6895e-01,  6.1831e-01,  1.3669e-02,  1.4805e-02,  5.0719e-01,
+        -2.2781e-01,  4.1483e-02, -2.6503e-01,  3.4719e-01,  6.4745e-01,
+        -6.9564e-01,  1.2456e-01, -1.8082e-01, -3.3121e-01, -1.2321e-01,
+         8.5364e-01, -1.5340e-01]
+
+HS_weights_unregularised = lambda00[:len(lambda00)//2]
+
+print("Lambda = 0")
+n = 5
+sorted_indices = np.argsort(HS_weights_unregularised)
+lowest_indices = sorted_indices[:n]
+print("Lowest weights:")
+for i in lowest_indices:
+    print(f"{features[i]}: {HS_weights_unregularised[i]:.4f}")
+print("\nHighest weights:")
+highest_indices = sorted_indices[-n:][::-1]
+for i in highest_indices:
+    print(f"{features[i]}: {HS_weights_unregularised[i]:.4f}")

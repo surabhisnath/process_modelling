@@ -335,7 +335,7 @@ def run(config):
         sequences = models[best_model_class].models[best_model_name].sequences
         RTs = models[best_model_class].models[best_model_name].RTs
         
-        suffix = "_fulldata"
+        suffix = ""
         results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         weights = results[f"weights_fold1{suffix}"].detach()
         
@@ -362,8 +362,8 @@ def run(config):
             visited = logprobs_withoutmasking.masked_fill(mask, -np.inf)
             num = torch.logsumexp(visited, dim=1)       # should be shape len(seq) - 2
 
-            # logPrej = num - den
-            logPrej = num
+            logPrej = num - den
+            # logPrej = num
 
             logPrej_forreg.extend(logPrej.cpu().numpy())
             chosen = nll.cpu().numpy()
