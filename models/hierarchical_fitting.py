@@ -48,24 +48,6 @@ def MAP(data_participant, pop_means, pop_vars, model_name):
 
 
 def em(data, num_participants, model_name, max_iter=100, tol=1e-6):
-    """
-    Run the EM algorithm for a given model and data.
-
-    Parameters:
-    - data: array-like, shape (n_participants,)
-        The input data for the EM algorithm.
-    - model_name: str
-        The name of the model to use ('gaussian', 'bernoulli', etc.).
-    - max_iter: int, optional (default=100)
-        The maximum number of iterations to run the EM algorithm.
-    - tol: float, optional (default=1e-6)
-        The tolerance for convergence.
-
-    Returns:
-    - params: dict
-        The estimated parameters of the model.
-    """
-
     n_params = get_num_params(model_name)
     param_ranges = get_param_ranges(model_name)
 

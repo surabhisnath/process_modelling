@@ -153,16 +153,18 @@ def run(config):
                     elif config["fitting"] == "group":
                         modelnlls.append(sum(results["testNLLs"]))
 
-        plt.figure(figsize=(8, 5))
-        x = np.arange(len(modelnlls))
-        plt.bar(x, modelnlls, alpha=0.8, color='#9370DB')
-        plt.xticks(x, labels, rotation=90)
-        plt.ylim(min(modelnlls) - 100, max(modelnlls) + 100)
-        plt.ylabel(f'Sum NLL over {config["cv"]} folds')
-        plt.title(f'Model NLL comparison ({config["fitting"]})')
-        plt.grid(axis='y', linestyle=':', alpha=0.5)
-        plt.tight_layout()
-        plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')
+        if config["save"]:
+            pk.dump(dict(zip(labels, modelnlls)), open("../files/modelNLLs.pk", "wb"))
+        # plt.figure(figsize=(8, 5))
+        # x = np.arange(len(modelnlls))
+        # plt.bar(x, modelnlls, alpha=0.8, color='#9370DB')
+        # plt.xticks(x, labels, rotation=90)
+        # plt.ylim(min(modelnlls) - 100, max(modelnlls) + 100)
+        # plt.ylabel(f'Sum NLL over {config["cv"]} folds')
+        # plt.title(f'Model NLL comparison ({config["fitting"]})')
+        # # plt.grid(axis='y', linestyle=':', alpha=0.5)
+        # plt.tight_layout()
+        # plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')
 
     if config["simulate"]:
         print("--------------------------------SIMULATING MODELS--------------------------------")
@@ -468,6 +470,9 @@ if __name__ == "__main__":
     parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
     parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
 
+    parser.add_argument("--save", action="store_true", default=True, help="save pk files (default: True)")
+    parser.add_argument("--nosave", action="store_false", dest="save", help="don't save files")
+
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
     parser.add_argument("--tol", type=float, default=1e-6, help="gradient and function/param tolerance")
@@ -498,6 +503,7 @@ if __name__ == "__main__":
 
     parser.add_argument("--ours", action="store_true", default=True, help="implement our models (default: True)")
     parser.add_argument("--noours", action="store_false", dest="ours", help="don't implement our models")
+    parser.add_argument("--reglambda", type=float, default=0, help="regularisation lambda")
 
     parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
     parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")

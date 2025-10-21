@@ -5,7 +5,7 @@ import numpy as np
 
 labels = ["Random", "Freq", "HS", "Freq_HS", "WeightedHS", "FreqWeightedHS", "WeightedHSdebiased", "FreqWeightedHSdebiased", "OneCueStaticLocal", "CombinedCueStatic", "Freq_Sim_Subcategory", "Subcategory", "Freq_Subcategory", "Sim_Subcategory", "LLM", "Human"]
 
-with open("../models/group_fits_final_sims.log", "r") as f:
+with open("../models/logfiles/runafterinternship.log", "r") as f:
     log_data = f.read()
 
 matches = re.findall(r"SIM BLEUS MEAN:\s*(\{.*?\})", log_data)

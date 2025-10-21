@@ -295,8 +295,6 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         self.num_weights = self.num_features * 2 + 1
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
         self.onlyforgroup = True
-        self.reg_lambda = 0.01
-        self.reg_type = 'L1'
 
     def get_nll(self, seq, weightsfromarg=None, getnll=None):
         if weightsfromarg is not None:
@@ -327,16 +325,18 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
         # print(nll, end=" ")
-        
+
         # Add regularization
-        if self.reg_lambda > 0:
-            if self.reg_type == 'L2':
-                reg_term = torch.sum(weightstouse ** 2)
-            elif self.reg_type == 'L1':
-                reg_term = torch.sum(torch.abs(weightstouse))
-            else:
-                raise ValueError("reg_type must be 'L1' or 'L2'")
-            nll = nll + self.reg_lambda * reg_term
+        if self.config["reglambda"] > 0:
+            # if self.reg_type == 'L2':
+                # reg_term = torch.sum(weightstouse ** 2)
+            # elif self.reg_type == 'L1':
+                # reg_term = torch.sum(torch.abs(weightstouse))
+            # else:
+                # raise ValueError("reg_type must be 'L1' or 'L2'")
+
+            reg_term = torch.sum(torch.abs(weightstouse))       # L1
+            nll = nll + self.config["reglambda"] * reg_term
         # print(nll)
         return nll
     

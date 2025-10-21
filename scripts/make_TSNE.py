@@ -1,61 +1,3 @@
-# import os
-# import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# import pickle as pk
-# from sklearn.manifold import TSNE
-
-# def make_TSNE(embeddings, responses, clusters=None, show_responses=True):
-#     """Plot TSNE
-#     Args:
-#         embeddings (list): List of embeddings
-#         responses (list): List of responses -- used if show_responses is True
-#     """
-#     tsne = TSNE(n_components=2, perplexity=5, n_iter=3000, random_state=42)
-#     tsne_embeddings = tsne.fit_transform(embeddings)
-
-#     # Visualization
-#     if clusters is not None:
-#         plt.scatter(
-#             tsne_embeddings[:, 0],
-#             tsne_embeddings[:, 1],
-#             alpha=0.3,
-#             s=5,
-#             c=clusters,
-#             cmap="hsv",
-#         )
-#     else:
-#         plt.scatter(
-#             tsne_embeddings[:, 0],
-#             tsne_embeddings[:, 1],
-#             alpha=0.3,
-#             s=5,
-#             c="blue",
-#         )
-
-#     if show_responses:
-#         n = 50
-#         for i, response in enumerate(responses):
-#             if i % n == 0:
-#                 ax.annotate(
-#                     response, (tsne_embeddings[i, 0], tsne_embeddings[i, 1])
-#                 )  # plot every nth text on the TSNE
-#     plt.xlabel("TSNE-1")
-#     plt.ylabel("TSNE-2")
-#     plt.grid(False)
-#     plt.axis("off")
-#     plt.savefig("../plots/tsne_plot.png", dpi=300, bbox_inches="tight")
-#     # ax.set_xlabel("TSNE-1")
-#     # ax.set_ylabel("TSNE-2")
-#     # ax.grid(False)
-#     # ax.axis("off")
-
-# featuredict = pk.load(open(f"../files/features_gpt41.pk", "rb"))
-# responses = featuredict.keys()
-# embeddings = np.array([featuredict[response] for response in responses])
-
-
-import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -73,7 +15,7 @@ def make_TSNE(embeddings, responses, clusters=None, show_responses=True, feature
     """
     assert len(embeddings) == len(responses), "Embeddings and responses must have the same length"
 
-    tsne = TSNE(n_components=2, perplexity=10, n_iter=3000, random_state=42)
+    tsne = TSNE(n_components=2, perplexity=10, n_iter=3000, random_state=42, metric="hamming")
     tsne_embeddings = tsne.fit_transform(embeddings)
 
     plt.figure(figsize=(2, 2))
@@ -150,8 +92,8 @@ make_TSNE(embeddings, responses, None, True, "all_features")
 make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is mammal']], False, "Is mammal")
 make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is bird']], False, "Is bird")
 make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is domesticated']], False, "Is domesticated")
-# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is a predator']], False, "Is predator")
-# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is native to Asia']], False, "Is native to Asia")
-# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is marsupial']], False, "Is marsupial")
-# make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Has less than four limbs']], False, "Has more than four limbs")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is a predator']], False, "Is predator")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is native to Asia']], False, "Is native to Asia")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is marsupial']], False, "Is marsupial")
+make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Has less than four limbs']], False, "Has more than four limbs")
 make_TSNE(embeddings, responses, embeddings[:,feature_name_to_ind['feature_Is migratory']], False, "Is migratory")

@@ -459,7 +459,8 @@ class Model:
             if model.module.num_weights > 0:
                 print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
-        pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+        if self.config["save"]:
+            pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
     
     def simulate(self, customsequences=None):
         if customsequences is None:
@@ -497,7 +498,8 @@ class Model:
                 self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in test_seqs]))
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
-        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+        if self.config["save"]:
+            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")
@@ -526,7 +528,8 @@ class Model:
             self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in self.sequences]))
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
-        pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+        if self.config["save"]:
+            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")

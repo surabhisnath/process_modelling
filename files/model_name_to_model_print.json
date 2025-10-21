@@ -1,0 +1,22 @@
+{
+    "Random": "Random",
+
+    "Freq": "Freq",
+    
+    "HS": "HS",
+    "Freq_HS": "Freq + HS",
+    "WeightedHS": "wHS",
+    "FreqWeightedHS": "Freq + wHS",
+    "Activity": "wAct",
+    "WeightedHSActivity": "wHS + wAct",
+    "FreqWeightedHSActivity": "Freq + wHS + wAct",
+    
+    "OneCueStaticLocal": "CS",
+    "CombinedCueStatic": "Freq + CS",
+    "CombinedCueDynamicCat": "Freq + CS Dyn",
+
+    "Subcategory": "Cat",
+    "Freq_Subcategory": "Freq + Cat",
+    "Sim_Subcategory": "CS + Cat",
+    "Freq_Sim_Subcategory": "Freq + CS + Cat"
+}
