@@ -27,3 +27,4 @@ arviz
 numba
 statsmodels
 model2vec
+numdifftools

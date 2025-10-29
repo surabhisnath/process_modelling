@@ -39,15 +39,20 @@ class Hills(Model):
         sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
         if self.dynamic:
             if self.dynamic_cat:
-                # sim_terms_mask = torch.tensor([not (set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
-                sim_terms_mask = torch.tensor([ bool(set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device)
-            elif self.sim_drop:
-                sim1 = torch.tensor([self.sim_mat[seq[i - 2]][seq[i - 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
-                sim2 = torch.tensor([self.sim_mat[seq[i - 1]][seq[i]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
-                sim3 = torch.tensor([self.sim_mat[seq[i]][seq[i + 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
-                # sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                 # (len(seq) - 3,)
-                sim_drops = (~((sim1 > sim2) & (sim2 < sim3))).to(torch.int8)                              
-                sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
+                if seq[-1] == "":  # --- Simulation mode: predict next response
+                    prev_resp = seq[-2]
+                    prev_cat = set(self.response_to_category[prev_resp])
+                    sim_terms_mask = torch.tensor([bool(prev_cat & set(self.response_to_category[r])) for r in self.unique_responses], dtype=torch.int8, device=device).unsqueeze(0)  # shape: (1, num_resp)
+                else:
+                    sim_terms_mask = torch.tensor([ bool(set(self.response_to_category[seq[i]]) & set(self.response_to_category[seq[i - 1]])) for i in range(2, len(seq))], dtype=torch.int8, device=device).unsqueeze(1)   # shape: (len(seq) - 2, 1)
+
+            # elif self.sim_drop:
+            #     sim1 = torch.tensor([self.sim_mat[seq[i - 2]][seq[i - 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+            #     sim2 = torch.tensor([self.sim_mat[seq[i - 1]][seq[i]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+            #     sim3 = torch.tensor([self.sim_mat[seq[i]][seq[i + 1]] for i in range(2, len(seq) - 1)], dtype=torch.float16, device=device)
+            #     # sim_drops = ((sim1 > sim2) & (sim2 < sim3)).to(torch.int8)                                 # (len(seq) - 3,)
+            #     sim_drops = (~((sim1 > sim2) & (sim2 < sim3))).to(torch.int8)                              
+            #     sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
 
         mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         for i in range(2, len(seq)):
@@ -66,7 +71,7 @@ class Hills(Model):
         
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +
-            weightstouse[1] * sim_terms * sim_terms_mask.unsqueeze(1).float() #+
+            weightstouse[1] * sim_terms * sim_terms_mask.float() #+
             # weightstouse[2] * sim_terms_2step
         )
         

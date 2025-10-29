@@ -35,6 +35,9 @@ from collections import Counter
 from scipy.stats import ttest_ind
 import pickle as pk
 from model2vec import StaticModel
+from hierarchical_fitting import *
+from concurrent.futures import ThreadPoolExecutor
+import torch.multiprocessing as mp
 
 SEED = 42
 np.random.seed(SEED)
@@ -462,6 +465,146 @@ class Model:
         if self.config["save"]:
             pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
     
+    # def fitem(self):
+    #     datatofit = self.sequences
+    #     num_participants = self.num_sequences
+    #     res = em(datatofit, num_participants, self.__class__.__name__.lower(), self.num_weights, self.get_nll)
+    #     print(res)
+
+    def compute_diag_hessian(self, w, mu, sigma2, seq):
+        """Compute diagonal of Hessian of total loss wrt parameters w."""
+        w = w.clone().detach().requires_grad_(True)
+        nll = self.get_nll(seq, weightsfromarg=w, getnll=True)
+        prior_term = 0.5 * torch.sum((w - mu) ** 2 / sigma2)
+        total_loss = nll + prior_term
+        g = torch.autograd.grad(total_loss, w, create_graph=True)[0]
+        diag_hess = torch.zeros_like(w)
+        for i in range(len(w)):
+            grad2 = torch.autograd.grad(g[i], w, retain_graph=True)[0][i]
+            diag_hess[i] = grad2.detach()
+        return diag_hess.abs() + 1e-6
+
+
+    def fit_one_participant(self, args):
+        """Worker function for E-step."""
+        pid, seq, mu_np, sigma2_np = args
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        mu = torch.tensor(mu_np, dtype=torch.float32, device=device)
+        sigma2 = torch.tensor(sigma2_np, dtype=torch.float32, device=device)
+        w = mu.clone().detach().requires_grad_(True)
+
+        optimizer = torch.optim.LBFGS([w], lr=0.1, max_iter=50, line_search_fn="strong_wolfe")
+
+        def closure():
+            optimizer.zero_grad()
+            nll = self.get_nll(seq, weightsfromarg=w, getnll=True)
+            prior_term = 0.5 * torch.sum((w - mu)**2 / sigma2)
+            loss = nll + prior_term
+            loss.backward()
+            return loss
+        optimizer.step(closure)
+        # Hessian-based precision approximation
+        diag_hess_est = self.compute_diag_hessian(w, mu, sigma2, seq)
+        return pid, w.detach().cpu().numpy(), diag_hess_est.cpu().numpy()
+    
+    def fitem(self, max_iter=100, tol=1e-2):
+        """
+        Performs hierarchical model fitting using EM and MAP estimation.
+        E-step: estimate individual-level parameters given current priors.
+        M-step: update group-level priors based on individual posteriors.
+
+        Args:
+            max_iter (int): Maximum number of EM iterations.
+            tol (float): Convergence tolerance for change in group mean.
+        """
+        datatofit = self.sequences
+        num_participants = self.num_sequences
+        n_params = self.num_weights
+
+        # === Initialize group-level priors ===
+        mu = torch.zeros(n_params, dtype=torch.float32, device='cuda')
+        sigma2 = torch.ones(n_params, dtype=torch.float32, device='cuda')
+        prev_mu = mu.clone()
+
+        print(f"Starting hierarchical MAP-EM fitting for {num_participants} participants...")
+
+        for iteration in range(max_iter):
+            start_time = time.time()
+
+            # Store individual posterior estimates
+            pars_U = torch.zeros((num_participants, n_params), device='cuda')
+            diag_hess = torch.zeros((num_participants, n_params), device='cuda')
+
+            # # === E-step ===
+            # for pid, seq in enumerate(datatofit):
+            #     def nll_fn(params):
+            #         return self.get_nll(seq, weightsfromarg=params, getnll=True)
+
+            #     # Initialize params with prior mean
+            #     w = mu.clone().detach().requires_grad_(True)
+            #     optimizer = torch.optim.LBFGS([w], lr=0.1, max_iter=50, line_search_fn="strong_wolfe")
+
+            #     def closure():
+            #         optimizer.zero_grad()
+            #         nll = nll_fn(w)
+            #         prior_term = 0.5 * torch.sum((w - mu) ** 2 / sigma2)        # Add prior term (MAP)
+            #         loss = nll + prior_term
+            #         loss.backward()
+            #         return loss
+            #     optimizer.step(closure)
+
+            #     pars_U[pid] = w.detach()                # Save posterior estimates
+            #     diag_hess[pid] = 1.0 / (sigma2 + 1e-6)  # Approximate Hessian diagonal as inverse variance
+
+
+            # === Parallelized E-step ===
+            with mp.Manager() as manager:
+
+                args_list = [
+                    (pid, seq, mu.cpu().numpy(), sigma2.cpu().numpy())
+                    for pid, seq in enumerate(datatofit)
+                ]
+
+                pars_U = torch.zeros((num_participants, n_params), device='cuda')
+                diag_hess = torch.zeros((num_participants, n_params), device='cuda')
+
+                print(f"Running parallel E-step on {min(num_participants, mp.cpu_count())} workers...")
+
+                with ThreadPoolExecutor(max_workers=min(num_participants, 8)) as ex:
+                    futures = ex.map(self.fit_one_participant, args_list)
+                    for pid, w_est, h_est in futures:
+                        pars_U[pid] = torch.tensor(w_est, device='cuda')
+                        diag_hess[pid] = torch.tensor(h_est, device='cuda')
+
+
+            # === M-step ===
+            mu = torch.mean(pars_U, dim=0)
+            sigma2 = torch.mean((pars_U - mu) ** 2 + 1.0 / diag_hess, dim=0)
+
+            delta = torch.norm(mu - prev_mu).item()
+            elapsed = time.time() - start_time
+            print(f"Iter {iteration+1:03d} | Δμ={delta:.6f} | Time={elapsed:.2f}s")
+
+            if delta < tol:
+                print("Converged.")
+                break
+
+            prev_mu = mu.clone()
+
+        result = {
+            "mu": mu.cpu().numpy(),
+            "sigma2": sigma2.cpu().numpy(),
+            "individual_params": pars_U.cpu().numpy(),
+        }
+
+        print("Hierarchical fitting complete.")
+        print("Group mean:", mu.cpu().numpy())
+        print("Group variance:", sigma2.cpu().numpy())
+        print(result["individual_params"])
+
+        return result
+
     def simulate(self, customsequences=None):
         if customsequences is None:
             splitstofit = self.splits

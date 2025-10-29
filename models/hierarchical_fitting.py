@@ -13,31 +13,25 @@ def _Hess_diag(fun, x, dx=1e-4):
         hessdiag[i] = (fun(x + dx_i) + fun(x - dx_i) - 2. * fun(x)) / (dx ** 2.)
     return hessdiag
 
-def compute_log_likelihood(data_participant, pars_bounded, model_name):
-    # call the correct ll func
-
-def MAP(data_participant, pop_means, pop_vars, model_name):
-    n_params = get_num_params(model_name)
-    param_ranges = get_param_ranges(model_name)
-
+def MAP(data_participant, pop_means, pop_vars, get_nll):
     # initial guess
     x0 = pop_means
 
     # bounds
-    bounds = param_ranges
+    # bounds = param_ranges
 
     # negative log posterior
     def neg_log_post(pars):
-
-        pars_bounded = trans_to_bounded(pars, param_ranges)
-        log_lik = compute_log_likelihood(
-            data_participant, pars_bounded, model_name)
+        # pars_bounded = trans_to_bounded(pars, param_ranges)
+        log_lik = get_nll(data_participant, pars, True).cpu().detach().numpy()
+        # print(log_lik)
         log_prior = - (len(pars) / 2.) * np.log(2 * np.pi) - np.sum(np.log(pop_vars)) \
             / 2. - sum((pars - pop_means) ** 2. / (2 * pop_vars))
+        # print(log_prior)
         return -(log_lik + log_prior)
 
     # optimization
-    res = minimize(neg_log_post, x0, method='L-BFGS-B', bounds=bounds)
+    res = minimize(neg_log_post, x0, method='L-BFGS-B') #, bounds=bounds)
     hess_func = neg_log_post
     diag_hess = _Hess_diag(hess_func, res['x'])
 
@@ -47,32 +41,27 @@ def MAP(data_participant, pop_means, pop_vars, model_name):
     return fit_participant
 
 
-def em(data, num_participants, model_name, max_iter=100, tol=1e-6):
-    n_params = get_num_params(model_name)
-    param_ranges = get_param_ranges(model_name)
-
+def em(data, num_participants, model_name, n_params, get_nll, max_iter=100, tol=1e-3):
+    print("NUM PARAMS: ", n_params)
     # initialise prior
-    pop_means = np.random.randn(n_params)  # or np.zeros(n_params)
-    pop_vars = np.ones(n_params)  # * 6.25
+    pop_means = np.random.randn(n_params) # or np.zeros(n_params)
+    pop_vars = np.ones(n_params) * 6.25
 
     # EM algorithm
-
     for iteration in range(max_iter):
-
         # E-step
         fit_participants = []
         for i in range(num_participants):
-
-            fit_participant = MAP(data[i], pop_means, pop_vars, model_name)
+            fit_participant = MAP(data[i], pop_means, pop_vars, get_nll)
             fit_participants.append(fit_participant)
 
         # M-step
-        pars_U = [fit_participant['par_u']
-                  for fit_participant in fit_participants]
-        diag_hess = [fit_participant['diag_hess']
-                     for fit_participant in fit_participants]
-        new_pop_means = np.mean(pars_U)
-        new_pop_vars = np.mean(pars_U**2. + 1./diag_hess, 0)-pop_means**2.
+        pars_U = np.array([fit_participant['par_u']
+                  for fit_participant in fit_participants])
+        diag_hess = np.array([fit_participant['diag_hess']
+                     for fit_participant in fit_participants])
+        new_pop_means = np.mean(pars_U, axis=0)
+        new_pop_vars = np.mean(pars_U**2. + 1./diag_hess, axis=0) - pop_means**2.
 
         # check convergence
         if np.max(np.abs(new_pop_means-pop_means)) < tol and np.max(
@@ -86,10 +75,10 @@ def em(data, num_participants, model_name, max_iter=100, tol=1e-6):
         pop_means = new_pop_means
         pop_vars = new_pop_vars
 
-    bic = compute_bic(data, fit_participants, pop_means,
-                      pop_vars, model_name)
+    # bic = compute_bic(data, fit_participants, pop_means,
+    #                   pop_vars, model_name)
 
-    fit_pop = {'pop_means': pop_means, 'pop_vars': pop_vars, 'bic': bic,
+    fit_pop = {'pop_means': pop_means, 'pop_vars': pop_vars, #'bic': bic,
                'fit_participants': fit_participants, 'model_name': model_name}
 
     return fit_pop

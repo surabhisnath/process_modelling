@@ -39,4 +39,8 @@ plt.ylabel(f'Sum NLL over 5 folds')
 # plt.title(f'Model NLL comparison')
 # plt.grid(axis='y', linestyle=':', alpha=0.5)
 plt.tight_layout()
+
+plt.xticks([], [])
+plt.xlabel('')  # remove any x-axis label if present
+
 plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')

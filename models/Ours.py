@@ -30,10 +30,9 @@ class Ours(Model):
     def create_models(self):
         if self.config["fitting"] == "individual":
             subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
-            # self.models = {subclass.__name__: instance for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)}
-        elif self.config["fitting"] == "group":
+        # elif self.config["fitting"] == "group":
+        else:
             subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1]
-            # self.models = {subclass.__name__: subclass(self) for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
         ref_name = self.config["refnll"]
         ordered_subclasses = sorted(subclasses, key=lambda cls: 0 if cls.__name__.lower() == ref_name else 1)
         self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
@@ -72,26 +71,28 @@ class Ours(Model):
         nll = 0
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
 
-        # repeated = np.zeros((len(seq) - 2, len(self.unique_responses)))
+        # mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         # for i in range(2, len(seq)):
-        #     repeated_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
-        #     repeated[i - 2, repeated_responses] = 1
-
-        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        #     visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+        #     mask[i - 2, visited_responses] = 0
+        mask = torch.ones((len(seq) - 2, len(self.unique_responses)), device=device)
         for i in range(2, len(seq)):
-            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
-            mask[i - 2, visited_responses] = 0
+            visited_responses = torch.tensor([self.unique_response_to_index[resp] for resp in seq[:i]], device=device)
+            mask[i - 2, visited_responses] = 0.0
+
 
         weightstouse = self.allweights(weightsfromarg)
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
             weightstouse[1] * sim_terms                                                                          # shape: (len_seq - 2, num_resp)
-            # + weightstouse[4] * torch.tensor(repeated, device=device)
         )
 
+        # if self.config["mask"]:
+        #     mask = torch.tensor(mask, dtype=torch.bool, device=device)
+        #     logits[mask == 0] = float('-inf')
         if self.config["mask"]:
-            mask = torch.tensor(mask, dtype=torch.bool, device=device)
-            logits[mask == 0] = float('-inf')
+            logits = logits.masked_fill(mask == 0, float('-inf'))
+
         log_probs = F.log_softmax(logits, dim=1)
 
         if weightsfromarg is not None and getnll is None:
@@ -365,3 +366,42 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         else:
             nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
             return nll
+    
+    def get_logits_maxlogits(self, seq, weightsfromarg=None, getnll=None):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+        
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
+            mask[i - 2, visited_responses] = 0
+
+        freq_logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).repeat(len(seq) - 2, 1)
+        HS_logits = torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:1 + self.num_weights//2])
+        Activity_logits = torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse[1 + self.num_weights//2:]).unsqueeze(0).repeat(len(seq) - 2, 1)
+        logits = freq_logits + HS_logits + Activity_logits         # l = len(seq) - 2, n = num_unique_responses
+        
+        if self.config["mask"]:
+            mask = torch.tensor(mask, dtype=torch.bool, device=device)
+            logits[mask == 0] = float('-inf')
+            freq_logits[mask == 0] = float('-inf')
+            HS_logits[mask == 0] = float('-inf')
+            Activity_logits[mask == 0] = float('-inf')
+
+        log_probs = F.log_softmax(logits, dim=1)
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+        nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+
+        return log_probs, nll, \
+            freq_logits[torch.arange(freq_logits.size(0)), targets[2:]], HS_logits[torch.arange(HS_logits.size(0)), targets[2:]], Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]], \
+            freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)], HS_logits[torch.arange(HS_logits.size(0)), HS_logits.argmax(dim=1)], Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)], \
+            torch.exp(freq_logits[torch.arange(freq_logits.size(0)), targets[2:]]) / torch.exp(freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)]), \
+            torch.exp(HS_logits[torch.arange(HS_logits.size(0)), targets[2:]]) / torch.exp(HS_logits[torch.arange(HS_logits.size(0)), HS_logits.argmax(dim=1)]), \
+            torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]) / torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)])

@@ -123,7 +123,10 @@ def run(config):
             for model_name in models[model_class].models:
                 print(model_class, model_name)
                 start_time = time.time()
-                models[model_class].models[model_name].fit()
+                if config["fitting"] == "group":
+                    models[model_class].models[model_name].fit()
+                elif config["fitting"] == "hierarchical":
+                    models[model_class].models[model_name].fitem()
                 end_time = time.time()
                 elapsed_time = end_time - start_time
                 print(f"{model_name} completed in {elapsed_time:.2f} seconds")
@@ -249,7 +252,7 @@ def run(config):
         best_model_name = "FreqWeightedHSActivity"
         sequences = models[best_model_class].models[best_model_name].sequences
         num_features = models[best_model_class].models[best_model_name].num_features
-        suffix = "_fulldata"
+        suffix = ""
         results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         original_weights = results[f"weights_fold1{suffix}"].detach()
 
@@ -272,7 +275,7 @@ def run(config):
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no HS_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot1, labels = zip(*sorted(zip(barplot1, labels)))
+        barplot1, labels = zip(*sorted(zip(barplot1[2:], labels[2:])))
         x = np.arange(len(barplot1))
         plt.bar(x, barplot1, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
@@ -286,7 +289,7 @@ def run(config):
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no Activity_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot2, labels = zip(*sorted(zip(barplot2, labels)))
+        barplot2, labels = zip(*sorted(zip(barplot2[2:], labels[2:])))
         x = np.arange(len(barplot2))
         plt.bar(x, barplot2, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
@@ -316,7 +319,7 @@ def run(config):
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no {feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot3, labels = zip(*sorted(zip(barplot3, labels)))
+        barplot3, labels = zip(*sorted(zip(barplot3[2:], labels[2:])))
         x = np.arange(len(barplot3))
         plt.bar(x, barplot3, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
@@ -459,6 +462,37 @@ def run(config):
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity", df, groups=df["pid"]).fit()
         print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + chosen + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej + chosen", df, groups=df["pid"]).fit()
+        print(model.summary())
+    
+    if config["ARS"]:
+        print("--------------------------------ARS--------------------------------")
+        best_model_class = "ours"
+        best_model_name = "FreqWeightedHSActivity"
+        sequences = models[best_model_class].models[best_model_name].sequences
+        
+        suffix = ""
+        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        weights = results[f"weights_fold1{suffix}"].detach()
+
+        for sid, seq in enumerate(sequences):
+            _, _, _, _, _, _, _, _, freqeratio, HSeratio, activityeratio = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
+            print(sid)
+            print(seq[0])
+            print(seq[1])
+            for i in range(len(seq) - 2):
+                f = freqeratio[i].item()
+                h = HSeratio[i].item()
+                a = activityeratio[i].item()
+                max_type = ["freq", "HS", "activity"][torch.tensor([f, h, a]).argmax().item()]
+                print(f"{seq[i+2]:<15} {f:<6.2f} {h:<6.2f} {a:<6.2f} {max_type}")
+            print()
         
 if __name__ == "__main__":
 
@@ -515,6 +549,7 @@ if __name__ == "__main__":
     parser.add_argument("--parameterrecovery", action="store_true", help="simulate fake weights (default: False)")
     parser.add_argument("--ablation", action="store_true", help="ablate weights (default: False)")
     parser.add_argument("--RT_analysis", action="store_true", help="analyse RTs (default: False)")
+    parser.add_argument("--ARS", action="store_true", help="analyse RTs (default: False)")
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
