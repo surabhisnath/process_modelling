@@ -471,28 +471,136 @@ def run(config):
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej + chosen", df, groups=df["pid"]).fit()
         print(model.summary())
     
+    # if config["ARS"]:
+    #     print("--------------------------------ARS--------------------------------")
+    #     best_model_class = "ours"
+    #     best_model_name = "FreqWeightedHSActivity"
+    #     sequences = models[best_model_class].models[best_model_name].sequences
+    #     RTs = models[best_model_class].models[best_model_name].RTs
+        
+    #     suffix = ""
+    #     results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+    #     weights = results[f"weights_fold1{suffix}"].detach()
+
+    #     transitions_1 = np.zeros((2, 2))  # counts for max_type1
+    #     transitions_2 = np.zeros((2, 2))
+    #     logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
+    #     logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
+
+    #     def map_type(t):
+    #         return 0 if t == "HS" else 1  # 0=HS, 1=FA
+
+    #     for sid, seq in enumerate(sequences):
+    #         _, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
+    #         print(sid)
+    #         print(seq[0])
+    #         print(seq[1])
+    #         for i in range(len(seq) - 2):
+    #             f1 = freqeratiomax[i].item()
+    #             h1 = HSeratiomax[i].item()
+    #             a1 = activityeratiomax[i].item()
+    #             max_type1 = ["freq", "HS", "activity"][torch.tensor([f1, h1, a1]).argmax().item()]
+
+    #             f2 = freqeratiosum[i].item()
+    #             h2 = HSeratiosum[i].item()
+    #             a2 = activityeratiosum[i].item()
+    #             max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
+
+    #             print(f"{seq[i+2]:<15} {f1:<6.2f} {h1:<6.2f} {a1:<6.2f} {max_type1:<15} {f2:<8.4f} {h2:<8.4f} {a2:<8.4f} {max_type2}")
+    #         print()
+
     if config["ARS"]:
         print("--------------------------------ARS--------------------------------")
         best_model_class = "ours"
         best_model_name = "FreqWeightedHSActivity"
         sequences = models[best_model_class].models[best_model_name].sequences
-        
+        # sequences = [["goat", "fly", "dog", "cat", "rat", "mouse", "tiger", "lion", "moth", "bee", "wasp", "shark", "dolphin", "whale", "octopus", "duck", "swan", "goose", "crocodile", "alligator", "komodo dragon"]]     
+        RTs = models[best_model_class].models[best_model_name].RTs
+        # RTs = np.ones(21)
+
         suffix = ""
-        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config['featurestouse']}{suffix}.pk", "rb"))
         weights = results[f"weights_fold1{suffix}"].detach()
 
+        # ---- Initialize accumulators ----
+        transitions_1 = np.zeros((2, 2))   # for max_type1
+        transitions_2 = np.zeros((2, 2))
+        logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
+        logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
+
+        def map_type(t):
+            """Map 'HS' → 0, 'freq'/'activity' → 1."""
+            return 0 if t == "HS" else 1
+
         for sid, seq in enumerate(sequences):
-            _, _, _, _, _, _, _, _, freqeratio, HSeratio, activityeratio = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
+            rt_seq = RTs[sid]
+            _, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
+
             print(sid)
             print(seq[0])
             print(seq[1])
+
+            # store categorical labels per position
+            max1_list, max2_list = [], []
+
             for i in range(len(seq) - 2):
-                f = freqeratio[i].item()
-                h = HSeratio[i].item()
-                a = activityeratio[i].item()
-                max_type = ["freq", "HS", "activity"][torch.tensor([f, h, a]).argmax().item()]
-                print(f"{seq[i+2]:<15} {f:<6.2f} {h:<6.2f} {a:<6.2f} {max_type}")
+                # --- max_type1 (max logits) ---
+                f1, h1, a1 = (
+                    freqeratiomax[i].item(),
+                    HSeratiomax[i].item(),
+                    activityeratiomax[i].item(),
+                )
+                max_type1 = ["freq", "HS", "activity"][torch.tensor([f1, h1, a1]).argmax().item()]
+                max1_list.append(max_type1)
+
+                # --- max_type2 (sum ratios) ---
+                f2, h2, a2 = (
+                    freqeratiosum[i].item(),
+                    HSeratiosum[i].item(),
+                    activityeratiosum[i].item(),
+                )
+                max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
+                max2_list.append(max_type2)
+
+                # ---- print line (keep your original format) ----
+                print(f"{seq[i+2]:<15} {f1:<6.2f} {h1:<6.2f} {a1:<6.2f} {max_type1:<15} "
+                    f"{f2:<8.4f} {h2:<8.4f} {a2:<8.4f} {max_type2}")
             print()
+
+            # ---- transitions for both types ----
+            for i in range(1, len(max1_list)):
+                t1_from, t1_to = map_type(max1_list[i-1]), map_type(max1_list[i])
+                t2_from, t2_to = map_type(max2_list[i-1]), map_type(max2_list[i])
+
+                transitions_1[t1_from, t1_to] += 1
+                transitions_2[t2_from, t2_to] += 1
+
+                # accumulate log(RT) of the *to* element
+                rt_val = np.log(rt_seq[i + 2] + 0.0001)
+                # rt_val = rt_seq[i + 2]
+                logrt_1[t1_from][t1_to].append(rt_val)
+                logrt_2[t2_from][t2_to].append(rt_val)
+
+        # ---- compute mean log(RT) matrices ----
+        mean_logrt_1 = np.zeros((2, 2))
+        mean_logrt_2 = np.zeros((2, 2))
+        for i in range(2):
+            for j in range(2):
+                mean_logrt_1[i, j] = np.mean(logrt_1[i][j])
+                mean_logrt_2[i, j] = np.mean(logrt_2[i][j])
+
+        # ---- pretty print ----
+        labels = ["HS", "FA"]
+        print("\n=== Transition counts (max_type1) ===")
+        print(pd.DataFrame(transitions_1, index=labels, columns=labels))
+        print("\n=== Mean log(RT) (max_type1) ===")
+        print(pd.DataFrame(mean_logrt_1, index=labels, columns=labels))
+
+        print("\n=== Transition counts (max_type2) ===")
+        print(pd.DataFrame(transitions_2, index=labels, columns=labels))
+        print("\n=== Mean log(RT) (max_type2) ===")
+        print(pd.DataFrame(mean_logrt_2, index=labels, columns=labels))
+
         
 if __name__ == "__main__":
 

@@ -603,6 +603,8 @@ class Model:
         print("Group variance:", sigma2.cpu().numpy())
         print(result["individual_params"])
 
+        pk.dump(result, open("../fits/hierarchical_fits_freqweightedhsactivity.pk", "wb"))
+
         return result
 
     def simulate(self, customsequences=None):

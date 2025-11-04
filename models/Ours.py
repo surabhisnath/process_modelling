@@ -404,4 +404,7 @@ class FreqWeightedHSActivity(Ours, nn.Module):
             freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)], HS_logits[torch.arange(HS_logits.size(0)), HS_logits.argmax(dim=1)], Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)], \
             torch.exp(freq_logits[torch.arange(freq_logits.size(0)), targets[2:]]) / torch.exp(freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)]), \
             torch.exp(HS_logits[torch.arange(HS_logits.size(0)), targets[2:]]) / torch.exp(HS_logits[torch.arange(HS_logits.size(0)), HS_logits.argmax(dim=1)]), \
-            torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]) / torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)])
+            torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]) / torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)]), \
+            torch.exp(freq_logits[torch.arange(freq_logits.size(0)), targets[2:]]) / torch.exp(freq_logits).sum(dim=1), \
+            torch.exp(HS_logits[torch.arange(HS_logits.size(0)), targets[2:]]) / torch.exp(HS_logits).sum(dim=1), \
+            torch.exp(Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]) / torch.exp(Activity_logits).sum(dim=1)
