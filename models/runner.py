@@ -31,6 +31,7 @@ pd.set_option('display.max_rows', None)         # Show all rows
 pd.set_option('display.max_columns', None)      # Show all columns
 from scipy.stats import ttest_ind
 from itertools import combinations
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def changeweights(weights, i):
     device = weights.device
@@ -85,6 +86,7 @@ def run(config):
     fit_results = {}
 
     modelobj = Model(config)
+    print(modelobj.freq)
     BLEUs = []
     for (train_sequences, test_sequences) in modelobj.splits:
         for i in range(modelobj.numsubsamples):
@@ -128,7 +130,7 @@ def run(config):
                 if config["fitting"] == "group":
                     models[model_class].models[model_name].fit()
                 elif config["fitting"] == "hierarchical":
-                    models[model_class].models[model_name].fitem()
+                    models[model_class].models[model_name].fitem(sequences=pk.load(open("../simulations/freqweightedhsactivity_simulations_gpt41_forhierarchicaltesting.pk", "rb")))
                 end_time = time.time()
                 elapsed_time = end_time - start_time
                 print(f"{model_name} completed in {elapsed_time:.2f} seconds")
@@ -151,7 +153,7 @@ def run(config):
                     elif config["fitting"] == "group":
                         modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
                 except:
-                    results = pk.load(open(f"../fits/{model_name.lower()}_fits_{config["featurestouse"]}.pk", "rb"))
+                    results = pk.load(open(f"../fits/{model_name.lower()}_fits_{config['featurestouse']}.pk", "rb"))
                     if config["fitting"] == "individual":
                         modelnlls.append(results["mean_minNLL"])
                         se_modelnlls.append(results["se_minNLL"])
@@ -254,13 +256,21 @@ def run(config):
         best_model_name = "FreqWeightedHSActivity"
         sequences = models[best_model_class].models[best_model_name].sequences
         num_features = models[best_model_class].models[best_model_name].num_features
-        suffix = ""
-        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        
+        suffix = "_fulldata"
+        try:
+            print("Loading weights on full dataset...")
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         original_weights = results[f"weights_fold1{suffix}"].detach()
 
         try:
-            barplot1 = pk.load(open("../fits/ablations1.pk", "rb"))
-            barplot2 = pk.load(open("../fits/ablations2.pk", "rb"))
+            barplot1 = pk.load(open(f"../fits/ablations1_{suffix}.pk", "rb"))
+            barplot2 = pk.load(open(f"../fits/ablations2_{suffix}.pk", "rb"))
         except:
             totalnlls = []
             for i in tqdm(range(len(original_weights) + 1)):
@@ -272,8 +282,8 @@ def run(config):
     
             barplot1 = [totalnlls[i].detach().cpu().item() for i in np.arange(0, 2 + num_features)]
             barplot2 = [totalnlls[i].detach().cpu().item() for i in [0, 1] + list(np.arange(2 + num_features, 2 + 2*num_features))]
-            pk.dump(barplot1, open("../fits/ablations1.pk", "wb"))
-            pk.dump(barplot2, open("../fits/ablations2.pk", "wb"))
+            pk.dump(barplot1, open(f"../fits/ablations1_{suffix}.pk", "wb"))
+            pk.dump(barplot2, open(f"../fits/ablations2_{suffix}.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no HS_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -286,8 +296,8 @@ def run(config):
         plt.title(f'Ablation for HS')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig("../plots/ablation_study_HS.png", dpi=300, bbox_inches='tight')
-        print("Saved ../plots/ablation_study_HS.png")
+        plt.savefig(f"../plots/ablation_study_HS_{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_HS_{suffix}.png")
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no Activity_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -300,11 +310,11 @@ def run(config):
         plt.title(f'Ablation for Activity')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig("../plots/ablation_study_Activity.png", dpi=300, bbox_inches='tight')
-        print("Saved ../plots/ablation_study_Activity.png")
+        plt.savefig(f"../plots/ablation_study_Activity_{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_Activity_{suffix}.png")
 
         try:
-            barplot3 = pk.load(open("../fits/ablations3.pk", "rb"))
+            barplot3 = pk.load(open(f"../fits/ablations3_{suffix}.pk", "rb"))
         except:
             totalnlls_fullfeatureremoved = []
             for i in tqdm(range(num_features + 2)):
@@ -317,7 +327,7 @@ def run(config):
                 totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
                 totalnlls_fullfeatureremoved.append(totalnll)
             barplot3 = [totalnlls_fullfeatureremoved[i].detach().cpu().item() for i in range(len(totalnlls_fullfeatureremoved))]
-            pk.dump(barplot3, open("../fits/ablations3.pk", "wb"))
+            pk.dump(barplot3, open(f"../fits/ablations3_{suffix}.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no {feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -330,8 +340,90 @@ def run(config):
         plt.title(f'Ablation for features')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig("../plots/ablation_study_features.png", dpi=300, bbox_inches='tight')
-        print("Saved ../plots/ablation_study_features.png")
+        plt.savefig(f"../plots/ablation_study_features_{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_features_{suffix}.png")
+
+
+
+        # suffix = ""
+        # results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        # for fold in range(config["cv"]):
+        #     print("FOLD: ", fold+1, f"/ {config["cv"]}")
+        #     original_weights = results[f"weights_fold{fold+1}{suffix}"].detach()
+        #     try:
+        #         barplot1 = pk.load(open(f"../fits/ablations1_{fold+1}.pk", "rb"))
+        #         barplot2 = pk.load(open(f"../fits/ablations2_{fold+1}.pk", "rb"))
+        #     except:
+        #         totalnlls = []
+        #         for i in tqdm(range(len(original_weights) + 1)):
+        #             weights = original_weights.clone()
+        #             if i != 0:
+        #                 weights[i-1] = 0
+        #             totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
+        #             totalnlls.append(totalnll)
+        
+        #         barplot1 = [totalnlls[i].detach().cpu().item() for i in np.arange(0, 2 + num_features)]
+        #         barplot2 = [totalnlls[i].detach().cpu().item() for i in [0, 1] + list(np.arange(2 + num_features, 2 + 2*num_features))]
+        #         pk.dump(barplot1, open(f"../fits/ablations1_{fold+1}.pk", "wb"))
+        #         pk.dump(barplot2, open(f"../fits/ablations2_{fold+1}.pk", "wb"))
+
+        #     plt.figure(figsize=(15, 8))
+        #     labels = ["with all weights", "no freq"] + [f"no HS_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
+        #     barplot1, labels = zip(*sorted(zip(barplot1[2:], labels[2:])))
+        #     x = np.arange(len(barplot1))
+        #     plt.bar(x, barplot1, alpha=0.8, color='#9370DB')
+        #     plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
+        #     plt.ylim(min(barplot1) - 100, max(barplot1) + 100)
+        #     plt.ylabel(f'NLL')
+        #     plt.title(f'Ablation for HS')
+        #     plt.grid(axis='y', linestyle=':', alpha=0.5)
+        #     plt.tight_layout()
+        #     plt.savefig(f"../plots/ablation_study_HS_{fold+1}.png", dpi=300, bbox_inches='tight')
+        #     print(f"Saved ../plots/ablation_study_HS_{fold+1}.png")
+
+        #     plt.figure(figsize=(15, 8))
+        #     labels = ["with all weights", "no freq"] + [f"no Activity_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
+        #     barplot2, labels = zip(*sorted(zip(barplot2[2:], labels[2:])))
+        #     x = np.arange(len(barplot2))
+        #     plt.bar(x, barplot2, alpha=0.8, color='#9370DB')
+        #     plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
+        #     plt.ylim(min(barplot2) - 100, max(barplot2) + 100)
+        #     plt.ylabel(f'NLL')
+        #     plt.title(f'Ablation for Activity')
+        #     plt.grid(axis='y', linestyle=':', alpha=0.5)
+        #     plt.tight_layout()
+        #     plt.savefig(f"../plots/ablation_study_Activity_{fold+1}.png", dpi=300, bbox_inches='tight')
+        #     print(f"Saved ../plots/ablation_study_Activity_{fold+1}.png")
+
+        #     try:
+        #         barplot3 = pk.load(open(f"../fits/ablations3_{fold+1}.pk", "rb"))
+        #     except:
+        #         totalnlls_fullfeatureremoved = []
+        #         for i in tqdm(range(num_features + 2)):
+        #             weights = original_weights.clone()
+        #             if i != 0 and i == 1:
+        #                 weights[i-1] = 0
+        #             elif i != 0 and i > 1:
+        #                 weights[i-1] = 0
+        #                 weights[i-1 + num_features] = 0
+        #             totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
+        #             totalnlls_fullfeatureremoved.append(totalnll)
+        #         barplot3 = [totalnlls_fullfeatureremoved[i].detach().cpu().item() for i in range(len(totalnlls_fullfeatureremoved))]
+        #         pk.dump(barplot3, open(f"../fits/ablations3_{fold+1}.pk", "wb"))
+
+        #     plt.figure(figsize=(15, 8))
+        #     labels = ["with all weights", "no freq"] + [f"no {feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
+        #     barplot3, labels = zip(*sorted(zip(barplot3[2:], labels[2:])))
+        #     x = np.arange(len(barplot3))
+        #     plt.bar(x, barplot3, alpha=0.8, color='#9370DB')
+        #     plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
+        #     plt.ylim(min(barplot3) - 100, max(barplot3) + 100)
+        #     plt.ylabel(f'NLL')
+        #     plt.title(f'Ablation for features')
+        #     plt.grid(axis='y', linestyle=':', alpha=0.5)
+        #     plt.tight_layout()
+        #     plt.savefig(f"../plots/ablation_study_features_{fold+1}.png", dpi=300, bbox_inches='tight')
+        #     print(f"Saved ../plots/ablation_study_features_{fold+1}.png")
     
     if config["RT_analysis"]:
         print("--------------------------------RT ANALYSIS--------------------------------")
@@ -340,8 +432,15 @@ def run(config):
         sequences = models[best_model_class].models[best_model_name].sequences
         RTs = models[best_model_class].models[best_model_name].RTs
         
-        suffix = ""
-        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        suffix = "_fulldata"
+        try:
+            print("Loading weights on full dataset...")
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         weights = results[f"weights_fold1{suffix}"].detach()
         
         RTs_forreg = []
@@ -351,11 +450,14 @@ def run(config):
         HS_forreg = []
         activity_forreg = []
         pid = []
+        cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
+        cue_transitions_forreg = []
         for sid, seq in enumerate(sequences):
             logprobs_withoutmasking, nll, freq, HS, activity = models[best_model_class].models[best_model_name].get_nll_withoutmasking(seq, weights)
             freq_forreg.extend(freq.cpu().numpy())
             HS_forreg.extend(HS.cpu().numpy())
             activity_forreg.extend(activity.cpu().numpy())
+            cue_transitions_forreg.extend(cue_transitions[sid])
 
             den = torch.logsumexp(logprobs_withoutmasking, dim=1)      # shape len(seq) - 2
 
@@ -388,7 +490,7 @@ def run(config):
             plt.savefig(f"../plots/seq{i+1}_RTanalysis")
             plt.close()
 
-        df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid})
+        df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "cue_transitions": cue_transitions_forreg})
         df["prev_freq"] = df.groupby("pid")["freq"].shift(1)
         df["prev_HS"] = df.groupby("pid")["HS"].shift(1)
         df["prev_activity"] = df.groupby("pid")["activity"].shift(1)
@@ -396,6 +498,9 @@ def run(config):
         df["prev_prev_freq"] = df.groupby("pid")["prev_freq"].shift(1)
         df["prev_prev_HS"] = df.groupby("pid")["prev_HS"].shift(1)
         df["prev_prev_activity"] = df.groupby("pid")["prev_activity"].shift(1)
+
+        df = df.dropna()
+
 
         # df = df.dropna()
 
@@ -453,6 +558,10 @@ def run(config):
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
         print(model.summary())
 
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print(model.summary())
+
         df = df.dropna(subset=["prev_freq"])
 
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
@@ -473,97 +582,6 @@ def run(config):
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej + chosen", df, groups=df["pid"]).fit()
         print(model.summary())
     
-    # if config["ARS"]:
-    #     print("--------------------------------ARS--------------------------------")
-    #     best_model_class = "ours"
-    #     best_model_name = "FreqWeightedHSActivity"
-    #     sequences = models[best_model_class].models[best_model_name].sequences
-    #     # sequences = [["goat", "fly", "dog", "cat", "rat", "mouse", "tiger", "lion", "moth", "bee", "wasp", "shark", "dolphin", "whale", "octopus", "duck", "swan", "goose", "crocodile", "alligator", "komodo dragon"]]     
-    #     RTs = models[best_model_class].models[best_model_name].RTs
-    #     # RTs = np.ones(21)
-
-    #     suffix = ""
-    #     results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config['featurestouse']}{suffix}.pk", "rb"))
-    #     weights = results[f"weights_fold1{suffix}"].detach()
-
-    #     # ---- Initialize accumulators ----
-    #     transitions_1 = np.zeros((2, 2))   # for max_type1
-    #     transitions_2 = np.zeros((2, 2))
-    #     logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
-    #     logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
-
-    #     def map_type(t):
-    #         """Map 'HS' → 0, 'freq'/'activity' → 1."""
-    #         return 0 if t == "HS" else 1
-
-    #     for sid, seq in enumerate(sequences):
-    #         rt_seq = RTs[sid]
-    #         _, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
-
-    #         print(sid)
-    #         print(seq[0])
-    #         print(seq[1])
-
-    #         # store categorical labels per position
-    #         max1_list, max2_list = [], []
-
-    #         for i in range(len(seq) - 2):
-    #             # --- max_type1 (max logits) ---
-    #             f1, h1, a1 = (
-    #                 freqeratiomax[i].item(),
-    #                 HSeratiomax[i].item(),
-    #                 activityeratiomax[i].item(),
-    #             )
-    #             max_type1 = ["freq", "HS", "activity"][torch.tensor([f1, h1, a1]).argmax().item()]
-    #             max1_list.append(max_type1)
-
-    #             # --- max_type2 (sum ratios) ---
-    #             f2, h2, a2 = (
-    #                 freqeratiosum[i].item(),
-    #                 HSeratiosum[i].item(),
-    #                 activityeratiosum[i].item(),
-    #             )
-    #             max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
-    #             max2_list.append(max_type2)
-
-    #             # ---- print line (keep your original format) ----
-    #             print(f"{seq[i+2]:<15} {f1:<6.2f} {h1:<6.2f} {a1:<6.2f} {max_type1:<15} "
-    #                 f"{f2:<8.4f} {h2:<8.4f} {a2:<8.4f} {max_type2}")
-    #         print()
-
-    #         # ---- transitions for both types ----
-    #         for i in range(1, len(max1_list)):
-    #             t1_from, t1_to = map_type(max1_list[i-1]), map_type(max1_list[i])
-    #             t2_from, t2_to = map_type(max2_list[i-1]), map_type(max2_list[i])
-
-    #             transitions_1[t1_from, t1_to] += 1
-    #             transitions_2[t2_from, t2_to] += 1
-
-    #             # accumulate log(RT) of the *to* element
-    #             rt_val = np.log(rt_seq[i + 2] + 0.0001)
-    #             logrt_1[t1_from][t1_to].append(rt_val)
-    #             logrt_2[t2_from][t2_to].append(rt_val)
-
-    #     # ---- compute mean log(RT) matrices ----
-    #     mean_logrt_1 = np.zeros((2, 2))
-    #     mean_logrt_2 = np.zeros((2, 2))
-    #     for i in range(2):
-    #         for j in range(2):
-    #             mean_logrt_1[i, j] = np.mean(logrt_1[i][j])
-    #             mean_logrt_2[i, j] = np.mean(logrt_2[i][j])
-
-    #     # ---- pretty print ----
-    #     labels = ["HS", "FA"]
-    #     print("\n=== Transition counts (max_type1) ===")
-    #     print(pd.DataFrame(transitions_1, index=labels, columns=labels))
-    #     print("\n=== Mean log(RT) (max_type1) ===")
-    #     print(pd.DataFrame(mean_logrt_1, index=labels, columns=labels))
-
-    #     print("\n=== Transition counts (max_type2) ===")
-    #     print(pd.DataFrame(transitions_2, index=labels, columns=labels))
-    #     print("\n=== Mean log(RT) (max_type2) ===")
-    #     print(pd.DataFrame(mean_logrt_2, index=labels, columns=labels))
-
     if config["ARS"]:
         print("--------------------------------ARS--------------------------------")
         best_model_class = "ours"
@@ -571,8 +589,15 @@ def run(config):
         sequences = models[best_model_class].models[best_model_name].sequences
         RTs = models[best_model_class].models[best_model_name].RTs
 
-        suffix = ""
-        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config['featurestouse']}{suffix}.pk", "rb"))
+        suffix = "_fulldata"
+        try:
+            print("Loading weights on full dataset...")
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         weights = results[f"weights_fold1{suffix}"].detach()
 
         def map_type(t):
@@ -580,20 +605,35 @@ def run(config):
             return 0 if t == "HS" else 1
 
         per_seq_logrt_1, per_seq_logrt_2 = [], []
+        per_seq_probs_1, per_seq_probs_2 = [], []
+
+        cue_transitions = []
 
         for sid, seq in enumerate(sequences):
             rt_seq = RTs[sid]
-            (_, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
-
+            (_, log_probs, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
+            probs = np.exp(log_probs.detach().cpu().numpy())
+            print("PROBS SHAPE" , probs.shape)
             # print(sid)
             # print(seq[0])
             # print(seq[1])
-
+            cue_transitions_seq = [np.nan]
             max1_list, max2_list = [], []
             for i in range(len(seq) - 2):
+                
                 f1, h1, a1 = (freqeratiomax[i].item(), HSeratiomax[i].item(), activityeratiomax[i].item())
                 max_type1 = ["freq", "HS", "activity"][torch.tensor([f1, h1, a1]).argmax().item()]
                 max1_list.append(max_type1)
+
+                if i > 0:
+                    if (max1_list[-2] == "freq" or max1_list[-2] == "activity") and (max1_list[-1] == "freq" or max1_list[-1] == "activity"):
+                        cue_transitions_seq.append(0)
+                    elif (max1_list[-2] == "freq" or max1_list[-2] == "activity") and max1_list[-1] == "HS":
+                        cue_transitions_seq.append(1)
+                    elif max1_list[-2] == "HS" and (max1_list[-1] == "freq" or max1_list[-1] == "activity"):
+                        cue_transitions_seq.append(2)
+                    elif max1_list[-2] == "HS" and max1_list[-1] == "HS":
+                        cue_transitions_seq.append(3)
 
                 f2, h2, a2 = (freqeratiosum[i].item(), HSeratiosum[i].item(), activityeratiosum[i].item())
                 max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
@@ -601,10 +641,11 @@ def run(config):
 
                 # print(f"{seq[i+2]:<15} {f1:<6.2f} {h1:<6.2f} {a1:<6.2f} {max_type1:<15} "
                     # f"{f2:<8.4f} {h2:<8.4f} {a2:<8.4f} {max_type2}")
-            # print()
-
+            cue_transitions.append(cue_transitions_seq)
             logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
             logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
+            probs_1 = [[[] for _ in range(2)] for _ in range(2)]
+            probs_2 = [[[] for _ in range(2)] for _ in range(2)]
 
             for i in range(1, len(max1_list)):
                 t1_from, t1_to = map_type(max1_list[i-1]), map_type(max1_list[i])
@@ -613,14 +654,24 @@ def run(config):
                 rt_val = np.log(rt_seq[i + 2] + 0.001)
                 logrt_1[t1_from][t1_to].append(rt_val)
                 logrt_2[t2_from][t2_to].append(rt_val)
+                probs_1[t1_from][t1_to].append(probs[i])
+                probs_2[t2_from][t2_to].append(probs[i])
 
             per_seq_logrt_1.append(logrt_1)
             per_seq_logrt_2.append(logrt_2)
+            per_seq_probs_1.append(probs_1)
+            per_seq_probs_2.append(probs_2)
 
+        pk.dump(cue_transitions, open("../files/cue_transitions.pk", "wb"))
         mean_logrt_1 = np.zeros((2, 2))
         mean_logrt_2 = np.zeros((2, 2))
         se_logrt_1 = np.zeros((2, 2))
         se_logrt_2 = np.zeros((2, 2))
+
+        mean_probs_1 = np.zeros((2, 2))
+        mean_probs_2 = np.zeros((2, 2))
+        se_probs_1 = np.zeros((2, 2))
+        se_probs_2 = np.zeros((2, 2))
         for i in range(2):
             for j in range(2):
                 # I've checked this logic to be true
@@ -631,6 +682,13 @@ def run(config):
                 se_logrt_1[i, j] = np.std(vals_1, ddof=1) / np.sqrt(len(vals_1))
                 se_logrt_2[i, j] = np.std(vals_2, ddof=1) / np.sqrt(len(vals_2))
 
+                vals_1 = [np.mean(probs_1[i][j]) for probs_1 in per_seq_probs_1 if probs_1[i][j]]       # not everyone may have all 4 types of transitions in their seq therefore if probs_1[i][j] ie if it is not empty
+                vals_2 = [np.mean(probs_2[i][j]) for probs_2 in per_seq_probs_2 if probs_2[i][j]]
+                mean_probs_1[i, j] = np.mean(vals_1)
+                mean_probs_2[i, j] = np.mean(vals_2)
+                se_probs_1[i, j] = np.std(vals_1, ddof=1) / np.sqrt(len(vals_1))
+                se_probs_2[i, j] = np.std(vals_2, ddof=1) / np.sqrt(len(vals_2))
+
         labels = ["HS", "FA"]
         print("\n=== Mean ± SEM log(RT) (max_type1) ===")
         df_mean = pd.DataFrame(mean_logrt_1, index=labels, columns=labels)
@@ -640,6 +698,18 @@ def run(config):
         df_mean = pd.DataFrame(mean_logrt_2, index=labels, columns=labels)
         df_se   = pd.DataFrame(se_logrt_2, index=labels, columns=labels)
         print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
+
+        labels = ["HS", "FA"]
+        print("\n=== Mean ± SEM probs (max_type1) ===")
+        df_mean = pd.DataFrame(mean_probs_1, index=labels, columns=labels)
+        df_se   = pd.DataFrame(se_probs_1, index=labels, columns=labels)
+        print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
+        print("\n=== Mean ± SEM probs (max_type2) ===")
+        df_mean = pd.DataFrame(mean_probs_2, index=labels, columns=labels)
+        df_se   = pd.DataFrame(se_probs_2, index=labels, columns=labels)
+        print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
+
+        #---------------------------------
 
         # t-tests:
         labels = ["HS→HS", "HS→FA", "FA→HS", "FA→FA"]
@@ -659,6 +729,12 @@ def run(config):
                         [1.56, 1.23]])
         errors = np.array([[0.03, 0.03],
                         [0.03, 0.04]])
+        
+        # probs:
+        # data = np.array([[0.026, 0.107],
+        #                 [0.024, 0.067]])
+        # errors = np.array([[0.001, 0.004],
+        #                 [0.001, 0.004]])
 
         fig, ax = plt.subplots(figsize=(5,5))
         im = ax.imshow(data, cmap='Reds', vmin=1.0, vmax=1.6, alpha=0.5)
@@ -686,9 +762,140 @@ def run(config):
         sequences = models[best_model_class].models[best_model_name].sequences
         RTs = models[best_model_class].models[best_model_name].RTs
 
+        suffix = "_fulldata"
+        try:
+            print("Loading weights on full dataset...")
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        weights = results[f"weights_fold1{suffix}"].detach().cpu()
+
+        features = models[best_model_class].models[best_model_name].feature_names
+        weights_HS = weights[1:1+len(features)]
+        weights_Act = weights[1+len(features):]
+        ablations_HS = pk.load(open("../fits/ablations1.pk", "rb"))[2:]
+        ablations_Act = pk.load(open("../fits/ablations2.pk", "rb"))[2:]
+
+        plt.scatter(ablations_HS, ablations_Act)
+        top10_HS_idx = np.argsort(ablations_HS)[-10:]
+        top10_Act_idx = np.argsort(ablations_Act)[-10:]
+        top10_idx = set(top10_HS_idx) | set(top10_Act_idx)
+        for i, feat in enumerate(features):
+            if (ablations_HS[i] > 20645 and ablations_Act[i] > 20700) or (i in top10_idx):
+                plt.text(
+                    ablations_HS[i],
+                    ablations_Act[i],
+                    feat[8:].split('(')[0], 
+                    fontsize=6,
+                    ha="center",
+                    va="bottom"
+                )
+
+        plt.xlabel("HS Ablation Effect")
+        plt.ylabel("Activity Ablation Effect")
+        plt.grid(True, linestyle="--", alpha=0.6)
+        plt.tight_layout()
+        plt.xlim(min(ablations_HS) - 2, 20670)
+        # plt.xlim(np.min(ablations_HS), 9.936)
+        plt.ylim(20600, 21000)
+        # plt.ylim(np.min(ablations_Act), 9.95)
+        plt.savefig("../plots/visweights.png", dpi=300)
+
+        sorted_idx = np.argsort(weights_HS)  # ascending; use [::-1] for descending
+        features_sorted = [features[i] for i in sorted_idx]
+        weights_HS_sorted = weights_HS[sorted_idx]
+        weights_Act_sorted = weights_Act[sorted_idx]
+
+        # Prepare 1×N arrays for heatmaps
+        weights_HS_mat = weights_HS_sorted[np.newaxis, :]
+        weights_Act_mat = weights_Act_sorted[np.newaxis, :]
+
+        # Set shared color scale across both
+        vmin = min(weights_HS.min(), weights_Act.min())
+        vmax = max(weights_HS.max(), weights_Act.max())
+
+        # Plot
+        fig, axes = plt.subplots(2, 1, figsize=(15, 4), sharex=True)
+
+        # HS heatmap
+        im1 = axes[0].imshow(weights_HS_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
+        axes[0].set_yticks([0])
+        axes[0].set_yticklabels(["HS"])
+        axes[0].set_xticks(np.arange(len(features_sorted)))
+        axes[0].set_xticklabels(features_sorted, rotation=90, fontsize=8)
+        axes[0].set_title("Feature Weights (HS)", fontsize=11)
+        plt.colorbar(im1, ax=axes[0], orientation='vertical', fraction=0.02, pad=0.02)
+
+        # Activity heatmap
+        im2 = axes[1].imshow(weights_Act_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
+        axes[1].set_yticks([0])
+        axes[1].set_yticklabels(["Activity"])
+        axes[1].set_xticks(np.arange(len(features_sorted)))
+        axes[1].set_xticklabels(features_sorted, rotation=90, fontsize=8)
+        axes[1].set_title("Feature Weights (Activity)", fontsize=11)
+        plt.colorbar(im2, ax=axes[1], orientation='vertical', fraction=0.02, pad=0.02)
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.25)   # increases bottom margin
+        plt.savefig("../plots/weightsheatmap.png", dpi=300, bbox_inches='tight')
+
+    if config["simulatewithindividualweights"]:
+        print("--------------------------------SIMULATE SEQUENCES WITH INDIVIDUAL WEIGHTS--------------------------------")   
+        best_model_class = "ours"
+        best_model_name = "FreqWeightedHSActivity"
+        individual_params = pk.load(open("../fits/random_individual_params_forsim.pk", "rb"))
+        models[best_model_class].models[best_model_name].simulatesequences_withindividualweights(individual_params)
+    
+    # if config["testhierarchical"]:
+    #     print("--------------------------------TESTING HIERARCHICAL--------------------------------")
+    #     individual_params = pk.load(open("../fits/random_individual_params_forsim.pk", "rb"))
+    #     individual_params_recovered = pk.load(open("../fits/hierarchical_fits_freqweightedhsactivity_hierarchicaltesting.pk", "rb"))
+
+    if config["BICvsiBIC"]:
+        print("--------------------------------iBIC CALCULATION--------------------------------")
+        best_model_class = "ours"
+        best_model_name = "FreqWeightedHSActivity"
         suffix = ""
-        results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config['featurestouse']}{suffix}.pk", "rb"))
-        weights = results[f"weights_fold1{suffix}"].detach()
+        sequences = models[best_model_class].models[best_model_name].sequences
+
+        results_hierarchical = pk.load(open(f"../fits/hierarchical_fits_freqweightedhsactivity.pk", "rb"))
+        # groupmean = results_hierarchical["mu"]
+        # groupvar = results_hierarchical["sigma2"]
+        # groupstd = torch.sqrt(groupvar)
+        groupmean = torch.tensor(results_hierarchical["mu"], dtype=torch.float32)
+        groupvar = torch.tensor(results_hierarchical["sigma2"], dtype=torch.float32)
+        # Optionally move to GPU if your model runs there
+        groupmean, groupvar = groupmean.to(device), groupvar.to(device)
+        groupstd = torch.sqrt(groupvar)
+        num_samples = 10
+        mean_nll_per_seq = []
+        for seq in sequences:
+            samples = torch.normal(mean=groupmean.expand(num_samples, -1),
+                                std=groupstd.expand(num_samples, -1))
+            seq_nlls = []
+            for sample in samples:
+                seq_nll = models[best_model_class].models[best_model_name].get_nll(seq, sample, True)
+                seq_nlls.append(seq_nll)
+            # mean_nll_per_seq.append(np.mean(seq_nlls))
+            mean_nll_per_seq.append(np.mean([s.cpu().item() for s in seq_nlls]))
+
+        totalnll_hierarchical = np.sum(mean_nll_per_seq)
+        iBIC = 2 * totalnll_hierarchical + 2 * len(groupmean) * np.log(np.sum([len(s) for s in sequences]))
+        print(f"iBIC: {iBIC:.4f}")
+        print("total_hierarchical", totalnll_hierarchical)
+
+        results_flat = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config['featurestouse']}{suffix}.pk", "rb"))
+        weights = results_flat[f"weights_fold1{suffix}"].detach()
+        totalnll_flat = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
+        BIC1 = 2 * totalnll_flat + len(groupmean) * np.log(np.sum([len(s) - 2 for s in sequences]))
+        BIC2 = 2 * totalnll_flat + len(groupmean) * np.log(len(sequences))
+        print(f"BIC1: {BIC1:.4f}")
+        print(f"BIC2: {BIC2:.4f}")
+        print("totalnll_flat", totalnll_flat)
+
 
         
         
@@ -749,6 +956,8 @@ if __name__ == "__main__":
     parser.add_argument("--RT_analysis", action="store_true", help="analyse RTs (default: False)")
     parser.add_argument("--ARS", action="store_true", help="analyse RTs (default: False)")
     parser.add_argument("--visweights", action="store_true", help="visualise weights (default: False)")
+    parser.add_argument("--simulatewithindividualweights", action="store_true", help="simulate sequences with individual weights (default: False)")
+    parser.add_argument("--BICvsiBIC", action="store_true", help="simulate sequences with individual weights (default: False)")
 
     parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")

@@ -80,7 +80,6 @@ class Ours(Model):
             visited_responses = torch.tensor([self.unique_response_to_index[resp] for resp in seq[:i]], device=device)
             mask[i - 2, visited_responses] = 0.0
 
-
         weightstouse = self.allweights(weightsfromarg)
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0).expand(sim_terms.shape) +                             # shape: (1, num_resp)
@@ -101,6 +100,10 @@ class Ours(Model):
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
 
+        # print(seq)
+        # print(F.nll_loss(log_probs, targets[2:], reduction='none'))
+        # print(nll)
+        # print()
         return nll
       
 class Random(Ours, nn.Module):
@@ -399,7 +402,7 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
 
-        return log_probs, nll, \
+        return log_probs, log_probs[torch.arange(log_probs.size(0)), targets[2:]], nll, \
             freq_logits[torch.arange(freq_logits.size(0)), targets[2:]], HS_logits[torch.arange(HS_logits.size(0)), targets[2:]], Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]], \
             freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)], HS_logits[torch.arange(HS_logits.size(0)), HS_logits.argmax(dim=1)], Activity_logits[torch.arange(Activity_logits.size(0)), Activity_logits.argmax(dim=1)], \
             torch.exp(freq_logits[torch.arange(freq_logits.size(0)), targets[2:]]) / torch.exp(freq_logits[torch.arange(freq_logits.size(0)), freq_logits.argmax(dim=1)]), \

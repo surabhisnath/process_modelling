@@ -173,7 +173,7 @@ except:
 print("BEFORE", len(features_dict))
 
 texts = set()
-for path in ["../../csvs/divergent.csv", "../../csvs/similar.csv", "../../csvs/noconstraints.csv", "../../csvs/hills.csv", "../../csvs/claire.csv"]:
+for path in ["../../csvs/divergent.csv", "../../csvs/similar.csv", "../../csvs/noconstraints.csv", "../../csvs/hills.csv", "../../csvs/claire.csv", "../../csvs/data_LLMs_VF.csv"]:
     data = pd.read_csv(path)
     if "invalid" in data.columns:
         data = data[~(data["invalid"] == 1)]

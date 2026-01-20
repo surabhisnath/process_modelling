@@ -56,6 +56,7 @@ class Model:
         with open("../files/modelstorun.json", 'r') as f:
             self.modelstorun = json.load(f)
         self.data = pd.read_csv("../csvs/" + self.config["dataset"] + ".csv")
+        
         self.data = self.data[~self.data["response"].isin(["mammal", "bacterium", "unicorn", "woollymammoth"])]     # filtering NA responses
         with open("../files/response_corrections.json", 'r') as f:
             self.corrections = json.load(f)
@@ -113,7 +114,10 @@ class Model:
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
-        self.RTs = self.data.groupby("pid").agg(list)["RT"].tolist()
+        try:
+            self.RTs = self.data.groupby("pid").agg(list)["RT"].tolist()
+        except:
+            self.RTs = []
         
         self.splits = self.split_sequences(self.sequences.copy())     # perform CV, only used in gorup fitting
 
@@ -150,6 +154,7 @@ class Model:
             freq_rel = {}
 
         remaining = [resp for resp in self.unique_responses if resp not in freq_abs]
+        print(remaining)
 
         if not remaining:
             return freq_abs
@@ -484,7 +489,6 @@ class Model:
             diag_hess[i] = grad2.detach()
         return diag_hess.abs() + 1e-6
 
-
     def fit_one_participant(self, args):
         """Worker function for E-step."""
         pid, seq, mu_np, sigma2_np = args
@@ -508,7 +512,7 @@ class Model:
         diag_hess_est = self.compute_diag_hessian(w, mu, sigma2, seq)
         return pid, w.detach().cpu().numpy(), diag_hess_est.cpu().numpy()
     
-    def fitem(self, max_iter=100, tol=1e-2):
+    def fitem(self, max_iter=100, tol=1e-2, sequences=None):
         """
         Performs hierarchical model fitting using EM and MAP estimation.
         E-step: estimate individual-level parameters given current priors.
@@ -518,8 +522,11 @@ class Model:
             max_iter (int): Maximum number of EM iterations.
             tol (float): Convergence tolerance for change in group mean.
         """
-        datatofit = self.sequences
-        num_participants = self.num_sequences
+        if sequences is not None:
+            datatofit = sequences
+        else:
+            datatofit = self.sequences
+        num_participants = len(datatofit)
         n_params = self.num_weights
 
         # === Initialize group-level priors ===
@@ -603,7 +610,7 @@ class Model:
         print("Group variance:", sigma2.cpu().numpy())
         print(result["individual_params"])
 
-        pk.dump(result, open("../fits/hierarchical_fits_freqweightedhsactivity.pk", "wb"))
+        pk.dump(result, open("../fits/hierarchical_fits_freqweightedhsactivity_hierarchicaltesting.pk", "wb"))
 
         return result
 
@@ -675,6 +682,37 @@ class Model:
 
         if self.config["save"]:
             pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+
+        if self.config["print"]:
+            print(self.model_class, "simulations..................")
+            print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
+    
+    def simulatesequences_withindividualweights(self, individual_weights):
+        individual_weights = torch.tensor(individual_weights, dtype=torch.float32, device=device)
+        self.simulations = []
+        self.bleus = []
+        print(self.__class__.__name__)
+        for _ in range(1):
+            forbleu = []
+            for i in range(len(self.sequences)):
+                simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
+                for l in range(len(self.sequences[i]) - 2):
+                    candidates = list(set(self.unique_responses) - set(simulated_sequence))
+                    ll = self.get_nll(simulated_sequence[-2:] + [""], individual_weights[i]).squeeze(0)
+                    prob_dist = torch.exp(ll)
+                    inds = [self.unique_response_to_index[c] for c in candidates]
+                    prob_dist = prob_dist[inds]
+                    prob_dist /= prob_dist.sum()
+                    indices = torch.multinomial(prob_dist, 1, replacement=True)
+                    next_response = candidates[indices]
+                    simulated_sequence.append(next_response)
+                self.simulations.append(simulated_sequence)
+                forbleu.append(simulated_sequence)
+            self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in self.sequences]))
+        print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
+
+        if self.config["save"]:
+            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}_forhierarchicaltesting.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")
