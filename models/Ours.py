@@ -19,8 +19,6 @@ class Ours(Model):
         self.__dict__.update(parent.__dict__)
         self.model_class = "ours"
         self.feature_names, self.features = self.get_features()
-        # print(self.features)
-        # print(self.feature_names) 
         self.num_features = len(self.feature_names)
         self.sim_mat = self.get_feature_sim_mat()
         self.all_features = torch.stack([self.features[r] for r in self.unique_responses])  # shape: [R, D]
@@ -100,10 +98,6 @@ class Ours(Model):
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
 
-        # print(seq)
-        # print(F.nll_loss(log_probs, targets[2:], reduction='none'))
-        # print(nll)
-        # print()
         return nll
       
 class Random(Ours, nn.Module):
@@ -328,7 +322,6 @@ class FreqWeightedHSActivity(Ours, nn.Module):
 
         targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
         nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
-        # print(nll, end=" ")
 
         # Add regularization
         if self.config["reglambda"] > 0:

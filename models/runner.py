@@ -8,11 +8,9 @@ from Hills import Hills
 from Heineman import Heineman
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 from utils import *
-from metrics import *
 import time
 import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(device)
 print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
 import numpy as np
@@ -27,11 +25,8 @@ torch.manual_seed(42)
 from tqdm import tqdm
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
-pd.set_option('display.max_rows', None)         # Show all rows
-pd.set_option('display.max_columns', None)      # Show all columns
 from scipy.stats import ttest_ind
 from itertools import combinations
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 from brokenaxes import brokenaxes
 
 def changeweights(weights, i):
@@ -87,7 +82,7 @@ def run(config):
     fit_results = {}
 
     modelobj = Model(config)
-    print(modelobj.freq)
+
     BLEUs = []
     for (train_sequences, test_sequences) in modelobj.splits:
         for i in range(modelobj.numsubsamples):
@@ -95,8 +90,8 @@ def run(config):
             BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
     print("TRUE BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
 
-    LLM_data = pd.read_csv("../csvs/data_LLMs.csv")
-    LLM_sequences = LLM_data[LLM_data["task"] == 1].groupby("pid").agg(list)["response"].tolist()
+    LLM_data = pd.read_csv("../csvs/data_LLMs_VF.csv")
+    LLM_sequences = LLM_data.groupby("pid").agg(list)["response"].tolist()
     for (train_sequences, test_sequences) in modelobj.splits:
         for i in range(modelobj.numsubsamples):
             LLM_sample = random.sample(LLM_sequences, k=len(test_sequences))
@@ -105,7 +100,6 @@ def run(config):
         
     if config["ours"]:
         ours = Ours(modelobj)
-        print(ours.feature_names, len(ours.feature_names))
         ours.create_models()
         models["ours"] = ours
         fit_results["ours"] = {}
@@ -124,60 +118,39 @@ def run(config):
     
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
+        foldername = "model_fits"
+        os.makedirs(f"fits/{foldername}", exist_ok=True)
+        labels = []
+        modelnlls = []
         for model_class in models:
             for model_name in models[model_class].models:
                 print(model_class, model_name)
                 start_time = time.time()
-                if config["fitting"] == "group":
-                    models[model_class].models[model_name].fit()
-                elif config["fitting"] == "hierarchical":
-                    models[model_class].models[model_name].fitem(sequences=pk.load(open("../simulations/freqweightedhsactivity_simulations_gpt41_forhierarchicaltesting.pk", "rb")))
+                models[model_class].models[model_name].fit(folderinfits=foldername)
+                modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
+                labels.append(model_name)
                 end_time = time.time()
                 elapsed_time = end_time - start_time
                 print(f"{model_name} completed in {elapsed_time:.2f} seconds")
-
-    if config["plot"]:
-        print("--------------------------------PLOTTING MODELS--------------------------------")
-        labels = []
-        modelnlls = []
-        se_modelnlls = []
-        for model_class in models:
-            for model_name in models[model_class].models:
-                if model_name.lower() == config["refnll"]:
-                    continue
-                print(model_class, model_name)
-                labels.append(model_name)
-                try:
-                    if config["fitting"] == "individual":
-                        modelnlls.append(models[model_class].models[model_name].results["mean_minNLL"])
-                        se_modelnlls.append(models[model_class].models[model_name].results["se_minNLL"])
-                    elif config["fitting"] == "group":
-                        modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
-                except:
-                    results = pk.load(open(f"../fits/{model_name.lower()}_fits_{config['featurestouse']}.pk", "rb"))
-                    if config["fitting"] == "individual":
-                        modelnlls.append(results["mean_minNLL"])
-                        se_modelnlls.append(results["se_minNLL"])
-                    elif config["fitting"] == "group":
-                        modelnlls.append(sum(results["testNLLs"]))
-
+        
         if config["save"]:
             pk.dump(dict(zip(labels, modelnlls)), open("../files/modelNLLs.pk", "wb"))
 
     if config["simulate"]:
         print("--------------------------------SIMULATING MODELS--------------------------------")
+        os.makedirs(f"simulations", exist_ok=True)
         for model_class in models:
             for model_name in models[model_class].models:
                 if models[model_class].models[model_name].dynamic:
                     if not models[model_class].models[model_name].dynamic_cat:
                         continue
                 print(model_class, model_name)
-                models[model_class].models[model_name].simulate()                          
-                # if config["test"]:
-                #     models[model_class].models[model_name].test()
+                models[model_class].models[model_name].simulate()
          
     if config["recovery"]:
         print("--------------------------------MODEL RECOVERY--------------------------------")
+        foldername = "model_recovery"
+        os.makedirs(f"fits/{foldername}", exist_ok=True)
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
                 try:
@@ -196,7 +169,7 @@ def run(config):
                                 models[model_class].models[model_name].suffix = suffix
                                 models[model_class].models[model_name].custom_splits = models[model_class].models[model_name].split_sequences(ss)
                                 start_time = time.time()
-                                models[model_class].models[model_name].fit(customsequences=True)
+                                models[model_class].models[model_name].fit(customsequences=True, folderinfits=foldername)
                                 end_time = time.time()
                                 elapsed_time = end_time - start_time
                                 print(f"{model_name} completed in {elapsed_time:.2f} seconds")
@@ -767,8 +740,6 @@ def run(config):
         models[best_model_class].models[best_model_name].simulatesequences_withindividualweights(individual_params)
 
 
-        
-        
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")
@@ -786,9 +757,6 @@ if __name__ == "__main__":
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
     parser.add_argument("--tol", type=float, default=1e-6, help="gradient and function/param tolerance")
     parser.add_argument("--maxiter", type=int, default=1500, help="maximum number of training iterations")
-
-    parser.add_argument("--plot", action="store_true", default=True, help="plot model weights, NLL (default: True)")
-    parser.add_argument("--noplot", action="store_false", dest="plot", help="don't plot model weights, NLL")
 
     parser.add_argument("--fitting", type=str, default="group", help="how to fit betas: individual, group or hierarchical")
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
@@ -835,6 +803,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
     config = vars(args)
     
-    print(config)
+    print("CONFIG:", config)
     
     run(config)

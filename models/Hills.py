@@ -36,7 +36,7 @@ class Hills(Model):
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                              # shape: (len_seq - 2, num_resp)
         # sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
         
-        sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device)  # Default: all ones
+        sim_terms_mask = torch.ones(len(seq) - 2, dtype=torch.int8, device=device).unsqueeze(1)  # Default: all ones
         if self.dynamic:
             if self.dynamic_cat:
                 if seq[-1] == "":  # --- Simulation mode: predict next response
@@ -70,8 +70,8 @@ class Hills(Model):
         # print(b)
         
         logits = (
-            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +
-            weightstouse[1] * sim_terms * sim_terms_mask.float() #+
+            weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +               # 1, num_responses
+            weightstouse[1] * sim_terms * sim_terms_mask.float() #+             # 
             # weightstouse[2] * sim_terms_2step
         )
         

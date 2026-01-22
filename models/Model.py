@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split, KFold
 from numba import njit
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
-from metrics import *
+from utils import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch
 import torch.nn as nn
@@ -35,7 +35,6 @@ from collections import Counter
 from scipy.stats import ttest_ind
 import pickle as pk
 from model2vec import StaticModel
-from hierarchical_fitting import *
 from concurrent.futures import ThreadPoolExecutor
 import torch.multiprocessing as mp
 
@@ -104,7 +103,6 @@ class Model:
         
         self.embeddings = self.get_embeddings()
         self.num_embedding_dims = len(next(iter(self.embeddings.values())))
-        print("num embedding dimensions", self.num_embedding_dims)
         self.sim_mat = self.get_embedding_sim_mat()
 
         self.data_unique_responses = sorted([resp.lower() for resp in self.data["response"].unique()])  # 354 unique animals
@@ -154,7 +152,6 @@ class Model:
             freq_rel = {}
 
         remaining = [resp for resp in self.unique_responses if resp not in freq_abs]
-        print(remaining)
 
         if not remaining:
             return freq_abs
@@ -387,7 +384,7 @@ class Model:
         plt.savefig(os.path.join(plot_dir, f"params_{self.__class__.__name__}.png"))
         plt.close()
 
-    def fit(self, customsequences=None):
+    def fit(self, customsequences=None, folderinfits="model_fits"):
         if customsequences is None:
             splitstofit = self.splits
         else:
@@ -417,7 +414,6 @@ class Model:
                 loss_history.append(loss.item())
                 param_history.append(model.module.weights.detach().cpu().clone())
                 lbfgs_iters += 1
-                # print(lbfgs_iters)
                 return loss
 
             if model.module.num_weights > 0:
@@ -427,8 +423,8 @@ class Model:
                 self.results[f"weights_fold{split_ind + 1}{self.suffix}"] = fittedweights
                 weights_list.append(fittedweights)
 
-                if self.config["plot"] and self.suffix == "":
-                    self.plot_group(loss_history, param_history)
+                # if self.config["plot"] and self.suffix == "":
+                #     self.plot_group(loss_history, param_history)
 
             with torch.no_grad():
                 trainnll = sum([model.module.get_nll(seq) for seq in train_sequences])
@@ -468,26 +464,7 @@ class Model:
                 print(f"weights for each {self.config['cv']} fold", self.results[f"weights{self.suffix}"])
 
         if self.config["save"]:
-            pk.dump(self.results, open(f"../fits/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
-    
-    # def fitem(self):
-    #     datatofit = self.sequences
-    #     num_participants = self.num_sequences
-    #     res = em(datatofit, num_participants, self.__class__.__name__.lower(), self.num_weights, self.get_nll)
-    #     print(res)
-
-    def compute_diag_hessian(self, w, mu, sigma2, seq):
-        """Compute diagonal of Hessian of total loss wrt parameters w."""
-        w = w.clone().detach().requires_grad_(True)
-        nll = self.get_nll(seq, weightsfromarg=w, getnll=True)
-        prior_term = 0.5 * torch.sum((w - mu) ** 2 / sigma2)
-        total_loss = nll + prior_term
-        g = torch.autograd.grad(total_loss, w, create_graph=True)[0]
-        diag_hess = torch.zeros_like(w)
-        for i in range(len(w)):
-            grad2 = torch.autograd.grad(g[i], w, retain_graph=True)[0][i]
-            diag_hess[i] = grad2.detach()
-        return diag_hess.abs() + 1e-6
+            pk.dump(self.results, open(f"../fits/{folderinfits}/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
     def fit_one_participant(self, args):
         """Worker function for E-step."""
@@ -512,108 +489,6 @@ class Model:
         diag_hess_est = self.compute_diag_hessian(w, mu, sigma2, seq)
         return pid, w.detach().cpu().numpy(), diag_hess_est.cpu().numpy()
     
-    def fitem(self, max_iter=100, tol=1e-2, sequences=None):
-        """
-        Performs hierarchical model fitting using EM and MAP estimation.
-        E-step: estimate individual-level parameters given current priors.
-        M-step: update group-level priors based on individual posteriors.
-
-        Args:
-            max_iter (int): Maximum number of EM iterations.
-            tol (float): Convergence tolerance for change in group mean.
-        """
-        if sequences is not None:
-            datatofit = sequences
-        else:
-            datatofit = self.sequences
-        num_participants = len(datatofit)
-        n_params = self.num_weights
-
-        # === Initialize group-level priors ===
-        mu = torch.zeros(n_params, dtype=torch.float32, device='cuda')
-        sigma2 = torch.ones(n_params, dtype=torch.float32, device='cuda')
-        prev_mu = mu.clone()
-
-        print(f"Starting hierarchical MAP-EM fitting for {num_participants} participants...")
-
-        for iteration in range(max_iter):
-            start_time = time.time()
-
-            # Store individual posterior estimates
-            pars_U = torch.zeros((num_participants, n_params), device='cuda')
-            diag_hess = torch.zeros((num_participants, n_params), device='cuda')
-
-            # # === E-step ===
-            # for pid, seq in enumerate(datatofit):
-            #     def nll_fn(params):
-            #         return self.get_nll(seq, weightsfromarg=params, getnll=True)
-
-            #     # Initialize params with prior mean
-            #     w = mu.clone().detach().requires_grad_(True)
-            #     optimizer = torch.optim.LBFGS([w], lr=0.1, max_iter=50, line_search_fn="strong_wolfe")
-
-            #     def closure():
-            #         optimizer.zero_grad()
-            #         nll = nll_fn(w)
-            #         prior_term = 0.5 * torch.sum((w - mu) ** 2 / sigma2)        # Add prior term (MAP)
-            #         loss = nll + prior_term
-            #         loss.backward()
-            #         return loss
-            #     optimizer.step(closure)
-
-            #     pars_U[pid] = w.detach()                # Save posterior estimates
-            #     diag_hess[pid] = 1.0 / (sigma2 + 1e-6)  # Approximate Hessian diagonal as inverse variance
-
-
-            # === Parallelized E-step ===
-            with mp.Manager() as manager:
-
-                args_list = [
-                    (pid, seq, mu.cpu().numpy(), sigma2.cpu().numpy())
-                    for pid, seq in enumerate(datatofit)
-                ]
-
-                pars_U = torch.zeros((num_participants, n_params), device='cuda')
-                diag_hess = torch.zeros((num_participants, n_params), device='cuda')
-
-                print(f"Running parallel E-step on {min(num_participants, mp.cpu_count())} workers...")
-
-                with ThreadPoolExecutor(max_workers=min(num_participants, 8)) as ex:
-                    futures = ex.map(self.fit_one_participant, args_list)
-                    for pid, w_est, h_est in futures:
-                        pars_U[pid] = torch.tensor(w_est, device='cuda')
-                        diag_hess[pid] = torch.tensor(h_est, device='cuda')
-
-
-            # === M-step ===
-            mu = torch.mean(pars_U, dim=0)
-            sigma2 = torch.mean((pars_U - mu) ** 2 + 1.0 / diag_hess, dim=0)
-
-            delta = torch.norm(mu - prev_mu).item()
-            elapsed = time.time() - start_time
-            print(f"Iter {iteration+1:03d} | Δμ={delta:.6f} | Time={elapsed:.2f}s")
-
-            if delta < tol:
-                print("Converged.")
-                break
-
-            prev_mu = mu.clone()
-
-        result = {
-            "mu": mu.cpu().numpy(),
-            "sigma2": sigma2.cpu().numpy(),
-            "individual_params": pars_U.cpu().numpy(),
-        }
-
-        print("Hierarchical fitting complete.")
-        print("Group mean:", mu.cpu().numpy())
-        print("Group variance:", sigma2.cpu().numpy())
-        print(result["individual_params"])
-
-        pk.dump(result, open("../fits/hierarchical_fits_freqweightedhsactivity_hierarchicaltesting.pk", "wb"))
-
-        return result
-
     def simulate(self, customsequences=None):
         if customsequences is None:
             splitstofit = self.splits
@@ -623,6 +498,7 @@ class Model:
         try:
             results = self.results
         except:
+            print("Loading fit from file...")
             results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "rb"))
         self.simulations = []
         self.bleus = []
@@ -718,22 +594,3 @@ class Model:
             print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
         
-    def test(self):
-        model_bleu = calculate_bleu([sim[2:] for sim in self.simulations], [seq[2:] for seq in self.sequences])     # only calc overlap from 3 onwards
-        print(model_bleu)
-        model_bleu1 = 0.25 * model_bleu["bleu1"] + 0.25 * model_bleu["bleu2"] + 0.25 * model_bleu["bleu3"] + 0.25 * model_bleu["bleu4"]
-        model_bleu2 = 0.33 * model_bleu["bleu2"] + 0.33 * model_bleu["bleu3"] + 0.33 * model_bleu["bleu4"]
-        model_bleu3 = 0.1 * model_bleu["bleu1"] + 0.2 * model_bleu["bleu2"] + 0.3 * model_bleu["bleu3"] + 0.4 * model_bleu["bleu4"]
-        print(model_bleu1, model_bleu2, model_bleu3)
-
-        # print(calculate_rouge([" ".join(seq[2:]) for seq in self.simulations], [" ".join(seq[2:]) for seq in self.sequences]))
-
-        flat_seq = [w for sublist in self.sequences for w in sublist]
-        freq_true = Counter(flat_seq)
-        dist_true = [freq_true.get(u, 0) for u in self.unique_responses]
-        flat_sim = [w for sublist in self.simulations for w in sublist]
-        freq_sim = Counter(flat_sim)
-        dist_sim = [freq_sim.get(u, 0) for u in self.unique_responses]
-        t_stat, p_value = ttest_ind(dist_true, dist_sim)
-        print("t-statistic:", t_stat)
-        print("p-value:", p_value)

@@ -23,6 +23,7 @@ import requests
 import math
 import argparse
 import pickle as pk
+from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 # Functions
 def calculate_bleu(generated_sequences, real_sequences):
