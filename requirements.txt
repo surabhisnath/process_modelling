@@ -28,3 +28,4 @@ numba
 statsmodels
 model2vec
 numdifftools
+brokenaxes

@@ -32,6 +32,7 @@ pd.set_option('display.max_columns', None)      # Show all columns
 from scipy.stats import ttest_ind
 from itertools import combinations
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from brokenaxes import brokenaxes
 
 def changeweights(weights, i):
     device = weights.device
@@ -269,8 +270,8 @@ def run(config):
         original_weights = results[f"weights_fold1{suffix}"].detach()
 
         try:
-            barplot1 = pk.load(open(f"../fits/ablations1_{suffix}.pk", "rb"))
-            barplot2 = pk.load(open(f"../fits/ablations2_{suffix}.pk", "rb"))
+            barplot1 = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))
+            barplot2 = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))
         except:
             totalnlls = []
             for i in tqdm(range(len(original_weights) + 1)):
@@ -282,8 +283,8 @@ def run(config):
     
             barplot1 = [totalnlls[i].detach().cpu().item() for i in np.arange(0, 2 + num_features)]
             barplot2 = [totalnlls[i].detach().cpu().item() for i in [0, 1] + list(np.arange(2 + num_features, 2 + 2*num_features))]
-            pk.dump(barplot1, open(f"../fits/ablations1_{suffix}.pk", "wb"))
-            pk.dump(barplot2, open(f"../fits/ablations2_{suffix}.pk", "wb"))
+            pk.dump(barplot1, open(f"../fits/ablations1{suffix}.pk", "wb"))
+            pk.dump(barplot2, open(f"../fits/ablations2{suffix}.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no HS_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -296,8 +297,8 @@ def run(config):
         plt.title(f'Ablation for HS')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_HS_{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_HS_{suffix}.png")
+        plt.savefig(f"../plots/ablation_study_HS{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_HS{suffix}.png")
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no Activity_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -310,11 +311,11 @@ def run(config):
         plt.title(f'Ablation for Activity')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_Activity_{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_Activity_{suffix}.png")
+        plt.savefig(f"../plots/ablation_study_Activity{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_Activity{suffix}.png")
 
         try:
-            barplot3 = pk.load(open(f"../fits/ablations3_{suffix}.pk", "rb"))
+            barplot3 = pk.load(open(f"../fits/ablations3{suffix}.pk", "rb"))
         except:
             totalnlls_fullfeatureremoved = []
             for i in tqdm(range(num_features + 2)):
@@ -327,7 +328,7 @@ def run(config):
                 totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
                 totalnlls_fullfeatureremoved.append(totalnll)
             barplot3 = [totalnlls_fullfeatureremoved[i].detach().cpu().item() for i in range(len(totalnlls_fullfeatureremoved))]
-            pk.dump(barplot3, open(f"../fits/ablations3_{suffix}.pk", "wb"))
+            pk.dump(barplot3, open(f"../fits/ablations3{suffix}.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no {feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
@@ -340,8 +341,8 @@ def run(config):
         plt.title(f'Ablation for features')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_features_{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_features_{suffix}.png")
+        plt.savefig(f"../plots/ablation_study_features{suffix}.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_study_features{suffix}.png")
 
 
 
@@ -776,33 +777,140 @@ def run(config):
         features = models[best_model_class].models[best_model_name].feature_names
         weights_HS = weights[1:1+len(features)]
         weights_Act = weights[1+len(features):]
-        ablations_HS = pk.load(open("../fits/ablations1.pk", "rb"))[2:]
-        ablations_Act = pk.load(open("../fits/ablations2.pk", "rb"))[2:]
+        ablations_HS = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))[2:]
+        ablations_Act = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))[2:]
 
-        plt.scatter(ablations_HS, ablations_Act)
         top10_HS_idx = np.argsort(ablations_HS)[-10:]
         top10_Act_idx = np.argsort(ablations_Act)[-10:]
         top10_idx = set(top10_HS_idx) | set(top10_Act_idx)
+
+        # plt.scatter(ablations_HS, ablations_Act)
+        # for i, feat in enumerate(features):
+        #     # if (ablations_HS[i] > 20645 and ablations_Act[i] > 20700) or (i in top10_idx):
+        #     if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx):
+        #         plt.text(
+        #             ablations_HS[i],
+        #             ablations_Act[i],
+        #             feat[8:].split('(')[0], 
+        #             fontsize=6,
+        #             ha="center",
+        #             va="bottom"
+        #         )
+
+        # plt.xlabel("HS Ablation Effect")
+        # plt.ylabel("Activity Ablation Effect")
+        # # plt.grid(True, linestyle="--", alpha=0.6)
+        # plt.tight_layout()
+        # plt.xlim(min(ablations_HS) - 2, 20670)
+        # plt.ylim(20600, 21000)
+        # plt.savefig("../plots/visweights.png", dpi=300)
+        # print("Saved")
+
+        
+        '''
+        plt.scatter(
+            ablations_HS,
+            ablations_Act,
+            color="steelblue",   # change colour
+            alpha=0.6,           # add transparency
+            s=40
+        )
+
+        highlight_idx = [
+            i for i in range(len(features))
+            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx)
+        ]
+        plt.scatter(
+            np.array(ablations_HS)[highlight_idx],
+            np.array(ablations_Act)[highlight_idx],
+            color="crimson",
+            alpha=0.9,
+            s=40,
+            edgecolor="darkred",
+            linewidth=0.4
+        )
+
         for i, feat in enumerate(features):
-            if (ablations_HS[i] > 20645 and ablations_Act[i] > 20700) or (i in top10_idx):
+            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700):
                 plt.text(
                     ablations_HS[i],
                     ablations_Act[i],
-                    feat[8:].split('(')[0], 
-                    fontsize=6,
-                    ha="center",
+                    feat[8:].split('(')[0],
+                    fontsize=8,            # bigger font
+                    rotation=60,           # 60 degrees
+                    ha="left",             # start after the point
+                    va="bottom"
+                )
+            elif (i in top10_idx):
+                plt.text(
+                    ablations_HS[i],
+                    ablations_Act[i],
+                    feat[8:].split('(')[0],
+                    fontsize=8,            # bigger font
+                    rotation=60,
+                    ha="left",             # start after the point
                     va="bottom"
                 )
 
-        plt.xlabel("HS Ablation Effect")
-        plt.ylabel("Activity Ablation Effect")
-        plt.grid(True, linestyle="--", alpha=0.6)
+        plt.xlabel("HS Ablation Effect", fontsize=13)
+        plt.ylabel("Activity Ablation Effect", fontsize=13)
+
+        # --- Remove top & right spines
+        ax = plt.gca()
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
         plt.tight_layout()
-        plt.xlim(min(ablations_HS) - 2, 20670)
-        # plt.xlim(np.min(ablations_HS), 9.936)
-        plt.ylim(20600, 21000)
-        # plt.ylim(np.min(ablations_Act), 9.95)
+        plt.xlim(min(ablations_HS) - 2, 20725)
+        plt.ylim(20600, 21200)
+
         plt.savefig("../plots/visweights.png", dpi=300)
+        print("Saved")
+        '''
+
+        bax = brokenaxes(
+            xlims=((min(ablations_HS)-2, 20711),
+                (max(ablations_HS)-10, max(ablations_HS)+2)),
+            ylims=((20590, 21215),
+                (max(ablations_Act)-35, max(ablations_Act)+30)),
+            hspace=.05, wspace=.05
+        )
+
+        bax.scatter(ablations_HS, ablations_Act,
+                    color="slateblue", alpha=0.6, s=50)
+        highlight_idx = [
+            i for i in range(len(features))
+            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx)
+        ]
+
+        colours = []
+        for ind in highlight_idx:
+            if weights_Act[ind] > 0 and weights_HS[ind] > 0:
+                colours.append("crimson")
+            if weights_Act[ind] < 0 and weights_HS[ind] < 0:
+                colours.append("blue")
+            if weights_Act[ind] > 0 and weights_HS[ind] < 0:
+                colours.append("green")
+            if weights_Act[ind] < 0 and weights_HS[ind] > 0:
+                colours.append("pink")
+        
+        bax.scatter(
+            np.array(ablations_HS)[highlight_idx],
+            np.array(ablations_Act)[highlight_idx],
+            color=colours, alpha=0.8, s=50,
+            linewidth=0.4
+        )
+        for ax in bax.axs:
+            ax.tick_params(axis="both", labelsize=15)
+
+        # bax.set_xlabel("HS Ablation Effect", labelpad=24)
+        # bax.set_ylabel("Activity Ablation Effect", labelpad=45)
+        # plt.tight_layout()
+        plt.savefig("../plots/visweights.png", dpi=300)
+        print("Saved")
+
+
+        #-------------------------
 
         sorted_idx = np.argsort(weights_HS)  # ascending; use [::-1] for descending
         features_sorted = [features[i] for i in sorted_idx]
