@@ -32,7 +32,6 @@ from brokenaxes import brokenaxes
 def changeweights(weights, i):
     device = weights.device
     shape = weights.shape
-    print(i)
     if i == 0:
         return weights
     if i == 1:
@@ -74,7 +73,7 @@ def changeweights(weights, i):
         noise = torch.randn(shape, device=device) * 0.1
         fakeweights = weights.flip(0) + noise
 
-    pk.dump(fakeweights, open(f"../fits/fakeweights{i}.pk", "wb"))
+    pk.dump(fakeweights, open(f"../fits/parameter_recovery/fakeweights{i}.pk", "wb"))
     return fakeweights
 
 def run(config):
@@ -116,14 +115,18 @@ def run(config):
         modelnlls = []
         for model_class in models:
             for model_name in models[model_class].models:
-                print(model_class, model_name)
-                start_time = time.time()
-                models[model_class].models[model_name].fit(folderinfits=foldername)
-                modelnlls.append(sum(models[model_class].models[model_name].results["testNLLs"]))
+                try:
+                    results = pk.load(open(f"../fits/model_fits/{model_name.lower()}_fits_{config["featurestouse"]}.pk", "rb"))
+                except:
+                    print(model_class, model_name)
+                    start_time = time.time()
+                    models[model_class].models[model_name].fit(folderinfits=foldername)
+                    results = models[model_class].models[model_name].results
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
+                    print(f"{model_name} completed in {elapsed_time:.2f} seconds")
+                modelnlls.append(sum(results["testNLLs"]))
                 labels.append(model_name)
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                print(f"{model_name} completed in {elapsed_time:.2f} seconds")
         
         if config["save"]:
             pk.dump(dict(zip(labels, modelnlls)), open("../files/modelNLLs.pk", "wb"))
@@ -132,13 +135,19 @@ def run(config):
         print("--------------------------------SIMULATING MODELS--------------------------------")
         foldername = "model_simulations"
         os.makedirs(f"../simulations/{foldername}", exist_ok=True)
+        labels = []
+        modelbleus = []
         for model_class in models:
             for model_name in models[model_class].models:
-                if models[model_class].models[model_name].dynamic:
-                    if not models[model_class].models[model_name].dynamic_cat:
-                        continue
-                print(model_class, model_name)
-                models[model_class].models[model_name].simulate(folderinsimulations=foldername)
+                try:
+                    simseqs = pk.load(open(f"../simulations/model_simulations/{model_name.lower()}_simulations_{config["featurestouse"]}.pk", "rb"))
+                except:
+                    if models[model_class].models[model_name].dynamic:
+                        if not models[model_class].models[model_name].dynamic_cat:
+                            continue
+                    print(model_class, model_name)
+                    models[model_class].models[model_name].simulate(folderinsimulations=foldername)
+                    simseqs = models[model_class].models[model_name].simulations
          
     if config["recovery"]:
         print("--------------------------------MODEL RECOVERY--------------------------------")
@@ -197,7 +206,7 @@ def run(config):
             except:
                 print(f"Modifying weights... {i}")
                 weights = changeweights(original_weights, i)
-                models[best_model_class].models[best_model_name].suffix = suffix + f"_fakeweights_{i}"
+                models[best_model_class].models[best_model_name].suffix = f"_fakeweights_{i}"
                 models[best_model_class].models[best_model_name].simulateweights(weights)
                 simseqs = models[best_model_class].models[best_model_name].simulations
 
@@ -222,18 +231,19 @@ def run(config):
         
         suffix = "_fulldata"
         try:
-            print("Loading weights on full dataset...")
             results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Loaded weights on full dataset.")
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
             models[best_model_class].models[best_model_name].fit(customsequences=True)
             results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         original_weights = results[f"weights_fold1{suffix}"].detach()
+        best_model_nll = sum(results[f"trainNLLs{suffix}"])
 
         try:
-            barplot1 = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))
-            barplot2 = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))
+            barplot_HS = pk.load(open(f"../files/ablations_HS.pk", "rb"))
+            barplot_Activity = pk.load(open(f"../files/ablations_Activity.pk", "rb"))
         except:
             totalnlls = []
             for i in tqdm(range(len(original_weights) + 1)):
@@ -243,41 +253,48 @@ def run(config):
                 totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
                 totalnlls.append(totalnll)
     
-            barplot1 = [totalnlls[i].detach().cpu().item() for i in np.arange(0, 2 + num_features)]
-            barplot2 = [totalnlls[i].detach().cpu().item() for i in [0, 1] + list(np.arange(2 + num_features, 2 + 2*num_features))]
-            pk.dump(barplot1, open(f"../fits/ablations1{suffix}.pk", "wb"))
-            pk.dump(barplot2, open(f"../fits/ablations2{suffix}.pk", "wb"))
+            barplot_HS = [totalnlls[i].detach().cpu().item() for i in np.arange(0, 2 + num_features)]
+            barplot_Activity = [totalnlls[i].detach().cpu().item() for i in [0, 1] + list(np.arange(2 + num_features, 2 + 2*num_features))]
+            pk.dump(barplot_HS, open(f"../files/ablations_HS.pk", "wb"))
+            pk.dump(barplot_Activity, open(f"../files/ablations_Activity.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no HS_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot1, labels = zip(*sorted(zip(barplot1[2:], labels[2:])))
-        x = np.arange(len(barplot1))
-        plt.bar(x, barplot1, alpha=0.8, color='#9370DB')
+        barplot_HS, labels = zip(*sorted(zip(barplot_HS[2:], labels[2:])))
+        barplot_HS = np.array(barplot_HS)
+        x = np.arange(len(barplot_HS))
+        plt.bar(x, barplot_HS - best_model_nll, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
-        plt.ylim(min(barplot1) - 100, max(barplot1) + 100)
-        plt.ylabel(f'NLL')
+        plt.ylim(min(barplot_HS - best_model_nll), max(barplot_HS - best_model_nll))
+        plt.ylabel(f'Increase in NLL')
         plt.title(f'Ablation for HS')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_HS{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_HS{suffix}.png")
+        plt.savefig(f"../plots/ablation_HS.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_HS.png")
+        print("Top 10 important features for HS:")
+        print(labels[-1:-9:-1])
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no Activity_{feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot2, labels = zip(*sorted(zip(barplot2[2:], labels[2:])))
-        x = np.arange(len(barplot2))
-        plt.bar(x, barplot2, alpha=0.8, color='#9370DB')
+        barplot_Activity, labels = zip(*sorted(zip(barplot_Activity[2:], labels[2:])))
+        barplot_Activity = np.array(barplot_Activity)
+        x = np.arange(len(barplot_Activity))
+        plt.bar(x, barplot_Activity - best_model_nll, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
-        plt.ylim(min(barplot2) - 100, max(barplot2) + 100)
-        plt.ylabel(f'NLL')
+        plt.ylim(min(barplot_Activity - best_model_nll), max(barplot_Activity - best_model_nll))
+        plt.ylabel(f'Increase in NLL')
         plt.title(f'Ablation for Activity')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_Activity{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_Activity{suffix}.png")
+        plt.savefig(f"../plots/ablation_Activity.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_Activity.png")
+        print("Top 10 important features for Activity:")
+        print(labels[-1:-9:-1])
+
 
         try:
-            barplot3 = pk.load(open(f"../fits/ablations3{suffix}.pk", "rb"))
+            barplot_features = pk.load(open(f"../files/ablations_features.pk", "rb"))
         except:
             totalnlls_fullfeatureremoved = []
             for i in tqdm(range(num_features + 2)):
@@ -289,22 +306,133 @@ def run(config):
                     weights[i-1 + num_features] = 0
                 totalnll = sum([models[best_model_class].models[best_model_name].get_nll(seq, weights, True) for seq in sequences])
                 totalnlls_fullfeatureremoved.append(totalnll)
-            barplot3 = [totalnlls_fullfeatureremoved[i].detach().cpu().item() for i in range(len(totalnlls_fullfeatureremoved))]
-            pk.dump(barplot3, open(f"../fits/ablations3{suffix}.pk", "wb"))
+            barplot_features = [totalnlls_fullfeatureremoved[i].detach().cpu().item()for i in range(len(totalnlls_fullfeatureremoved))]
+            pk.dump(barplot_features, open(f"../files/ablations_features.pk", "wb"))
 
         plt.figure(figsize=(15, 8))
         labels = ["with all weights", "no freq"] + [f"no {feat}" for feat in models[best_model_class].models[best_model_name].feature_names]
-        barplot3, labels = zip(*sorted(zip(barplot3[2:], labels[2:])))
-        x = np.arange(len(barplot3))
-        plt.bar(x, barplot3, alpha=0.8, color='#9370DB')
+        barplot_features, labels = zip(*sorted(zip(barplot_features[2:], labels[2:])))
+        barplot_features = np.array(barplot_features)
+        x = np.arange(len(barplot_features))
+        plt.bar(x, barplot_features - best_model_nll, alpha=0.8, color='#9370DB')
         plt.xticks(x, labels, rotation=60, fontsize=6, ha='right')
-        plt.ylim(min(barplot3) - 100, max(barplot3) + 100)
-        plt.ylabel(f'NLL')
+        plt.ylim(min(barplot_features - best_model_nll), max(barplot_features - best_model_nll))
+        plt.ylabel(f'Increase in NLL')
         plt.title(f'Ablation for features')
         plt.grid(axis='y', linestyle=':', alpha=0.5)
         plt.tight_layout()
-        plt.savefig(f"../plots/ablation_study_features{suffix}.png", dpi=300, bbox_inches='tight')
-        print(f"Saved ../plots/ablation_study_features{suffix}.png")
+        plt.savefig(f"../plots/ablation_features.png", dpi=300, bbox_inches='tight')
+        print(f"Saved ../plots/ablation_features.png")
+    
+    if config["visweights"]:
+        print("--------------------------------Visualize weights--------------------------------")
+        best_model_class = "ours"
+        best_model_name = "FreqWeightedHSActivity"
+        sequences = models[best_model_class].models[best_model_name].sequences
+        RTs = models[best_model_class].models[best_model_name].RTs
+
+        suffix = "_fulldata"
+        try:
+            print("Loading weights on full dataset...")
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        except:
+            models[best_model_class].models[best_model_name].suffix = suffix
+            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
+            models[best_model_class].models[best_model_name].fit(customsequences=True)
+            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+        weights = results[f"weights_fold1{suffix}"].detach().cpu()
+
+        features = models[best_model_class].models[best_model_name].feature_names
+        weights_HS = weights[1:1+len(features)]
+        weights_Act = weights[1+len(features):]
+        ablations_HS = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))[2:]
+        ablations_Act = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))[2:]
+
+        top10_HS_idx = np.argsort(ablations_HS)[-10:]
+        top10_Act_idx = np.argsort(ablations_Act)[-10:]
+        top10_idx = set(top10_HS_idx) | set(top10_Act_idx)
+
+        bax = brokenaxes(
+            xlims=((min(ablations_HS)-2, 20711),
+                (max(ablations_HS)-10, max(ablations_HS)+2)),
+            ylims=((20590, 21215),
+                (max(ablations_Act)-35, max(ablations_Act)+30)),
+            hspace=.05, wspace=.05
+        )
+
+        bax.scatter(ablations_HS, ablations_Act,
+                    color="slateblue", alpha=0.6, s=50)
+        highlight_idx = [
+            i for i in range(len(features))
+            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx)
+        ]
+
+        colours = []
+        for ind in highlight_idx:
+            if weights_Act[ind] > 0 and weights_HS[ind] > 0:
+                colours.append("crimson")
+            if weights_Act[ind] < 0 and weights_HS[ind] < 0:
+                colours.append("blue")
+            if weights_Act[ind] > 0 and weights_HS[ind] < 0:
+                colours.append("green")
+            if weights_Act[ind] < 0 and weights_HS[ind] > 0:
+                colours.append("pink")
+        
+        bax.scatter(
+            np.array(ablations_HS)[highlight_idx],
+            np.array(ablations_Act)[highlight_idx],
+            color=colours, alpha=0.8, s=50,
+            linewidth=0.4
+        )
+        for ax in bax.axs:
+            ax.tick_params(axis="both", labelsize=15)
+
+        # bax.set_xlabel("HS Ablation Effect", labelpad=24)
+        # bax.set_ylabel("Activity Ablation Effect", labelpad=45)
+        # plt.tight_layout()
+        plt.savefig("../plots/visweights.png", dpi=300)
+        print("Saved")
+
+
+        #-------------------------
+
+        sorted_idx = np.argsort(weights_HS)  # ascending; use [::-1] for descending
+        features_sorted = [features[i] for i in sorted_idx]
+        weights_HS_sorted = weights_HS[sorted_idx]
+        weights_Act_sorted = weights_Act[sorted_idx]
+
+        # Prepare 1×N arrays for heatmaps
+        weights_HS_mat = weights_HS_sorted[np.newaxis, :]
+        weights_Act_mat = weights_Act_sorted[np.newaxis, :]
+
+        # Set shared color scale across both
+        vmin = min(weights_HS.min(), weights_Act.min())
+        vmax = max(weights_HS.max(), weights_Act.max())
+
+        # Plot
+        fig, axes = plt.subplots(2, 1, figsize=(15, 4), sharex=True)
+
+        # HS heatmap
+        im1 = axes[0].imshow(weights_HS_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
+        axes[0].set_yticks([0])
+        axes[0].set_yticklabels(["HS"])
+        axes[0].set_xticks(np.arange(len(features_sorted)))
+        axes[0].set_xticklabels(features_sorted, rotation=90, fontsize=8)
+        axes[0].set_title("Feature Weights (HS)", fontsize=11)
+        plt.colorbar(im1, ax=axes[0], orientation='vertical', fraction=0.02, pad=0.02)
+
+        # Activity heatmap
+        im2 = axes[1].imshow(weights_Act_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
+        axes[1].set_yticks([0])
+        axes[1].set_yticklabels(["Activity"])
+        axes[1].set_xticks(np.arange(len(features_sorted)))
+        axes[1].set_xticklabels(features_sorted, rotation=90, fontsize=8)
+        axes[1].set_title("Feature Weights (Activity)", fontsize=11)
+        plt.colorbar(im2, ax=axes[1], orientation='vertical', fraction=0.02, pad=0.02)
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.25)   # increases bottom margin
+        plt.savefig("../plots/weightsheatmap.png", dpi=300, bbox_inches='tight')
     
     if config["RT_analysis"]:
         print("--------------------------------RT ANALYSIS--------------------------------")
@@ -505,8 +633,6 @@ def run(config):
                 max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
                 max2_list.append(max_type2)
 
-                # print(f"{seq[i+2]:<15} {f1:<6.2f} {h1:<6.2f} {a1:<6.2f} {max_type1:<15} "
-                    # f"{f2:<8.4f} {h2:<8.4f} {a2:<8.4f} {max_type2}")
             cue_transitions.append(cue_transitions_seq)
             logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
             logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
@@ -621,124 +747,7 @@ def run(config):
         plt.tight_layout()
         plt.savefig("../plots/meanlogRT_transitions.png", dpi=300)
     
-    if config["visweights"]:
-        print("--------------------------------Visualize weights--------------------------------")
-        best_model_class = "ours"
-        best_model_name = "FreqWeightedHSActivity"
-        sequences = models[best_model_class].models[best_model_name].sequences
-        RTs = models[best_model_class].models[best_model_name].RTs
-
-        suffix = "_fulldata"
-        try:
-            print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
-        except:
-            models[best_model_class].models[best_model_name].suffix = suffix
-            models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
-            models[best_model_class].models[best_model_name].fit(customsequences=True)
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
-        weights = results[f"weights_fold1{suffix}"].detach().cpu()
-
-        features = models[best_model_class].models[best_model_name].feature_names
-        weights_HS = weights[1:1+len(features)]
-        weights_Act = weights[1+len(features):]
-        ablations_HS = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))[2:]
-        ablations_Act = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))[2:]
-
-        top10_HS_idx = np.argsort(ablations_HS)[-10:]
-        top10_Act_idx = np.argsort(ablations_Act)[-10:]
-        top10_idx = set(top10_HS_idx) | set(top10_Act_idx)
-
-        bax = brokenaxes(
-            xlims=((min(ablations_HS)-2, 20711),
-                (max(ablations_HS)-10, max(ablations_HS)+2)),
-            ylims=((20590, 21215),
-                (max(ablations_Act)-35, max(ablations_Act)+30)),
-            hspace=.05, wspace=.05
-        )
-
-        bax.scatter(ablations_HS, ablations_Act,
-                    color="slateblue", alpha=0.6, s=50)
-        highlight_idx = [
-            i for i in range(len(features))
-            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx)
-        ]
-
-        colours = []
-        for ind in highlight_idx:
-            if weights_Act[ind] > 0 and weights_HS[ind] > 0:
-                colours.append("crimson")
-            if weights_Act[ind] < 0 and weights_HS[ind] < 0:
-                colours.append("blue")
-            if weights_Act[ind] > 0 and weights_HS[ind] < 0:
-                colours.append("green")
-            if weights_Act[ind] < 0 and weights_HS[ind] > 0:
-                colours.append("pink")
-        
-        bax.scatter(
-            np.array(ablations_HS)[highlight_idx],
-            np.array(ablations_Act)[highlight_idx],
-            color=colours, alpha=0.8, s=50,
-            linewidth=0.4
-        )
-        for ax in bax.axs:
-            ax.tick_params(axis="both", labelsize=15)
-
-        # bax.set_xlabel("HS Ablation Effect", labelpad=24)
-        # bax.set_ylabel("Activity Ablation Effect", labelpad=45)
-        # plt.tight_layout()
-        plt.savefig("../plots/visweights.png", dpi=300)
-        print("Saved")
-
-
-        #-------------------------
-
-        sorted_idx = np.argsort(weights_HS)  # ascending; use [::-1] for descending
-        features_sorted = [features[i] for i in sorted_idx]
-        weights_HS_sorted = weights_HS[sorted_idx]
-        weights_Act_sorted = weights_Act[sorted_idx]
-
-        # Prepare 1×N arrays for heatmaps
-        weights_HS_mat = weights_HS_sorted[np.newaxis, :]
-        weights_Act_mat = weights_Act_sorted[np.newaxis, :]
-
-        # Set shared color scale across both
-        vmin = min(weights_HS.min(), weights_Act.min())
-        vmax = max(weights_HS.max(), weights_Act.max())
-
-        # Plot
-        fig, axes = plt.subplots(2, 1, figsize=(15, 4), sharex=True)
-
-        # HS heatmap
-        im1 = axes[0].imshow(weights_HS_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
-        axes[0].set_yticks([0])
-        axes[0].set_yticklabels(["HS"])
-        axes[0].set_xticks(np.arange(len(features_sorted)))
-        axes[0].set_xticklabels(features_sorted, rotation=90, fontsize=8)
-        axes[0].set_title("Feature Weights (HS)", fontsize=11)
-        plt.colorbar(im1, ax=axes[0], orientation='vertical', fraction=0.02, pad=0.02)
-
-        # Activity heatmap
-        im2 = axes[1].imshow(weights_Act_mat, cmap="coolwarm", aspect="auto", vmin=vmin, vmax=vmax)
-        axes[1].set_yticks([0])
-        axes[1].set_yticklabels(["Activity"])
-        axes[1].set_xticks(np.arange(len(features_sorted)))
-        axes[1].set_xticklabels(features_sorted, rotation=90, fontsize=8)
-        axes[1].set_title("Feature Weights (Activity)", fontsize=11)
-        plt.colorbar(im2, ax=axes[1], orientation='vertical', fraction=0.02, pad=0.02)
-
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.25)   # increases bottom margin
-        plt.savefig("../plots/weightsheatmap.png", dpi=300, bbox_inches='tight')
-
-    if config["simulatewithindividualweights"]:
-        print("--------------------------------SIMULATE SEQUENCES WITH INDIVIDUAL WEIGHTS--------------------------------")   
-        best_model_class = "ours"
-        best_model_name = "FreqWeightedHSActivity"
-        individual_params = pk.load(open("../fits/random_individual_params_forsim.pk", "rb"))
-        models[best_model_class].models[best_model_name].simulatesequences_withindividualweights(individual_params)
-
-
+    
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")

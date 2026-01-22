@@ -23,23 +23,17 @@ model_name_to_color = json.load(open("../files/model_name_to_color.json", "r"))
 
 labels = ["Random", "Freq", "HS", "Freq_HS", "WeightedHS", "FreqWeightedHS", "Activity", "WeightedHSActivity", "FreqWeightedHSActivity", "OneCueStaticLocal", "CombinedCueStatic", "CombinedCueDynamicCat", "Freq_Sim_Subcategory", "Subcategory", "Freq_Subcategory", "Sim_Subcategory"]
 
-with open("../models/logfiles/runafterinternshipsimulations.log", "r") as f:
+with open("../models/logfiles/fit_and_simulate_models.log", "r") as f:
     log_data = f.read()
-
 matches = re.findall(r"SIM BLEUS MEAN:\s*(\{.*?\})", log_data)
 bleu_dicts = [ast.literal_eval(match) for match in matches]
 print(bleu_dicts)
 bleus = [0.25 * d['bleu1'] + 0.25 * d['bleu2'] + 0.25 * d['bleu3'] + 0.25 * d['bleu4'] for d in bleu_dicts]
-# bleus.append(0.25 * 0.827 + 0.25 * 0.227 + 0.25 * 0.027 + 0.25 * 0.001) # LLM
-# bleus.append(0.25 * 0.909 + 0.25 * 0.242 + 0.25 * 0.030 + 0.25 * 0.001) # Human
-human_bleu = 0.25 * 0.909 + 0.25 * 0.242 + 0.25 * 0.030 + 0.25 * 0.001
-
 print(bleus)
+
+human_bleu = 0.25 * 0.909 + 0.25 * 0.242 + 0.25 * 0.030 + 0.25 * 0.001
 modelnames = [model_name_to_model_print[m] for m in labels]
 colors = [model_name_to_color[m] for m in labels]
-
-# sorted_pairs = sorted(zip(labels, bleus), key=lambda x: x[1])
-# sorted_labels, sorted_bleus = zip(*sorted_pairs)
 
 plt.figure(figsize=(8, 5))
 x = np.arange(len(bleus))
@@ -48,9 +42,6 @@ plt.xticks(x, modelnames, rotation=90)
 plt.ylim(min(bleus)-0.01, human_bleu+0.01)
 plt.ylabel('Cross-Validated BLEU Score')
 plt.axhline(y=human_bleu, color='black', linestyle='--', linewidth=1.2)
-# plt.legend(frameon=False)
-plt.text(len(bleus) - 0.5, human_bleu + 0.005, f'\nHuman BLEU = {human_bleu:.3f}',
-         color='black', fontsize=10, va='top', ha='right')
-# plt.grid(axis='y', linestyle=':', alpha=0.5)
+plt.text(len(bleus) - 0.5, human_bleu + 0.005, f'\nHuman BLEU = {human_bleu:.3f}', color='black', fontsize=10, va='top', ha='right')
 plt.tight_layout()
-plt.savefig(f"../plots/model_bleus.png", dpi=300, bbox_inches='tight')
+plt.savefig(f"../plots/model_bleus.png", dpi=300)

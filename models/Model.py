@@ -499,7 +499,7 @@ class Model:
             results = self.results
         except:
             print("Loading fit from file...")
-            results = pk.load(open(f"../fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{self.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "rb"))
         self.simulations = []
         self.bleus = []
         print(self.__class__.__name__)
@@ -533,7 +533,7 @@ class Model:
             print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
     
-    def simulateweights(self, weights):
+    def simulateweights(self, weights, folderinsimulations="parameter_recovery"):
         self.simulations = []
         self.bleus = []
         print(self.__class__.__name__)
@@ -557,40 +557,8 @@ class Model:
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
         if self.config["save"]:
-            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+            pk.dump(self.simulations, open(f"../simulations/{folderinsimulations}/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")
             print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
-    
-    def simulatesequences_withindividualweights(self, individual_weights):
-        individual_weights = torch.tensor(individual_weights, dtype=torch.float32, device=device)
-        self.simulations = []
-        self.bleus = []
-        print(self.__class__.__name__)
-        for _ in range(1):
-            forbleu = []
-            for i in range(len(self.sequences)):
-                simulated_sequence = [self.sequences[i][0], self.sequences[i][1]]
-                for l in range(len(self.sequences[i]) - 2):
-                    candidates = list(set(self.unique_responses) - set(simulated_sequence))
-                    ll = self.get_nll(simulated_sequence[-2:] + [""], individual_weights[i]).squeeze(0)
-                    prob_dist = torch.exp(ll)
-                    inds = [self.unique_response_to_index[c] for c in candidates]
-                    prob_dist = prob_dist[inds]
-                    prob_dist /= prob_dist.sum()
-                    indices = torch.multinomial(prob_dist, 1, replacement=True)
-                    next_response = candidates[indices]
-                    simulated_sequence.append(next_response)
-                self.simulations.append(simulated_sequence)
-                forbleu.append(simulated_sequence)
-            self.bleus.append(calculate_bleu([sim[2:] for sim in forbleu], [seq[2:] for seq in self.sequences]))
-        print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
-
-        if self.config["save"]:
-            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}_forhierarchicaltesting.pk", "wb"))
-
-        if self.config["print"]:
-            print(self.model_class, "simulations..................")
-            print('\n'.join(['\t  '.join(map(str, row)) for row in self.simulations[:3]]))
-        

@@ -1,5 +1,3 @@
-import re
-import ast
 import matplotlib.pyplot as plt
 plt.rcParams.update({
     "axes.facecolor": "white",                      # background stays white
@@ -34,8 +32,8 @@ x = np.arange(len(modelNLLs))
 plt.bar(x, modelnlls, alpha=0.8, color=colors, edgecolor='black', linewidth=1.2)
 plt.xticks(x, modelnames, rotation=90)
 plt.ylim(min(modelnlls) - 100, max(modelnlls) + 100)
-plt.ylabel(f'Test NLL (sum over 5 folds)')
+plt.ylabel(f'Sum Test NLL (over 5 folds)')
+# plt.xticks([], [])
+# plt.xlabel('')
 plt.tight_layout()
-plt.xticks([], [])
-plt.xlabel('')
-plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')
+plt.savefig("../plots/model_nlls.png", dpi=300)

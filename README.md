@@ -44,8 +44,13 @@ pip install -r requirements.txt
 Before you being, ensure all models you wish to run are set to 1 in `files/model_to_run`.
 
 1. Model Fitting and Simulation: `python models/runner.py` (can add `--nofit` or `--nosimulate` if either is not desired).
-Plotting NLLs: `python scripts/model_comparison.py`
-Plotting BLEUs: `python scripts/model_BLEUs.py`
+Plotting NLLs: `python scripts/model_NLLs.py`, plot saved as `plots/model_nlls.png`
+Plotting BLEUs: `python scripts/model_BLEUs.py`, plot saved as `plots/model_bleus.png`
 
 2. Model Recovery: `python -u runner.py --nofit --nosimulate --recovery`
+
 3. Parameter Recovery: `python -u runner.py --nofit --nosimulate --parameterrecovery`
+
+4. Ablations: `python -u runner.py --nofit --nosimulate --ablation`, prints top 8 most important features for HS and Activity and plots saved as `plots/ablation_HS.png`, `plots/ablation_Activity.png`, `plots/ablation_features.png`
+
+5.  
