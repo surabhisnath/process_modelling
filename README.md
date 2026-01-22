@@ -43,5 +43,9 @@ pip install -r requirements.txt
 `models/runner.py` is the main runner script for the following analyses. All settings can be set using arguments of `runner.py`.
 Before you being, ensure all models you wish to run are set to 1 in `files/model_to_run`.
 
-1. Model Fitting and Simulation: `python -u runner.py` (can add `--nofit` or `--nosimulate` if either is not desired).
-2. 
+1. Model Fitting and Simulation: `python models/runner.py` (can add `--nofit` or `--nosimulate` if either is not desired).
+Plotting NLLs: `python scripts/model_comparison.py`
+Plotting BLEUs: `python scripts/model_BLEUs.py`
+
+2. Model Recovery: `python -u runner.py --nofit --nosimulate --recovery`
+3. Parameter Recovery: `python -u runner.py --nofit --nosimulate --parameterrecovery`

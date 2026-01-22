@@ -489,7 +489,7 @@ class Model:
         diag_hess_est = self.compute_diag_hessian(w, mu, sigma2, seq)
         return pid, w.detach().cpu().numpy(), diag_hess_est.cpu().numpy()
     
-    def simulate(self, customsequences=None):
+    def simulate(self, customsequences=None, folderinsimulations="model_simulations"):
         if customsequences is None:
             splitstofit = self.splits
         else:
@@ -527,7 +527,7 @@ class Model:
         print("SIM BLEUS MEAN:", {k: sum(d[k] for d in self.bleus) / len(self.bleus) for k in self.bleus[0]})
 
         if self.config["save"]:
-            pk.dump(self.simulations, open(f"../simulations/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
+            pk.dump(self.simulations, open(f"../simulations/{folderinsimulations}/{self.__class__.__name__.lower()}_simulations_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
         if self.config["print"]:
             print(self.model_class, "simulations..................")

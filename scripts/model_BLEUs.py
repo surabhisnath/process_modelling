@@ -21,7 +21,6 @@ import json
 model_name_to_model_print = json.load(open("../files/model_name_to_model_print.json", "r"))
 model_name_to_color = json.load(open("../files/model_name_to_color.json", "r"))
 
-# labels = ["Random", "Freq", "HS", "Freq_HS", "WeightedHS", "FreqWeightedHS", "Activity", "WeightedHSActivity", "FreqWeightedHSActivity", "OneCueStaticLocal", "CombinedCueStatic", "CombinedCueDynamicCat", "Freq_Sim_Subcategory", "Subcategory", "Freq_Subcategory", "Sim_Subcategory", "LLM", "Human"]
 labels = ["Random", "Freq", "HS", "Freq_HS", "WeightedHS", "FreqWeightedHS", "Activity", "WeightedHSActivity", "FreqWeightedHSActivity", "OneCueStaticLocal", "CombinedCueStatic", "CombinedCueDynamicCat", "Freq_Sim_Subcategory", "Subcategory", "Freq_Subcategory", "Sim_Subcategory"]
 
 with open("../models/logfiles/runafterinternshipsimulations.log", "r") as f:

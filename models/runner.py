@@ -89,15 +89,7 @@ def run(config):
             train_sample = random.sample(train_sequences, k=len(test_sequences))
             BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
     print("TRUE BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
-
-    LLM_data = pd.read_csv("../csvs/data_LLMs_VF.csv")
-    LLM_sequences = LLM_data.groupby("pid").agg(list)["response"].tolist()
-    for (train_sequences, test_sequences) in modelobj.splits:
-        for i in range(modelobj.numsubsamples):
-            LLM_sample = random.sample(LLM_sequences, k=len(test_sequences))
-            BLEUs.append(calculate_bleu([trseq[2:] for trseq in LLM_sample], [teseq[2:] for teseq in test_sequences]))
-    print("LLM BLEUS MEAN:", {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]})
-        
+ 
     if config["ours"]:
         ours = Ours(modelobj)
         ours.create_models()
@@ -119,7 +111,7 @@ def run(config):
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
         foldername = "model_fits"
-        os.makedirs(f"fits/{foldername}", exist_ok=True)
+        os.makedirs(f"../fits/{foldername}", exist_ok=True)
         labels = []
         modelnlls = []
         for model_class in models:
@@ -138,33 +130,34 @@ def run(config):
 
     if config["simulate"]:
         print("--------------------------------SIMULATING MODELS--------------------------------")
-        os.makedirs(f"simulations", exist_ok=True)
+        foldername = "model_simulations"
+        os.makedirs(f"../simulations/{foldername}", exist_ok=True)
         for model_class in models:
             for model_name in models[model_class].models:
                 if models[model_class].models[model_name].dynamic:
                     if not models[model_class].models[model_name].dynamic_cat:
                         continue
                 print(model_class, model_name)
-                models[model_class].models[model_name].simulate()
+                models[model_class].models[model_name].simulate(folderinsimulations=foldername)
          
     if config["recovery"]:
         print("--------------------------------MODEL RECOVERY--------------------------------")
         foldername = "model_recovery"
-        os.makedirs(f"fits/{foldername}", exist_ok=True)
+        os.makedirs(f"../fits/{foldername}", exist_ok=True)
         for model_class_sim in models:
             for model_name_sim in models[model_class_sim].models:
                 try:
                     simseqs = models[model_class_sim].models[model_name_sim].simulations
                 except:
                     print(f"Loading simulations for {model_name_sim}")
-                    simseqs = pk.load(open(f"../simulations/{model_name_sim.lower()}_simulations_{config["featurestouse"]}.pk", "rb"))
+                    simseqs = pk.load(open(f"../simulations/model_simulations/{model_name_sim.lower()}_simulations_{config["featurestouse"]}.pk", "rb"))
                 
                 for model_class in models:
                     for model_name in models[model_class].models:
                         for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
                             print(model_name_sim, model_name, ssid)
                             suffix = f"_recovery_{model_name_sim.lower()}_{ssid + 1}"
-                            if not os.path.exists(f"../fits/{model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk"):
+                            if not os.path.exists(f"../fits/{foldername}/{model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk"):
                                 print("Fitting...", model_name_sim, model_name, ssid)
                                 models[model_class].models[model_name].suffix = suffix
                                 models[model_class].models[model_name].custom_splits = models[model_class].models[model_name].split_sequences(ss)
@@ -178,23 +171,29 @@ def run(config):
         print("--------------------------------PARAMETER RECOVERY--------------------------------")
         # fit on full data, get weights, simulate, recover
         # modulate original weights, simulate, recover (repeat 10 times)
+        foldername = "parameter_recovery"
+        os.makedirs(f"../simulations/{foldername}", exist_ok=True)
+        os.makedirs(f"../fits/{foldername}", exist_ok=True)
         best_model_class = "ours"
         best_model_name = "FreqWeightedHSActivity"
+
+        # do parameter recovery on full data (not any fold)
         suffix = "_fulldata"
         try:
-            print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Loaded weights on full dataset.")
         except:
+            print("Fitting fulldata...")
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
-            models[best_model_class].models[best_model_name].fit(customsequences=True)
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            models[best_model_class].models[best_model_name].fit(customsequences=True, folderinfits="model_fits")
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Saved best model on full data")
         
         original_weights = results[f"weights_fold1{suffix}"]
-
         for i in range(11):
             try:
-                simseqs = pk.load(open(f"../simulations/{best_model_name.lower()}_simulations_gpt41_fulldata_fakeweights_{i}.pk", "rb"))
+                simseqs = pk.load(open(f"../simulations/{foldername}/{best_model_name.lower()}_simulations_gpt41_fakeweights_{i}.pk", "rb"))
             except:
                 print(f"Modifying weights... {i}")
                 weights = changeweights(original_weights, i)
@@ -204,12 +203,12 @@ def run(config):
 
             for ssid, ss in enumerate([simseqs[::3], simseqs[1::3], simseqs[2::3]]):
                 suffix2 = f"_paramrecovery_{i}_{ssid + 1}"
-                if not os.path.exists(f"../fits/{best_model_name.lower()}_fits_gpt41{suffix2}.pk"):
+                if not os.path.exists(f"../fits/{foldername}/{best_model_name.lower()}_fits_gpt41{suffix2}.pk"):
                     print(best_model_class, best_model_name, i, ssid)
                     models[best_model_class].models[best_model_name].suffix = suffix2
                     models[best_model_class].models[best_model_name].custom_splits = [(ss, [])]
                     start_time = time.time()
-                    models[best_model_class].models[best_model_name].fit(customsequences=True)
+                    models[best_model_class].models[best_model_name].fit(customsequences=True, folderinfits=foldername)
                     end_time = time.time()
                     elapsed_time = end_time - start_time
                     print(f"{best_model_name} completed in {elapsed_time:.2f} seconds")
@@ -224,12 +223,12 @@ def run(config):
         suffix = "_fulldata"
         try:
             print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
             models[best_model_class].models[best_model_name].fit(customsequences=True)
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
         original_weights = results[f"weights_fold1{suffix}"].detach()
 
         try:

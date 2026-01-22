@@ -13,7 +13,6 @@ plt.rcParams.update({
     "xtick.labelsize": 14,                          # bigger x-tick labels
     "ytick.labelsize": 14,                          # bigger y-tick labels
     "axes.titlesize": 18,                           # bigger title
-    "figure.dpi": 100,                              # higher resolution
 })
 import numpy as np
 import json
@@ -35,12 +34,8 @@ x = np.arange(len(modelNLLs))
 plt.bar(x, modelnlls, alpha=0.8, color=colors, edgecolor='black', linewidth=1.2)
 plt.xticks(x, modelnames, rotation=90)
 plt.ylim(min(modelnlls) - 100, max(modelnlls) + 100)
-plt.ylabel(f'Sum NLL over 5 folds')
-# plt.title(f'Model NLL comparison')
-# plt.grid(axis='y', linestyle=':', alpha=0.5)
+plt.ylabel(f'Test NLL (sum over 5 folds)')
 plt.tight_layout()
-
 plt.xticks([], [])
-plt.xlabel('')  # remove any x-axis label if present
-
+plt.xlabel('')
 plt.savefig("../plots/model_nll_comparison.png", dpi=300, bbox_inches='tight')
