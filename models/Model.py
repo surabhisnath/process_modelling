@@ -23,7 +23,7 @@ import json
 from sklearn.model_selection import train_test_split, KFold
 from numba import njit
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 from metrics import *
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torch

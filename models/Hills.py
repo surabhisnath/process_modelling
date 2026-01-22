@@ -5,7 +5,7 @@ import sys
 import os
 import pickle as pk
 from Model import *
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utils")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "scripts")))
 from utils import *
 import torch
 import torch.nn as nn

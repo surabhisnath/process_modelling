@@ -117,7 +117,7 @@ for w in np.arange(1, 139):
 
     fig.suptitle(weight_names[w])
     plt.tight_layout()
-    plt.savefig(f"../figures/{w}_{weight_names[w].replace('/', ' or ')}_recovery.png", bbox_inches='tight', dpi=300)
+    plt.savefig(f"../plots/{w}_{weight_names[w].replace('/', ' or ')}_recovery.png", bbox_inches='tight', dpi=300)
     plt.close()
 
     results.append({
@@ -133,7 +133,7 @@ df_results.to_csv('../csvs/parameter_recovery.csv', index=False)
 
 plt.figure(figsize=(8, 4))
 plt.hist(df_results["R2_HS"])
-plt.savefig('../figures/r2_hs_histogram.png', bbox_inches='tight', dpi=300)
+plt.savefig('../plots/r2_hs_histogram.png', bbox_inches='tight', dpi=300)
 plt.figure(figsize=(8, 4))
 plt.hist(df_results["R2_Activity"])
-plt.savefig('../figures/r2_activity_histogram.png', bbox_inches='tight', dpi=300)
+plt.savefig('../plots/r2_activity_histogram.png', bbox_inches='tight', dpi=300)
