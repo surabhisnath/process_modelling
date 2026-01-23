@@ -1,3 +1,5 @@
+"""Feature-based model family with static and activity-weighted variants."""
+
 from pylab import *
 import numpy as np
 np.random.seed(42)
@@ -26,6 +28,7 @@ class Ours(Model):
         self.onlyforgroup = False
 
     def create_models(self):
+        """Instantiate enabled subclasses, respecting fitting mode."""
         if self.config["fitting"] == "individual":
             subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
         # elif self.config["fitting"] == "group":
@@ -36,12 +39,14 @@ class Ours(Model):
         self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
 
     def get_features(self):
+        """Load binary feature vectors for each response."""
         featuredict = pk.load(open(f"../files/features_{self.config['featurestouse']}.pk", "rb"))
         feature_names = list(next(iter(featuredict.values())).keys())
         # feature_names = pk.load(open(f"../files/vf_final_features.pk", "rb"))
         return feature_names, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names], dtype=torch.int8, device=device) for k, values in featuredict.items()}
 
     def get_feature_sim_mat(self):
+        """Compute pairwise similarity as mean feature overlap."""
         sim_matrix = {response: {} for response in self.unique_responses}
         self.not_change_mat = torch.zeros((len(self.unique_responses), len(self.unique_responses), self.num_features), dtype=torch.int8)
         for i, resp1 in enumerate(self.unique_responses):
@@ -67,12 +72,14 @@ class Ours(Model):
     
     def get_nll(self, seq, weightsfromarg=None, getnll=None):
         nll = 0
+        # Similarity cues derived from feature overlap.
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
 
         # mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         # for i in range(2, len(seq)):
         #     visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
         #     mask[i - 2, visited_responses] = 0
+        # Mask previously visited responses in each sequence position.
         mask = torch.ones((len(seq) - 2, len(self.unique_responses)), device=device)
         for i in range(2, len(seq)):
             visited_responses = torch.tensor([self.unique_response_to_index[resp] for resp in seq[:i]], device=device)

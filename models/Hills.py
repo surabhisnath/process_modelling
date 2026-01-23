@@ -1,3 +1,5 @@
+"""Hills family models for sequence prediction and weighting variants."""
+
 from pylab import *
 import numpy as np
 np.random.seed(42)
@@ -19,6 +21,7 @@ class Hills(Model):
         self.num_total_weights = 3
      
     def create_models(self):
+        """Instantiate enabled subclasses for the current config."""
         self.models = {subclass.__name__: subclass(self) for subclass in Hills.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
     
     def allweights(self, weights=None):
@@ -33,6 +36,7 @@ class Hills(Model):
 
     def get_nll(self, seq, weightsfromarg=None):
         nll = 0
+        # Similarity terms for each step in the sequence (excluding start/end).
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                              # shape: (len_seq - 2, num_resp)
         # sim_terms_2step = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[:-2]]).to(device=device)                         # shape: (len_seq - 2, num_resp)
         
@@ -54,6 +58,7 @@ class Hills(Model):
             #     sim_drops = (~((sim1 > sim2) & (sim2 < sim3))).to(torch.int8)                              
             #     sim_terms_mask = torch.cat([sim_drops, torch.tensor([0], dtype=torch.int8, device=device)])  # Pad to length (len(seq) - 2)
 
+        # Prevent revisiting previously used responses.
         mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         for i in range(2, len(seq)):
             visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
@@ -69,6 +74,7 @@ class Hills(Model):
         # print("b vector")
         # print(b)
         
+        # Combine frequency and similarity cues into logits.
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +               # 1, num_responses
             weightstouse[1] * sim_terms * sim_terms_mask.float() #+             # 

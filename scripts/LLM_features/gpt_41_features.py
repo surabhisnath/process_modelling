@@ -1,3 +1,5 @@
+"""Query GPT-4.1 for feature labels and cache responses."""
+
 from openai import OpenAI
 import transformers
 import torch
@@ -172,6 +174,7 @@ except:
     features_dict = {}
 print("BEFORE", len(features_dict))
 
+# Build the set of candidate responses from all CSVs.
 texts = set()
 for path in ["../../csvs/divergent.csv", "../../csvs/similar.csv", "../../csvs/noconstraints.csv", "../../csvs/hills.csv", "../../csvs/claire.csv", "../../csvs/data_LLMs_VF.csv"]:
     data = pd.read_csv(path)
@@ -191,6 +194,7 @@ for idx, response in enumerate(texts):
         if feature in features_dict[response]:
             continue
 
+        # Ask the model for a strict true/false judgment.
         messages = [
             {"role": "system", "content": "You are a helpful assistant and animal expert who has access to all the facts about animals."},
             {"role": "user", "content": f"Output only true or false. {response}: {feature.split('_')[1]}"}

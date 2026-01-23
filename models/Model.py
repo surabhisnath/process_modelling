@@ -1,3 +1,5 @@
+"""Core model utilities, data loading, and shared fitting helpers."""
+
 import os
 from sympy import sequence
 import numpy as np
@@ -56,6 +58,7 @@ class Model:
             self.modelstorun = json.load(f)
         self.data = pd.read_csv("../csvs/" + self.config["dataset"] + ".csv")
         
+        # Normalize responses and drop invalid/NA entries.
         self.data = self.data[~self.data["response"].isin(["mammal", "bacterium", "unicorn", "woollymammoth"])]     # filtering NA responses
         with open("../files/response_corrections.json", 'r') as f:
             self.corrections = json.load(f)
@@ -88,6 +91,7 @@ class Model:
         self.unique_response_to_index = dict(zip(self.unique_responses, np.arange(len(self.unique_responses))))
 
         if config["useapifreq"]: 
+            # Frequency cues from external n-gram data.
             self.freq = self.get_frequencies()       # normalising is bad for performance when log freqs
             for k, v in self.freq.items():
                 if pd.isna(v):
@@ -101,6 +105,7 @@ class Model:
         elif config["dataset"] == "hills":      # ie --usehillsfreq
             self.freq = self.get_frequencies_hills()
         
+        # Precompute embeddings and similarity matrices for all responses.
         self.embeddings = self.get_embeddings()
         self.num_embedding_dims = len(next(iter(self.embeddings.values())))
         self.sim_mat = self.get_embedding_sim_mat()
@@ -117,7 +122,8 @@ class Model:
         except:
             self.RTs = []
         
-        self.splits = self.split_sequences(self.sequences.copy())     # perform CV, only used in gorup fitting
+        # Precompute CV splits for group fitting.
+        self.splits = self.split_sequences(self.sequences.copy())     # perform CV, only used in group fitting
 
         self.start = 2
         self.init_val = self.config["initval"]
@@ -130,12 +136,15 @@ class Model:
         self.custom_splits = None
          
     def d2ts(self, some_dict):
+        """Convert a response-indexed dict into a tensor aligned to unique_responses."""
         return torch.tensor([some_dict[resp] for resp in self.unique_responses], dtype=torch.float32, device=device)
 
     def np2ts(self, some_np):
+        """Convert a numpy array into a torch tensor on the active device."""
         return torch.tensor(some_np, dtype=torch.float32, device=device)
 
     def d2np(self, some_dict):
+        """Convert a response-indexed dict into a numpy array."""
         return np.array([some_dict[resp] for resp in self.unique_responses])
 
     def get_frequencies(self):
@@ -168,6 +177,7 @@ class Model:
                 "queries": chunk
             }
 
+            # Batch query the n-grams API for frequency counts.
             response = requests.post(url, headers=headers, json=payload)
             print(f"Batch {i + 1}/{total_chunks} | Status: {response.status_code}")
 
@@ -191,6 +201,7 @@ class Model:
 
         freq_abs = dict(sorted(freq_abs.items(), key=lambda item: item[1], reverse=True))
         freq_rel = dict(sorted(freq_rel.items(), key=lambda item: item[1], reverse=True))
+        # Cache results to avoid repeated API calls.
         with open("../files/freq_abs_log.json", "w") as f:
             json.dump(freq_abs, f, indent=2)
         with open("../files/freq_rel_log.json", "w") as f:
@@ -212,7 +223,6 @@ class Model:
     def get_embeddings(self): 
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        #running
         if self.config["representation"] == "clip":
             model = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True).to(device)
             tokenizer = AutoTokenizer.from_pretrained("openai/clip-vit-large-patch14", local_files_only=True)
@@ -224,13 +234,11 @@ class Model:
             embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
 
 
-        #running
         if self.config["representation"] == "minilm":
             model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
 
-        #set running
         if self.config["representation"] == "potion_256":
             model = StaticModel.from_pretrained("/home/snath/.cache/huggingface/hub/models--minishlab--potion-base-8M/snapshots/3f12147e8ef0407df4e55de29669f79c11c8e2de/") # "minishlab/potion-base-8M"
             embeddings = model.encode(self.unique_responses, normalize=True)
@@ -244,13 +252,11 @@ class Model:
             embeddings = model.encode(self.unique_responses, normalize=True)
         
 
-        #running
         if self.config["representation"] == "qwen":     #1024
             model = SentenceTransformer("Qwen/Qwen3-Embedding-0.6B", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
 
-        #set running
         if self.config["representation"] == "bgesmall":  #512
             model = SentenceTransformer("BAAI/bge-small-en-v1.5", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
@@ -264,7 +270,6 @@ class Model:
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
 
 
-        #set running
         if self.config["representation"] == "e5small":  #384
             model = SentenceTransformer("intfloat/e5-small", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
@@ -278,24 +283,20 @@ class Model:
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
 
-        #running
         if self.config["representation"] == "infly":  #1536
             model = SentenceTransformer("infly/inf-retriever-v1-1.5b", trust_remote_code=True, device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
         
-        #running
         if self.config["representation"] == "rubert":  #312
             model = SentenceTransformer("cointegrated/rubert-tiny2", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
 
-        #running
         if self.config["representation"] == "gtelarge": #1024
             model = SentenceTransformer("thenlper/gte-large", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
 
-        #running
         if self.config["representation"] == "gtebert":  #768
             model = SentenceTransformer("Alibaba-NLP/gte-modernbert-base", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)

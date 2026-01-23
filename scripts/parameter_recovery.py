@@ -1,3 +1,5 @@
+"""Generate parameter recovery plots and summary statistics."""
+
 import pickle as pk
 import random
 import matplotlib.pyplot as plt
@@ -6,18 +8,20 @@ import random
 import pandas as pd
 
 def identity_r2(true, recovered):
-    # R² for y = x line fit
+    """R^2 against the identity line (y=x)."""
     ss_res = np.sum((recovered - true)**2)
     ss_tot = np.sum((recovered - np.mean(recovered))**2)
     return 1 - ss_res / ss_tot
 
 def identity_rmsd(true, recovered):
+    """Root-mean-square deviation between true and recovered values."""
     return np.sqrt(np.mean((recovered - true)**2))
 
 weight_names = ['freq', 'Is mammal', 'Is bird', 'Is insect', 'Is reptile', 'Is amphibian', 'Is fish', 'Is rodent', 'Is primate', 'Is jungle animal', 'Is non-jungle animal', 'Is feline', 'Is canine', 'Is subspecies of an animal', 'Is carnivore', 'Is herbivore', 'Is omnivore', 'Is larger in size compared to other animals', 'Is smaller in size compared to other animals', 'Is average size compared to other animals', 'Is warm-blooded', 'Is cold-blooded', 'Is a predator', 'Is prey for larger animals', 'Is a parasite', 'Is a host for parasites', 'Is nocturnal', 'Is diurnal', 'Has fur', 'Has feathers', 'Has scales', 'Has exoskeleton', 'Has beak', 'Has claws', 'Has whiskers', 'Has horns', 'Has antlers', 'Has tusks', 'Has wings', 'Has tail', 'Has less than four limbs', 'Has exactly four limbs', 'Has more than four limbs', 'Has stripes', 'Has spots', 'Has mane', 'Has crest', 'Has gills', 'Has flippers', 'Has compound eyes', 'Has segmented body', 'Has a long neck', 'Can fly', 'Can swim', 'Can climb', 'Can dig', 'Can jump', 'Can camouflage', 'Can hibernate', 'Can be trained or tamed by humans', 'Is found in zoos', 'Lives in water', 'Lives in trees', 'Lives underground', 'Lives on land', 'Is native to Africa', 'Is native to Asia', 'Is native to North America', 'Is native to South America', 'Is native to Australia', 'Is native to Europe', 'Lives in Arctic/far North', 'Is found in deserts', 'Is found in forests', 'Is found in oceans', 'Is found in grasslands', 'Is found in mountains', 'Lives in burrows', 'Lays eggs', 'Gives birth', 'Is venomous', 'Is domesticated', 'Lives in groups', 'Is solitary', 'Builds nests', 'Is migratory', 'Has social hierarchy', 'Uses tools', 'Shows intelligence', 'Communicates vocally', 'Can change color', 'Is capable of mimicry', 'Has echolocation', 'Is known for speed', 'Is known for strength', 'Is kept as a pet', 'Is used in farming', 'Is hunted by humans', 'Is used for food by humans', 'Is used for transportation', 'Is used in scientific research', 'Has a long lifespan', 'Has regenerative ability', 'Is vertebrate', 'Is invertebrate', 'Is marsupial', 'Is placental', 'Is monotreme', 'Is flightless', 'Has webbed feet', 'Is known for intelligence', 'Is a scavenger', 'Is territorial', 'Is endangered', 'Is bioluminescent', 'Is capable of parental care', 'Is a pollinator', 'Can tolerate extreme temperatures', 'Exhibits seasonal color changes', 'Is active during dawn or dusk (crepuscular)', 'Produces pheromones for communication', 'Lives symbiotically with other species', 'Is bi-parental (both parents care for offspring)', 'Displays mating rituals', 'Has specialized courtship behavior', 'Exhibits territorial marking', 'Is associated with mythology or folklore', 'Exhibits altruistic behavior', 'Is a keystone species in its ecosystem', 'Can regenerate body parts', 'Is raised in captivity or farms', 'Has unique reproductive strategies (e.g., asexual reproduction)', 'Hibernates during winter', 'Has a role in biological pest control', 'Has distinct seasonal breeding cycles', 'Forms a symbiotic relationship with plants (e.g., pollination)', 'Uses specific vocalizations to communicate', 'Is a flagship species (conservation symbol)', 'Displays warning coloration']
 
 true_weights = []
 
+# Load ground-truth weights (full data + synthetic perturbations).
 results = pk.load(open(f"../fits/freqweightedhsactivity_fits_gpt41_fulldata.pk", "rb"))
 original_weights = results[f"weights_fold1_fulldata"]
 

@@ -1,3 +1,5 @@
+"""Plot summed test NLLs for all fitted models."""
+
 import matplotlib.pyplot as plt
 plt.rcParams.update({
     "axes.facecolor": "white",                      # background stays white

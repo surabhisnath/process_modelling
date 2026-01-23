@@ -1,9 +1,12 @@
+"""Merge multiple feature pickles into a single combined file."""
+
 import pickle as pk
 import json
 import os
 
 feature_dict = {}
 
+# Load shards that were generated in multiple passes.
 feature_dicts = [pk.load(open("../files/features_gpt4omini.pk", "rb")), pk.load(open("../files/features_gpt4omini_200to300.pk", "rb")), pk.load(open("../files/features_gpt4omini_300to400.pk", "rb")), pk.load(open("../files/features_gpt4omini_400to500.pk", "rb")), pk.load(open("../files/features_gpt4omini_500tolast.pk", "rb"))]
 
 features = [
@@ -166,4 +169,5 @@ for d in feature_dicts:
         for f in features:
             feature_dict[resp][f] = d[resp][f]
 
+# Persist the merged dictionary for downstream scripts.
 pk.dump(feature_dict, open("../files/features_gpt4omini_all.pk", "wb"))

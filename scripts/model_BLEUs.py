@@ -1,3 +1,5 @@
+"""Parse simulation logs to plot BLEU scores per model."""
+
 import re
 import ast
 import matplotlib.pyplot as plt
@@ -28,6 +30,7 @@ with open("../models/logfiles/fit_and_simulate_models.log", "r") as f:
 matches = re.findall(r"SIM BLEUS MEAN:\s*(\{.*?\})", log_data)
 bleu_dicts = [ast.literal_eval(match) for match in matches]
 print(bleu_dicts)
+# Average BLEU-1..4 equally for a single summary score.
 bleus = [0.25 * d['bleu1'] + 0.25 * d['bleu2'] + 0.25 * d['bleu3'] + 0.25 * d['bleu4'] for d in bleu_dicts]
 print(bleus)
 

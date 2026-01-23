@@ -1,17 +1,22 @@
+"""Compare LLM-derived feature labels and report agreement metrics."""
+
 import pickle as pk
 import pandas as pd
 pd.set_option('display.max_rows', None)
 
 
 def out_to_binary(out):
+    """Convert model string outputs to binary 0/1 flags."""
     if out.lower()[:4] == "true":
         return 1
     elif out.lower()[:5] == "false":
         return 0
 
+# Load feature dictionaries for two model variants.
 llama_features = pk.load(open("../files/features_llama.pk", "rb"))
 gpt4omini_features = pk.load(open("../files/features_gpt41.pk", "rb"))
 
+# Use only features present in both sources to ensure fair comparison.
 common_features = list(set(next(iter(llama_features.values()))).intersection(set(next(iter(gpt4omini_features.values())))))
 
 features = [
@@ -171,6 +176,7 @@ features = [
 common = [f for f in features if f in common_features]
 print(len(common))
 
+# Normalize "true"/"false" strings into numeric matrices.
 data1 = {outer_k: {k: out_to_binary(inner_v[k]) for k in common if k in inner_v}
          for outer_k, inner_v in llama_features.items()}
 
@@ -186,16 +192,11 @@ print(df1)
 print(df2)
 
 agreement = (df1 == df2).astype(int)
-# print(agreement, type(agreement))
 print(agreement.sum().sum()/agreement.size * 100)
 
+# Summarize agreement by feature and by animal.
 feature_agreement = (agreement).mean().sort_values(ascending=True)
 print(feature_agreement)  # Values closer to 1 => high agreement
 
 animal_agreement = (df1 == df2).mean(axis=1).sort_values()
-print(animal_agreement)  # Values closer to 1 mean high agreement
-
-# for row_idx, row in agreement.iterrows():
-#     for col in agreement.columns:
-#         if row[col] == 0:
-#             print(f"Row: {row_idx}, Column: {col}", df1.loc[row_idx, col], df2.loc[row_idx, col])
+print(animal_agreement)  # Values closer to 1 => high agreement

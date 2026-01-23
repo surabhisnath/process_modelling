@@ -17,6 +17,8 @@
 # tokenizer.save_pretrained("../../models/bert-base-uncased-tokenizer/")
 # print(f"Model and tokenizer saved")
 
+"""Download and save LLM checkpoints locally."""
+
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # model_id = "meta-llama/Meta-Llama-3.1-8B-Instruct"
@@ -25,6 +27,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 model_id = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
 save_dir = "../../models/DeepSeek-R1-0528-Qwen3-8B/"
 
+# Fetch model weights and tokenizer, then save to disk.
 model = AutoModelForCausalLM.from_pretrained(model_id)
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 

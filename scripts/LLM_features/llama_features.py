@@ -1,3 +1,5 @@
+"""Generate animal feature labels using a local Llama checkpoint."""
+
 import transformers
 import torch
 import pandas as pd
@@ -9,6 +11,7 @@ name = "../../files/features_llama"
 
 save_dir = "../../../models/meta-llama-3.1-8B-instruct/"  # Path to the saved model directory
 
+# Load the local model checkpoint to avoid network access.
 tokenizer = transformers.AutoTokenizer.from_pretrained(save_dir)
 model = transformers.AutoModelForCausalLM.from_pretrained(save_dir, torch_dtype=torch.bfloat16, device_map="auto")
 
@@ -180,6 +183,7 @@ except:
     features_dict = {}
 print("BEFORE", len(features_dict))
 
+# Collect unique responses from all data sources.
 texts = set()
 for path in ["../../csvs/divergent.csv", "../../csvs/similar.csv", "../../csvs/noconstraints.csv", "../../csvs/hills.csv", "../../csvs/claire.csv"]:
     data = pd.read_csv(path)
@@ -199,6 +203,7 @@ for idx, response in enumerate(texts):
     for i, feature in enumerate(features):
         if feature in features_dict[response]:
             continue
+        # Ask for a strict true/false label for each feature.
         messages = [
            {"role": "system", "content": "You are a helpful assistant and animal expert who has access to all the facts about animals."},
            {"role": "user", "content": f"Output only true or false. {response}: {feature.split("_")[1]}"},

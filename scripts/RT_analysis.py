@@ -1,3 +1,5 @@
+"""Analyze response times and export per-feature RT summaries."""
+
 import pandas as pd
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -7,6 +9,7 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 
+# Load trial-level RT data and align responses to corrected labels.
 csv = pd.read_csv("../csvs/hills.csv")
 
 featuredict = pk.load(open(f"../files/features_gpt41.pk", "rb"))
@@ -17,6 +20,7 @@ features = {corrections.get(k, k): [1 if values.get(f, "").lower()[:4] == "true"
 
 csv["response"] = csv["response"].map(lambda r: corrections.get(r, r))
 
+# Expand features into columns for each response.
 feature_rows = csv["response"].map(lambda r: features[r])
 feature_df = pd.DataFrame(feature_rows.tolist(), columns=feature_names)
 csv = pd.concat([csv, feature_df], axis=1)
@@ -26,6 +30,7 @@ plt.hist(csv["RT"])
 plt.savefig("../figures/RT_hist.png")
 plt.close()
 
+# Filter RT outliers using IQR, then log-transform.
 Q1 = csv["RT"].quantile(0.25)
 Q3 = csv["RT"].quantile(0.75)
 IQR = Q3 - Q1
@@ -42,6 +47,7 @@ for f in HS_important_features:
     csv_ = csv[["pid", "response", "RT", f]]
     
     def compute_remained_1(group):
+        """Count consecutive occurrences of a feature within each participant."""
         remained = []
         count = 0
         for val in group[f]:

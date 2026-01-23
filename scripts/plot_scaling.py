@@ -1,3 +1,5 @@
+"""Plot test log-likelihood scaling vs. model size."""
+
 from math import comb
 import numpy as np
 import pandas as pd
@@ -7,6 +9,7 @@ import re
 import matplotlib.pyplot as plt
 
 def extract_test_nll(filepath, keyword):
+    """Find the test NLL value located after a matching keyword."""
     pattern = re.compile(rf'\b{re.escape(keyword)}\b')
     with open(filepath, 'r') as file:
         lines = file.readlines()
@@ -25,6 +28,7 @@ def extract_test_nll(filepath, keyword):
 
 
 def extract_embedding_dim(filepath, keyword="num embedding dimensions"):
+    """Parse embedding dimension from a log file."""
     with open(filepath, 'r') as file:
         for line in file:
             if keyword in line:
@@ -46,6 +50,7 @@ traditional_embedding_models = ["clip", "minilm",
                                 "gtelarge", "gtebert"
                             ]
 
+# Build x/y pairs for baseline and weighted variants.
 traditional_embedding_models_x = []
 traditional_embedding_models_y = [] 
 for traditional_embedding_model in traditional_embedding_models:

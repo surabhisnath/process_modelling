@@ -1,3 +1,5 @@
+"""Generate TSNE plots for feature embeddings and selected attributes."""
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,13 +8,7 @@ from sklearn.manifold import TSNE
 import json
 
 def make_TSNE(embeddings, responses, clusters=None, show_responses=True, feature_name=None):
-    """Plot TSNE
-    Args:
-        embeddings (np.ndarray): 2D array of embeddings
-        responses (list): List of responses (used if show_responses is True)
-        clusters (list or np.ndarray): Optional cluster labels
-        show_responses (bool): Whether to annotate responses
-    """
+    """Plot and save a TSNE scatter for the provided embeddings."""
     assert len(embeddings) == len(responses), "Embeddings and responses must have the same length"
 
     tsne = TSNE(n_components=2, perplexity=10, n_iter=3000, random_state=42, metric="hamming")
@@ -22,6 +18,7 @@ def make_TSNE(embeddings, responses, clusters=None, show_responses=True, feature
     ax = plt.gca()
 
     if clusters is not None:
+        # Highlight two clusters when binary labels are provided.
         cluster_0_mask = (clusters == 0)
         cluster_1_mask = (clusters == 1)
         ax.scatter(

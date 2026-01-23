@@ -1,3 +1,5 @@
+"""Heineman category-transition models and variants."""
+
 from pylab import *
 import numpy as np
 np.random.seed(42)
@@ -23,9 +25,11 @@ class Heineman(Model):
         self.split_ind = 0
      
     def create_models(self):
+        """Instantiate enabled subclasses for the current config."""
         self.models = {subclass.__name__: subclass(self) for subclass in Heineman.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1}
     
     def get_category_transition_matrices(self):
+        """Compute per-fold category transition matrices."""
         normalized_transition_matrices = np.zeros((self.config["cv"], self.num_categories, self.num_categories))
         if self.config["fitting"] == "group":
             for i, (train_seqs, _) in enumerate(self.splits):
@@ -83,6 +87,7 @@ class Heineman(Model):
     
     def get_nll(self, seq, weightsfromarg=None):
         nll = 0
+        # Similarity and category-transition cues for each step.
         sim_terms = torch.stack([self.d2ts(self.sim_mat[r]) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
         try:
             cat_trans_terms = self.cat_trans_terms[' '.join(seq)]
@@ -90,12 +95,14 @@ class Heineman(Model):
             cat_trans_terms = torch.stack([torch.tensor([self.get_category_cue(r_, r) for r_ in self.unique_responses], dtype=float, device=device) for r in seq[1:-1]]).to(device=device)                      # shape: (len_seq - 2, num_resp)
             self.cat_trans_terms[' '.join(seq)] = cat_trans_terms
 
+        # Prevent revisiting previously used responses.
         mask = np.ones((len(seq) - 2, len(self.unique_responses)))
         for i in range(2, len(seq)):
             visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:i]])
             mask[i - 2, visited_responses] = 0
 
         weightstouse = self.allweights(weightsfromarg)
+        # Combine frequency, similarity, and category-transition cues.
         logits = (
             weightstouse[0] * self.d2ts(self.freq).unsqueeze(0) +                                                    # shape: (1, num_resp)
             weightstouse[1] * sim_terms +                                                                            # shape: (len_seq - 2, num_resp)

@@ -1,3 +1,5 @@
+"""Shared utilities for modeling, plotting, and preprocessing."""
+
 import os
 import numpy as np
 import pandas as pd
@@ -27,6 +29,7 @@ from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 
 # Functions
 def calculate_bleu(generated_sequences, real_sequences):
+    """Compute BLEU-1..4 scores averaged across generated sequences."""
     scores = []
     for gen_seq in generated_sequences:
         score1 = sentence_bleu(real_sequences, gen_seq, weights=(1, 0, 0, 0))
@@ -37,6 +40,7 @@ def calculate_bleu(generated_sequences, real_sequences):
     return dict(zip(["bleu1", "bleu2", "bleu3", "bleu4"], np.round(np.mean(scores, axis=0), 2).tolist()))
 
 def str2bool(v):
+    """Parse common string representations into booleans."""
     if isinstance(v, bool):
         return v
     if v.lower() in ('yes', 'true', 't', '1'):
@@ -48,11 +52,7 @@ def str2bool(v):
 
 
 def make_TSNE(embeddings, responses, clusters, show_responses=False):
-    """Plot TSNE
-    Args:
-        embeddings (list): List of embeddings
-        responses (list): List of responses -- used if show_responses is True
-    """
+    """Plot a TSNE projection of embeddings with optional labels."""
     tsne = TSNE(n_components=2, perplexity=5, n_iter=3000, random_state=42)
     tsne_embeddings = tsne.fit_transform(embeddings)
 
@@ -84,6 +84,7 @@ def make_TSNE(embeddings, responses, clusters, show_responses=False):
 
 
 def view_pickle(filepath):
+    """Print the length of a pickled object."""
     with open(filepath, "rb") as f:
         obj = pk.load(f)
     print(len(obj))

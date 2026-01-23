@@ -1,3 +1,5 @@
+"""Plot counts of features per semantic category."""
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -12,6 +14,7 @@ import numpy as np
 # 8. Reproduction / Lifecycle	11
 # 9. Human Interaction & Cultural Use	11
 
+# Mapping of category name to included feature keys.
 feature_categories = {
     "Taxonomy / Species Type": [
         "feature_Is mammal", "feature_Is bird", "feature_Is insect", "feature_Is reptile",

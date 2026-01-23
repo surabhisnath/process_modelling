@@ -1,3 +1,5 @@
+"""Main entry point for fitting, simulation, recovery and analyses."""
+
 import pandas as pd
 import argparse
 import sys
@@ -30,6 +32,7 @@ from itertools import combinations
 from brokenaxes import brokenaxes
 
 def changeweights(weights, i):
+    """Generate perturbed weight vectors for parameter recovery."""
     device = weights.device
     shape = weights.shape
     if i == 0:
@@ -80,6 +83,7 @@ def run(config):
     models = {}
     fit_results = {}
 
+    # Initialize shared data and configuration.
     modelobj = Model(config)
 
     BLEUs = []
@@ -431,7 +435,7 @@ def run(config):
         plt.colorbar(im2, ax=axes[1], orientation='vertical', fraction=0.02, pad=0.02)
 
         plt.tight_layout()
-        plt.subplots_adjust(bottom=0.25)   # increases bottom margin
+        plt.subplots_adjust(bottom=0.25)
         plt.savefig("../plots/weightsheatmap.png", dpi=300, bbox_inches='tight')
     
     if config["RT_analysis"]:
@@ -607,10 +611,7 @@ def run(config):
             rt_seq = RTs[sid]
             (_, log_probs, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, freqeratiosum, HSeratiosum, activityeratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
             probs = np.exp(log_probs.detach().cpu().numpy())
-            print("PROBS SHAPE" , probs.shape)
-            # print(sid)
-            # print(seq[0])
-            # print(seq[1])
+            
             cue_transitions_seq = [np.nan]
             max1_list, max2_list = [], []
             for i in range(len(seq) - 2):
