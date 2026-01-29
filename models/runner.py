@@ -447,8 +447,8 @@ def run(config):
         
         suffix = "_fulldata"
         try:
-            print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Loaded weights on full dataset...")
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
@@ -463,14 +463,15 @@ def run(config):
         HS_forreg = []
         activity_forreg = []
         pid = []
-        cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
-        cue_transitions_forreg = []
+        trials = []
+        # cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
+        # cue_transitions_forreg = []
         for sid, seq in enumerate(sequences):
             logprobs_withoutmasking, nll, freq, HS, activity = models[best_model_class].models[best_model_name].get_nll_withoutmasking(seq, weights)
             freq_forreg.extend(freq.cpu().numpy())
             HS_forreg.extend(HS.cpu().numpy())
             activity_forreg.extend(activity.cpu().numpy())
-            cue_transitions_forreg.extend(cue_transitions[sid])
+            # cue_transitions_forreg.extend(cue_transitions[sid])
 
             den = torch.logsumexp(logprobs_withoutmasking, dim=1)      # shape len(seq) - 2
 
@@ -486,12 +487,14 @@ def run(config):
             # logPrej = num
 
             logPrej_forreg.extend(logPrej.cpu().numpy())
+            # logPrej_forreg.extend(logPrej.cpu().numpy() - np.log(np.arange(2, 2 + len(seq) - 2)))
             chosen = nll.cpu().numpy()
             chosen_forreg.extend(chosen)
 
             RT = np.log(np.array(RTs[sid][2:]) + 0.001)
             RTs_forreg.extend(RT)
             pid.extend([sid] * (len(seq) - 2))
+            trials.extend(np.arange(2, 2 + len(seq) - 2))
 
             plt.figure()
             plt.scatter(logPrej.cpu().numpy(), RT, label = "log(P(rej))")
@@ -501,7 +504,10 @@ def run(config):
             plt.savefig(f"../plots/seq{i+1}_RTanalysis")
             plt.close()
 
-        df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "cue_transitions": cue_transitions_forreg})
+        df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "trial": trials})
+        
+        print(df.corr(method="spearman"))
+
         df["prev_freq"] = df.groupby("pid")["freq"].shift(1)
         df["prev_HS"] = df.groupby("pid")["HS"].shift(1)
         df["prev_activity"] = df.groupby("pid")["activity"].shift(1)
@@ -552,8 +558,35 @@ def run(config):
         model = smf.mixedlm("logRT ~ freq + HS + activity", df, groups=df["pid"]).fit()
         print(model.summary())
 
+        print("log(RT) ~ log(P(rej)) + trial + 1|pid")
+        model = smf.mixedlm("logRT ~ logPrej + trial", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("Model 1: log(RT) ~ trial + 1|pid")
+        model_trial = smf.mixedlm("logRT ~ trial", df, groups=df["pid"]).fit()
+        print(model_trial.summary())
+        df["logRT_resid"] = model_trial.resid
+        print("Model 2: residual log(RT) ~ log(P(rej)) + 1|pid")
+        model_logPrej = smf.ols("logRT_resid ~ logPrej", data=df).fit()
+        print(model_logPrej.summary())
+        print("Model 3: residual log(RT) ~ freq + HS + activity + 1|pid")
+        model_logPrej = smf.ols("logRT_resid ~ freq + HS + activity", data=df).fit()
+        print(model_logPrej.summary())
+
+        print("log(RT) ~ log(P(rej)) * trial + 1|pid")
+        model = smf.mixedlm("logRT ~ logPrej * trial", df, groups=df["pid"]).fit()
+        print(model.summary())
+
         print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) * trial + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej * trial", df, groups=df["pid"]).fit()
         print(model.summary())
 
         print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")

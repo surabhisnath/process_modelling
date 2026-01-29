@@ -197,7 +197,6 @@ class OneCueStaticLocal_12step(Hills, nn.Module):
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
 
-
 class CombinedCueStaticWeightedActivity(Hills, nn.Module):
     def __init__(self, parent):
         self.__dict__.update(parent.__dict__)
@@ -282,8 +281,6 @@ class CombinedCueStatic(Hills, nn.Module):
         self.weight_indices = torch.tensor([0, 1], device=device)
 
         self.weights = nn.Parameter(torch.tensor([self.init_val] * self.num_weights, device=device))
-
-
 
 class CombinedCueStatic_12step(Hills, nn.Module):
     def __init__(self, parent):

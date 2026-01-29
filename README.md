@@ -45,7 +45,9 @@ pip install -r requirements.txt
 Before you being, ensure all models you wish to run are set to 1 in `files/model_to_run`.
 
 1. Model Fitting and Simulation: `python models/runner.py` (can add `--nofit` or `--nosimulate` if either is not desired).
+
 Plotting NLLs: `python scripts/model_NLLs.py`, plot saved as `plots/model_nlls.png`
+
 Plotting BLEUs: `python scripts/model_BLEUs.py`, plot saved as `plots/model_bleus.png`
 
 2. Model Recovery: `python -u runner.py --nofit --nosimulate --recovery`

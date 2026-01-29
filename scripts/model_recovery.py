@@ -6,6 +6,7 @@ import numpy as np
 import os
 import json
 
+os.makedirs("../plots/model_recovery", exist_ok=True)
 modelstorun = json.load(open("../files/modelstorun.json", "r"))
 models = [key for key, value in modelstorun.items() if value == 1]
 
@@ -17,7 +18,7 @@ for m1 in models:
         print(m1, m2)
         sums = []
         for i in range(3):
-            fit = pk.load(open(f"../fits/{m2.lower()}_fits_gpt41_recovery_{m1.lower()}_{i+1}.pk", "rb"))
+            fit = pk.load(open(f"../fits/model_recovery/{m2.lower()}_fits_gpt41_recovery_{m1.lower()}_{i+1}.pk", "rb"))
             sum_test_NLL = sum(fit[f"testNLLs_recovery_{m1.lower()}_{i + 1}"])
             sums.append(sum_test_NLL)
         mean_sumtestnlls.append(np.mean(sums))
@@ -35,4 +36,4 @@ for m1 in models:
     plt.xticks(rotation=90)
     plt.ylim(min(sorted_sums) - 50, max(sorted_sums) + 50)
     plt.tight_layout()
-    plt.savefig(f"../figures/model_recovery_{m1.lower()}.png", bbox_inches='tight',  dpi=300)
+    plt.savefig(f"../plots/model_recovery/model_recovery_{m1.lower()}.png", dpi=300)

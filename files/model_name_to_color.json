@@ -1,22 +1,46 @@
 {
     "Random": "#a0a0a0",
 
-    "Freq": "#C7E5D0",
+    "Freq": "#B7DCF5",
     
-    "HS": "#DFEED2",
-    "Freq_HS": "#C0D8A7",
-    "WeightedHS": "#7F9367",
-    "FreqWeightedHS": "#7C8E61",
-    "Activity": "#7F9367",
-    "WeightedHSActivity": "#5F6D46",
-    "FreqWeightedHSActivity": "#5B6D42",
+    "HS": "#F7A8AA",
+    "Freq_HS": "#BBB3D8",
+    "WeightedHS": "#F15757",
+    "FreqWeightedHS": "#7A6BB0",
+    "Activity": "#5D94CE",
+    "WeightedHSActivity": "#6555A4",
+    "FreqWeightedHSActivity": "#584990",
     
-    "OneCueStaticLocal": "#CEEAE9",
-    "CombinedCueStatic": "#BEE3E5",
-    "CombinedCueDynamicCat": "#8EC9CC",
+    "OneCueStaticLocal": "#F7A8AA",
+    "CombinedCueStatic": "#BBB3D8",
+    "CombinedCueDynamicCat": "#9188C1",
 
-    "Subcategory": "#CEEAE9",
-    "Freq_Subcategory": "#BEE3E5",
-    "Sim_Subcategory": "#BEE3E5",
-    "Freq_Sim_Subcategory": "#72B7B5"
+    "Subcategory": "#F7A8AA",
+    "Freq_Subcategory": "#BBB3D8",
+    "Sim_Subcategory": "#BBB3D8",
+    "Freq_Sim_Subcategory": "#9188C1"
 }
+
+
+// {
+//     "Random": "#a0a0a0",
+
+//     "Freq": "#C7E5D0",
+    
+//     "HS": "#DFEED2",
+//     "Freq_HS": "#C0D8A7",
+//     "WeightedHS": "#7F9367",
+//     "FreqWeightedHS": "#7C8E61",
+//     "Activity": "#7F9367",
+//     "WeightedHSActivity": "#5F6D46",
+//     "FreqWeightedHSActivity": "#5B6D42",
+    
+//     "OneCueStaticLocal": "#CEEAE9",
+//     "CombinedCueStatic": "#BEE3E5",
+//     "CombinedCueDynamicCat": "#8EC9CC",
+
+//     "Subcategory": "#CEEAE9",
+//     "Freq_Subcategory": "#BEE3E5",
+//     "Sim_Subcategory": "#BEE3E5",
+//     "Freq_Sim_Subcategory": "#72B7B5"
+// }
