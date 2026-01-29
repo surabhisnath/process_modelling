@@ -5,245 +5,123 @@ from collections import deque
 import pandas as pd
 import pickle as pk
 
-def feature_implication_matrix(X: np.ndarray, tau: float = 1.0, include_empty: bool = False):
+def conditional_feature_matrix(X):
     """
-    Compute implication matrix R where R[i,j]=True means feature i implies feature j:
-        P(f_j=1 | f_i=1) >= tau
-    Hard implication is tau=1.0.
-
-    Args:
-        X: (N, F) binary matrix (0/1 or bool)
-        tau: implication threshold in [0,1]. Default 1.0 (hard).
-        include_empty: whether to include implications from features with zero support (all zeros).
-                       If False, rows with support 0 imply nothing except themselves.
-
+    X: (N, F) binary numpy array
     Returns:
-        R: (F, F) boolean implication matrix
-        support: (F,) counts of ones per feature
-        conf: (F, F) matrix of conditional probabilities P(j=1 | i=1) (float in [0,1])
+        M: (F, F) matrix where
+           M[i, j] = P(feature j = 1 | feature i = 1)
     """
-    Xb = (X > 0).astype(np.uint8)  # ensure 0/1
-    N, F = Xb.shape
+    X = (X > 0).astype(np.uint8)   # ensure binary
+    N, F = X.shape
 
-    support = Xb.sum(axis=0)  # |S_i|
-    # cooc[i,j] = number of rows where i=1 and j=1
-    cooc = Xb.T @ Xb  # (F,F)
+    # support[i] = number of rows where feature i == 1
+    support = X.sum(axis=0)        # shape (F,)
 
-    # conf[i,j] = P(j=1 | i=1) = cooc[i,j] / support[i]
-    conf = np.zeros((F, F), dtype=np.float32)
+    # cooc[i, j] = number of rows where both i and j are 1
+    cooc = X.T @ X                 # shape (F, F)
+
+    # conditional probabilities
+    M = np.zeros((F, F), dtype=np.float32)
     nonzero = support > 0
-    conf[nonzero, :] = cooc[nonzero, :] / support[nonzero, None]
+    # M[nonzero, :] = cooc[nonzero, :] / support[nonzero, None]
+    M[:, nonzero] = cooc[:, nonzero] / support[nonzero]
 
-    # implication thresholding
-    R = conf >= float(tau)
+    return M, support
 
-    # Reflexive closure: each feature implies itself
-    np.fill_diagonal(R, True)
-
-    if not include_empty:
-        # If support[i]=0, make row i only imply itself (otherwise conf row is all 0 => only diag True anyway)
-        empty = support == 0
-        if np.any(empty):
-            R[empty, :] = False
-            R[empty, empty] = True
-
-    return R, support, conf
-
-def collapse_duplicate_features(X: np.ndarray):
+def dfs_paths_from(i, M, features, visited, path, all_paths):
     """
-    Collapses identical columns (same binary vector) into groups.
-
-    Returns:
-        X_unique: (N, F_unique)
-        groups: list of lists; groups[g] contains original feature indices merged into unique column g
-        inv: (F,) map from original feature index -> unique column index
+    Depth-first search starting from feature index i.
     """
-    Xb = (X > 0).astype(np.uint8)
-    # Use bytes signature per column (fast & stable)
-    sig = np.ascontiguousarray(Xb.T).view(np.dtype((np.void, Xb.shape[0]))).ravel()
-    order = np.argsort(sig)
-    sig_sorted = sig[order]
+    extended = False
 
-    groups = []
-    inv = np.empty(Xb.shape[1], dtype=np.int32)
+    # iterate over all j such that M[i, j] > 0
+    for j in np.where(M[i] > 0)[0]:
+        if j == i:
+            continue
+        if j in visited:
+            continue
 
-    start = 0
-    while start < len(sig_sorted):
-        end = start + 1
-        while end < len(sig_sorted) and sig_sorted[end] == sig_sorted[start]:
-            end += 1
-        idxs = order[start:end].tolist()
-        gid = len(groups)
-        for i in idxs:
-            inv[i] = gid
-        groups.append(idxs)
-        start = end
+        extended = True
+        dfs_paths_from(
+            j,
+            M,
+            features,
+            visited | {j},
+            path + [j],
+            all_paths
+        )
 
-    # Pick representative (first index) per group
-    reps = [g[0] for g in groups]
-    X_unique = Xb[:, reps]
-    return X_unique, groups, inv
-
-def transitive_reduction_hasse(R: np.ndarray):
-    """
-    Transitive reduction for a DAG represented by reachability/implication matrix R.
-    Assumes R is reflexive (diag True) and (approximately) transitive.
-    Produces Hasse edges: i->j if i implies j and there is no k with i->k->j.
-
-    Returns:
-        H: (F,F) boolean adjacency of Hasse diagram (no self-loops)
-    """
-    R = R.astype(bool)
-    F = R.shape[0]
-
-    # Candidate edges: i->j if i implies j and i!=j
-    H = R.copy()
-    np.fill_diagonal(H, False)
-
-    # Remove transitive edges:
-    # edge i->j is redundant if exists k such that i->k and k->j
-    # Compute for each (i,j): is there any k with (R[i,k] & R[k,j])?
-    # We must exclude the direct edge itself doesn't matter; any intermediate works.
-    # Using boolean matrix multiplication with OR-AND:
-    # path2 = (R @ R) in boolean semiring; but we'll do it via (R.astype(int) @ R.astype(int))>0
-    path2 = (R.astype(np.uint8) @ R.astype(np.uint8)) > 0  # includes i->i->j etc.
-
-    # An edge i->j is transitive if there exists k != i,j with i->k and k->j.
-    # path2 already includes cases through i or j; we need to exclude those intermediates.
-    # We'll compute intermediates existence more explicitly:
-    for k in range(F):
-        # if i->k and k->j then i->j is redundant (for i!=k and j!=k)
-        ik = R[:, k][:, None]   # (F,1)
-        kj = R[k, :][None, :]   # (1,F)
-        redundant_through_k = ik & kj
-        redundant_through_k[k, :] = False
-        redundant_through_k[:, k] = False
-        H[redundant_through_k] = False
-
-    return H
-
-def build_feature_hierarchy(
-    X: np.ndarray,
-    tau: float = 1.0,
-    collapse_duplicates: bool = True
-):
-    """
-    Full pipeline:
-      1) optionally collapse duplicate columns
-      2) build implication matrix (hard/soft via tau)
-      3) compute Hasse adjacency via transitive reduction
-
-    Returns dict with:
-      - X_used, groups, inv (if collapse)
-      - R, H
-      - support, conf
-    """
-    if collapse_duplicates:
-        X_used, groups, inv = collapse_duplicate_features(X)
-    else:
-        X_used = (X > 0).astype(np.uint8)
-        groups = [[i] for i in range(X_used.shape[1])]
-        inv = np.arange(X_used.shape[1], dtype=np.int32)
-
-    R, support, conf = feature_implication_matrix(X_used, tau=tau)
-    H = transitive_reduction_hasse(R)
-
-    return {
-        "X_used": X_used,
-        "groups": groups,
-        "inv": inv,
-        "R": R,
-        "H": H,
-        "support": support,
-        "conf": conf,
-    }
+    # if no further extension possible, record path
+    if not extended and len(path) > 1:
+        all_paths.append(path)
 
 
+# def all_feature_paths(M, features):
+#     """
+#     For each feature, run DFS and collect all paths.
+#     """
+#     F = M.shape[0]
+#     all_paths = []
+
+#     for i in range(F):
+#         dfs_paths_from(
+#             i=i,
+#             M=M,
+#             features=features,
+#             visited={i},
+#             path=[i],
+#             all_paths=all_paths
+#         )
+
+#     return all_paths
+
+def all_feature_paths(M, features):
+    F = M.shape[0]
+    all_paths = []
+
+    roots, leaves = find_roots_and_leaves(M)
+
+    # DFS only from roots
+    for i in roots:
+        dfs_paths_from(
+            i=i,
+            M=M,
+            features=features,
+            visited={i},
+            path=[i],
+            all_paths=all_paths
+        )
+
+    # keep only paths that end in leaves
+    all_paths = [p for p in all_paths if p[-1] in leaves]
+
+    # keep only longest paths
+    if not all_paths:
+        return []
+
+    max_len = max(len(p) for p in all_paths)
+    longest_paths = [p for p in all_paths if len(p) == max_len]
+
+    return longest_paths
 
 
+def find_roots_and_leaves(M):
+    F = M.shape[0]
+    indeg = np.zeros(F, dtype=int)
+    outdeg = np.zeros(F, dtype=int)
 
-
-
-def hasse_to_digraph(H: np.ndarray, feature_names=None):
-    F = H.shape[0]
-    G = nx.DiGraph()
     for i in range(F):
-        name = feature_names[i] if feature_names is not None else str(i)
-        G.add_node(i, label=name)
-    src, dst = np.where(H)
-    for i, j in zip(src.tolist(), dst.tolist()):
-        G.add_edge(i, j)
-    return G
+        js = np.where(M[i] > 0)[0]
+        js = js[js != i]
+        outdeg[i] = len(js)
+        for j in js:
+            indeg[j] += 1
 
-def compute_levels_dag(G: nx.DiGraph):
-    """
-    Assign each node a 'level' = length of longest path from any root (in-degree 0).
-    Works for DAGs.
-    """
-    # topological order
-    topo = list(nx.topological_sort(G))
-    level = {v: 0 for v in topo}
-    for v in topo:
-        for u in G.predecessors(v):
-            level[v] = max(level[v], level[u] + 1)
-    return level
+    roots = [i for i in range(F) if indeg[i] == 0 and outdeg[i] > 0]
+    leaves = [i for i in range(F) if outdeg[i] == 0]
 
-def layered_positions(G: nx.DiGraph):
-    """
-    Simple layered layout: nodes grouped by level, spread horizontally.
-    """
-    level = compute_levels_dag(G)
-    layers = {}
-    for v, lv in level.items():
-        layers.setdefault(lv, []).append(v)
-
-    pos = {}
-    for lv, nodes in layers.items():
-        nodes = sorted(nodes)
-        # spread across x
-        for k, v in enumerate(nodes):
-            pos[v] = (k, -lv)
-    return pos, level
-
-def plot_hasse(H: np.ndarray, feature_names=None, layout="layered", figsize=(12, 8), node_size=900):
-    G = hasse_to_digraph(H, feature_names=feature_names)
-
-    plt.figure(figsize=figsize)
-    if layout == "spring":
-        pos = nx.spring_layout(G, seed=0)
-    else:
-        pos, level = layered_positions(G)
-
-    labels = {i: (feature_names[i] if feature_names is not None else str(i)) for i in G.nodes}
-    nx.draw_networkx_edges(G, pos, arrows=True, arrowstyle="-|>", arrowsize=14, width=1.2)
-    nx.draw_networkx_nodes(G, pos, node_size=node_size)
-    nx.draw_networkx_labels(G, pos, labels=labels, font_size=9)
-
-    plt.axis("off")
-    plt.tight_layout()
-    plt.savefig("../plots/feature_hierarchy.pdf")
-
-    return G
-
-
-def print_feature_paths(
-    G,
-    features,
-    max_len=6,
-    min_len=2,
-    max_paths=200
-):
-    count = 0
-    for r in roots:
-        for l in leaves:
-            for path in nx.all_simple_paths(G, r, l, cutoff=max_len):
-                if len(path) >= min_len:
-                    names = [features[i] for i in path]
-                    print(" → ".join(names))
-                    count += 1
-                    if count >= max_paths:
-                        print(f"\n[Stopped after {max_paths} paths]")
-                        return
+    return roots, leaves
 
 
 hills = pd.read_csv("../csvs/hills.csv")
@@ -267,26 +145,27 @@ features = X_df.columns.tolist()     # column labels
 
 X = X_df.to_numpy(dtype=np.uint8)
 
-out = build_feature_hierarchy(X, tau=1.0)
+M, support = conditional_feature_matrix(X)
 print("Out done")
-R = out["R"]
-print(R)
+print(M)
 
-H = out["H"]
-# plot_hasse(H, feature_names=features, layout="layered")
+tau = 0.95
+M[M < tau] = 0.0
+np.fill_diagonal(M, 0.0)
 
-G = nx.DiGraph()
-F = H.shape[0]
+print(M)
+paths = all_feature_paths(M, [f[8:] for f in features])
 
-for i in range(F):
-    for j in range(F):
-        if H[i, j]:
-            G.add_edge(i, j)
-
-roots = [v for v in G.nodes if G.in_degree(v) == 0]
-leaves = [v for v in G.nodes if G.out_degree(v) == 0]
-print("Roots:", [features[i] for i in roots])
-print("Leaves:", [features[i] for i in leaves])
+for p in paths:
+    print(" -> ".join(features[i] for i in p))
 
 
-print_feature_paths(G, [f[8:] for f in features])
+
+# M_flat = M.ravel()
+# plt.figure(figsize=(6, 4))
+# plt.hist(M_flat, bins=50)
+# plt.xlabel("P(feature j = 1 | feature i = 1)")
+# plt.ylabel("Count")
+# plt.title("Distribution of conditional feature probabilities")
+# plt.tight_layout()
+# plt.savefig("temp.png")
