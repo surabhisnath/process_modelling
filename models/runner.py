@@ -1,6 +1,8 @@
 """Main entry point for fitting, simulation, recovery and analyses."""
 
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 import argparse
 import sys
 import os 
@@ -15,8 +17,6 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("CUDA available:", torch.cuda.is_available())
 print("GPU count:", torch.cuda.device_count())
-import numpy as np
-import matplotlib.pyplot as plt
 import random
 random.seed(42)
 import pickle as pk
@@ -30,6 +30,8 @@ import statsmodels.formula.api as smf
 from scipy.stats import ttest_ind
 from itertools import combinations
 from brokenaxes import brokenaxes
+from scipy.stats import spearmanr
+
 
 def changeweights(weights, i):
     """Generate perturbed weight vectors for parameter recovery."""
@@ -337,8 +339,8 @@ def run(config):
 
         suffix = "_fulldata"
         try:
-            print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Loaded weights on full dataset.")
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
@@ -349,8 +351,8 @@ def run(config):
         features = models[best_model_class].models[best_model_name].feature_names
         weights_HS = weights[1:1+len(features)]
         weights_Act = weights[1+len(features):]
-        ablations_HS = pk.load(open(f"../fits/ablations1{suffix}.pk", "rb"))[2:]
-        ablations_Act = pk.load(open(f"../fits/ablations2{suffix}.pk", "rb"))[2:]
+        ablations_HS = pk.load(open(f"../files/ablations_Activity.pk", "rb"))[2:]
+        ablations_Act = pk.load(open(f"../files/ablations_HS.pk", "rb"))[2:]
 
         top10_HS_idx = np.argsort(ablations_HS)[-10:]
         top10_Act_idx = np.argsort(ablations_Act)[-10:]
@@ -368,7 +370,7 @@ def run(config):
                     color="slateblue", alpha=0.6, s=50)
         highlight_idx = [
             i for i in range(len(features))
-            if (ablations_HS[i] > 20620 and ablations_Act[i] > 20700) or (i in top10_idx)
+            if (ablations_HS[i] > 20619 and ablations_Act[i] > 20700) or (i in top10_idx)
         ]
 
         colours = []
@@ -391,9 +393,9 @@ def run(config):
         for ax in bax.axs:
             ax.tick_params(axis="both", labelsize=15)
 
-        # bax.set_xlabel("HS Ablation Effect", labelpad=24)
-        # bax.set_ylabel("Activity Ablation Effect", labelpad=45)
-        # plt.tight_layout()
+        bax.set_xlabel("HS Ablation Effect", labelpad=24)
+        bax.set_ylabel("Activity Ablation Effect", labelpad=45)
+        plt.tight_layout()
         plt.savefig("../plots/visweights.png", dpi=300)
         print("Saved")
 
@@ -443,6 +445,7 @@ def run(config):
         best_model_class = "ours"
         best_model_name = "FreqWeightedHSActivity"
         sequences = models[best_model_class].models[best_model_name].sequences
+        data_metrics = models[best_model_class].models[best_model_name].data_metrics
         RTs = models[best_model_class].models[best_model_name].RTs
         
         suffix = "_fulldata"
@@ -463,50 +466,98 @@ def run(config):
         HS_forreg = []
         activity_forreg = []
         pid = []
+        responses = []
         trials = []
-        # cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
-        # cue_transitions_forreg = []
+
+        patchnum = []
+        numwithinpatch = []
+        switchornot = []
+        cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
+        patchnum2 = pk.load(open("../files/patchnum2.pk", "rb"))
+        numwithinpatch2 = pk.load(open("../files/numwithinpatch2.pk", "rb"))
+        
+        cue_transitions_forreg = []
+        patchnum2_forreg = []
+        numwithinpatch2_forreg = []
+
+        n_back = 0
+
         for sid, seq in enumerate(sequences):
             logprobs_withoutmasking, nll, freq, HS, activity = models[best_model_class].models[best_model_name].get_nll_withoutmasking(seq, weights)
             freq_forreg.extend(freq.cpu().numpy())
             HS_forreg.extend(HS.cpu().numpy())
             activity_forreg.extend(activity.cpu().numpy())
-            # cue_transitions_forreg.extend(cue_transitions[sid])
+            cue_transitions_forreg.extend(cue_transitions[sid])
+            patchnum2_forreg.extend(patchnum2[sid])
+            numwithinpatch2_forreg.extend(numwithinpatch2[sid])
 
             den = torch.logsumexp(logprobs_withoutmasking, dim=1)      # shape len(seq) - 2
 
+            ''' Check this masking if it works in nback case still or not'''
             mask = np.ones((len(seq) - 2, len(models[best_model_class].models[best_model_name].unique_responses)))
             for i in range(2, len(seq)):
-                visited_responses = np.array([models[best_model_class].models[best_model_name].unique_response_to_index[resp] for resp in seq[:i]])
+                visited_responses = np.array([models[best_model_class].models[best_model_name].unique_response_to_index[resp] for resp in seq[:i-1]])
                 mask[i - 2, visited_responses] = 0
             mask = torch.tensor(mask, dtype=torch.bool, device=device)
             visited = logprobs_withoutmasking.masked_fill(mask, -np.inf)
             num = torch.logsumexp(visited, dim=1)       # should be shape len(seq) - 2
 
-            logPrej = num - den
-            # logPrej = num
-
+            logPrej = num
+            # logPrej = num - den
             logPrej_forreg.extend(logPrej.cpu().numpy())
-            # logPrej_forreg.extend(logPrej.cpu().numpy() - np.log(np.arange(2, 2 + len(seq) - 2)))
+            # logPrej_forreg.extend(logPrej.cpu().numpy() - np.log(np.arange(1, 1 + len(seq) - 2)))
+
             chosen = nll.cpu().numpy()
             chosen_forreg.extend(chosen)
-
+            responses.extend(seq[2:])
             RT = np.log(np.array(RTs[sid][2:]) + 0.001)
             RTs_forreg.extend(RT)
             pid.extend([sid] * (len(seq) - 2))
             trials.extend(np.arange(2, 2 + len(seq) - 2))
+            patchnum.extend(data_metrics["patchnum"][sid][2:])
+            numwithinpatch.extend(data_metrics["numwithinpatch"][sid][2:])
+            switchornot.extend(data_metrics["switchornot"][sid][2:])
 
-            plt.figure()
-            plt.scatter(logPrej.cpu().numpy(), RT, label = "log(P(rej))")
-            plt.scatter(chosen, RT, label = "chosen NLL")
-            plt.ylabel("log(RT)")
-            plt.legend()
-            plt.savefig(f"../plots/seq{i+1}_RTanalysis")
-            plt.close()
+            # plt.figure()
+            # plt.scatter(logPrej.cpu().numpy(), RT, label = "log(P(rej))")
+            # plt.scatter(chosen, RT, label = "chosen NLL")
+            # plt.ylabel("log(RT)")
+            # plt.legend()
+            # plt.savefig(f"../plots/seq{i+1}_RTanalysis")
+            # plt.close()
 
-        df = pd.DataFrame({"freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "trial": trials})
-        
-        print(df.corr(method="spearman"))
+        print(len(trials))
+        print(len(patchnum))
+        print(len(numwithinpatch))
+        print(len(switchornot))
+
+        df = pd.DataFrame({"response": responses, "freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "trial": trials, "patchnum": patchnum, "numwithinpatch": numwithinpatch, "switchornot": switchornot, "cue_transitions": cue_transitions_forreg, "patchnum2": patchnum2_forreg, "numwithinpatch2": numwithinpatch2_forreg})
+        df.to_csv("../csvs/RT_analysis.csv", index=False)
+
+        corrs = (
+            df
+            .groupby("pid")
+            .apply(lambda g: spearmanr(g["trial"], g["logRT"], nan_policy="omit")[0])
+            .to_numpy()
+        )
+        plt.hist(corrs)
+        plt.xlabel("LogRT, Trial Spearman Correlation")
+        plt.ylabel("Number of Participants")
+        plt.savefig("../plots/ppt_logRT_trial_spearman.png", dpi=300)
+
+        plt.figure(figsize=(8, 5))
+        for pid, g in df.groupby("pid"):
+            plt.plot(g["trial"], g["logRT"], alpha=0.3)
+        plt.xlabel("Trial")
+        plt.ylabel("logRT")
+        plt.title("logRT over trials (per PID)")
+        plt.savefig("../plots/ppt_logRT_over_trials.png", dpi=300)
+
+        non_continuous_cols = ["response", "cue_transitions"]
+        continuous_cols = df.columns.difference(non_continuous_cols)
+        # df[continuous_cols] = (df[continuous_cols] - df[continuous_cols].mean()) / df[continuous_cols].std(ddof=0)
+
+        print(df[continuous_cols].corr(method="spearman"))
 
         df["prev_freq"] = df.groupby("pid")["freq"].shift(1)
         df["prev_HS"] = df.groupby("pid")["HS"].shift(1)
@@ -518,44 +569,68 @@ def run(config):
 
         df = df.dropna()
 
-        print("log(RT) ~ freq + 1|pid")
-        model = smf.mixedlm("logRT ~ freq", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ HS + 1|pid")
-        model = smf.mixedlm("logRT ~ HS", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ activity + 1|pid")
-        model = smf.mixedlm("logRT ~ activity", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + patchnum2 + numwithinpatch2 + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions) + patchnum2 + numwithinpatch2", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ log(P(rej)) + 1|pid")
-        model = smf.mixedlm("logRT ~ logPrej", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ chosen + 1|pid")
-        model3 = smf.mixedlm("logRT ~ chosen", df, groups=df["pid"]).fit()
-        print(model3.summary(), "\n")
+        # print("log(RT) ~ freq + 1|pid")
+        # model = smf.mixedlm("logRT ~ freq", df, groups=df["pid"]).fit()
+        # print(model.summary())
+
+        # print("log(RT) ~ HS + 1|pid")
+        # model = smf.mixedlm("logRT ~ HS", df, groups=df["pid"]).fit()
+        # print(model.summary())
+
+        # print("log(RT) ~ activity + 1|pid")
+        # model = smf.mixedlm("logRT ~ activity", df, groups=df["pid"]).fit()
+        # print(model.summary())
+
+        # print("log(RT) ~ log(P(rej)) + 1|pid")
+        # model = smf.mixedlm("logRT ~ logPrej", df, groups=df["pid"]).fit()
+        # print(model.summary())
+
+        # print("log(RT) ~ chosen + 1|pid")
+        # model3 = smf.mixedlm("logRT ~ chosen", df, groups=df["pid"]).fit()
+        # print(model3.summary(), "\n")
 
         print("log(RT) ~ chosen + log(P(rej)) + 1|pid")
         model3 = smf.mixedlm("logRT ~ chosen + logPrej", df, groups=df["pid"]).fit()
         print(model3.summary(), "\n")
 
-        print("log(RT) ~ freq + HS + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS", df, groups=df["pid"]).fit()
-        print(model.summary())
+        print("log(RT) ~ chosen + log(P(rej)) + trial + 1|pid")
+        model3 = smf.mixedlm("logRT ~ chosen + logPrej + trial", df, groups=df["pid"]).fit()
+        print(model3.summary(), "\n")
 
-        print("log(RT) ~ HS + activity + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + activity", df, groups=df["pid"]).fit()
-        print(model.summary())
+        # print("log(RT) ~ freq + HS + 1|pid")
+        # model = smf.mixedlm("logRT ~ freq + HS", df, groups=df["pid"]).fit()
+        # print(model.summary())
 
-        print("log(RT) ~ freq + activity + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + activity", df, groups=df["pid"]).fit()
-        print(model.summary())
+        # print("log(RT) ~ HS + activity + 1|pid")
+        # model = smf.mixedlm("logRT ~ HS + activity", df, groups=df["pid"]).fit()
+        # print(model.summary())
+
+        # print("log(RT) ~ freq + activity + 1|pid")
+        # model = smf.mixedlm("logRT ~ freq + activity", df, groups=df["pid"]).fit()
+        # print(model.summary())
 
         print("log(RT) ~ freq + HS + activity + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + trial + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial", df, groups=df["pid"]).fit()
         print(model.summary())
 
         print("log(RT) ~ log(P(rej)) + trial + 1|pid")
@@ -571,6 +646,9 @@ def run(config):
         print(model_logPrej.summary())
         print("Model 3: residual log(RT) ~ freq + HS + activity + 1|pid")
         model_logPrej = smf.ols("logRT_resid ~ freq + HS + activity", data=df).fit()
+        print(model_logPrej.summary())
+        print("Model 4: residual log(RT) ~ freq + HS + activity + logPrej + 1|pid")
+        model_logPrej = smf.ols("logRT_resid ~ freq + HS + activity + logPrej", data=df).fit()
         print(model_logPrej.summary())
 
         print("log(RT) ~ log(P(rej)) * trial + 1|pid")
@@ -589,8 +667,8 @@ def run(config):
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej * trial", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
 
         df = df.dropna(subset=["prev_freq"])
@@ -622,8 +700,8 @@ def run(config):
 
         suffix = "_fulldata"
         try:
-            print("Loading weights on full dataset...")
-            results = pk.load(open(f"../fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            results = pk.load(open(f"../fits/model_fits/{best_model_name.lower()}_fits_{config["featurestouse"]}{suffix}.pk", "rb"))
+            print("Loaded weights on full dataset...")
         except:
             models[best_model_class].models[best_model_name].suffix = suffix
             models[best_model_class].models[best_model_name].custom_splits = [(models[best_model_class].models[best_model_name].sequences, [])]
@@ -639,6 +717,8 @@ def run(config):
         per_seq_probs_1, per_seq_probs_2 = [], []
 
         cue_transitions = []
+        patchnum2 = []
+        numwithinpatch2 = []
 
         for sid, seq in enumerate(sequences):
             rt_seq = RTs[sid]
@@ -667,7 +747,27 @@ def run(config):
                 max_type2 = ["freq", "HS", "activity"][torch.tensor([f2, h2, a2]).argmax().item()]
                 max2_list.append(max_type2)
 
+            patchnum2_seq = []
+            numwithinpatch2_seq = []
+            current_patch = 0
+            within_patch = 0
+            for i, ct in enumerate(cue_transitions_seq):                
+                if i == 0 or np.isnan(ct):
+                    # First response always starts patch 0
+                    current_patch = 0
+                    within_patch = 0
+                elif ct in (0, 1, 2):
+                    # Boundary → new patch
+                    current_patch += 1
+                    within_patch = 0
+                else:  # ct == 3 (HS → HS)
+                    within_patch += 1
+                patchnum2_seq.append(current_patch)
+                numwithinpatch2_seq.append(within_patch)
             cue_transitions.append(cue_transitions_seq)
+            patchnum2.append(patchnum2_seq)
+            numwithinpatch2.append(numwithinpatch2_seq)
+
             logrt_1 = [[[] for _ in range(2)] for _ in range(2)]
             logrt_2 = [[[] for _ in range(2)] for _ in range(2)]
             probs_1 = [[[] for _ in range(2)] for _ in range(2)]
@@ -689,6 +789,8 @@ def run(config):
             per_seq_probs_2.append(probs_2)
 
         pk.dump(cue_transitions, open("../files/cue_transitions.pk", "wb"))
+        pk.dump(patchnum2, open("../files/patchnum2.pk", "wb"))
+        pk.dump(numwithinpatch2, open("../files/numwithinpatch2.pk", "wb"))
         mean_logrt_1 = np.zeros((2, 2))
         mean_logrt_2 = np.zeros((2, 2))
         se_logrt_1 = np.zeros((2, 2))

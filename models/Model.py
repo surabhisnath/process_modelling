@@ -115,6 +115,7 @@ class Model:
             self.response_to_category, self.num_categories = self.get_categories()
 
         self.sequences = self.data.groupby("pid").agg(list)["response"].tolist()
+        self.data_metrics = {"patchnum": self.data.groupby("pid").agg(list)["fpatchnum"].tolist(), "numwithinpatch": self.data.groupby("pid").agg(list)["fpatchitem"].tolist(), "switchornot": self.data.groupby("pid").agg(list)["flastitem"].tolist()}
         self.num_sequences = len(self.sequences)
         self.sequence_lengths = [len(s) for s in self.sequences]
         try:

@@ -36,14 +36,15 @@ true_weights = np.array(true_weights)
 recovered_weights_means = []
 recovered_weights_se = []
 for i in range(0,11):
-    if i == 0:      # not sure about this (unchanged weights recovery)
-        weights1 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_1.pk", "rb"))[f"weights_fold1_paramrecovery_1_{i+1}"].cpu().numpy()
-        weights2 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_2.pk", "rb"))[f"weights_fold1_paramrecovery_2_{i+1}"].cpu().numpy()
-        weights3 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_3.pk", "rb"))[f"weights_fold1_paramrecovery_3_{i+1}"].cpu().numpy()
-    else:
-        weights1 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_1.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_1"].cpu().numpy()
-        weights2 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_2.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_2"].cpu().numpy()
-        weights3 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_3.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_3"].cpu().numpy()
+    # if i == 0:      # not sure about this (unchanged weights recovery)
+    #     print(pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_1.pk", "rb")).keys())
+    #     weights1 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_1.pk", "rb"))[f"weights_fold1_paramrecovery_1_{i+1}"].cpu().numpy()
+    #     weights2 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_2.pk", "rb"))[f"weights_fold1_paramrecovery_2_{i+1}"].cpu().numpy()
+    #     weights3 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_3.pk", "rb"))[f"weights_fold1_paramrecovery_3_{i+1}"].cpu().numpy()
+    # else:
+    weights1 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_1.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_1"].cpu().numpy()
+    weights2 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_2.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_2"].cpu().numpy()
+    weights3 = pk.load(open(f"../fits/parameter_recovery/freqweightedhsactivity_fits_gpt41_paramrecovery_{i}_3.pk", "rb"))[f"weights_fold1_paramrecovery_{i}_3"].cpu().numpy()
 
     recovered_weights_means.append((weights1 + weights2 + weights3) / 3)
     recovered_weights_se.append(np.std([weights1, weights2, weights3], axis=0) / np.sqrt(3))

@@ -344,6 +344,38 @@ class FreqWeightedHSActivity(Ours, nn.Module):
         # print(nll)
         return nll
     
+    def get_nll_withoutmaskingnback(self, seq, weightsfromarg=None, getnll=None, n_back = 2):
+        if weightsfromarg is not None:
+            weightstouse = weightsfromarg
+        else:
+            weightstouse = self.weights
+
+        nll = 0
+        prev_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in seq[1:-1]]).to(device=device)    # Shape: (L, D) where L = len(seq) - 2
+        all_feats = torch.stack([torch.tensor(self.features[r], dtype=torch.int8, device=device) for r in self.unique_responses])           # Shape: (N, D) where N = num unique responses
+        all_diffs = (all_feats.unsqueeze(0) == prev_feats.unsqueeze(1)).float()                                                             # Output: (L, N, D)
+
+        mask = np.ones((len(seq) - 2, len(self.unique_responses)))
+        for i in range(2, len(seq)):
+            cutoff = max(0, i - n_back)
+            visited_responses = np.array([self.unique_response_to_index[resp] for resp in seq[:cutoff]], dtype=np.int64)
+            mask[i - 2, visited_responses] = 0
+
+        freq_logits = weightstouse[0] * self.d2ts(self.freq).unsqueeze(0)
+        HS_logits = torch.einsum("lnd,d->ln", all_diffs, weightstouse[1:1 + self.num_weights//2])
+        Activity_logits = torch.einsum("nd,d->n", all_feats.to(torch.float), weightstouse[1 + self.num_weights//2:]).unsqueeze(0)
+        logits = freq_logits + HS_logits + Activity_logits         # l = len(seq) - 2, n = num_unique_responses                                            # Shape: (L, N)
+        log_probs = F.log_softmax(logits, dim=1)
+
+        targets = torch.tensor([self.unique_response_to_index[r] for r in seq], device=device)
+
+        if weightsfromarg is not None:
+            return log_probs, -F.nll_loss(log_probs, targets[2:], reduction='none'), freq_logits[torch.arange(freq_logits.size(0)), targets[2:]], HS_logits[torch.arange(HS_logits.size(0)), targets[2:]], Activity_logits[torch.arange(Activity_logits.size(0)), targets[2:]]
+
+        else:
+            nll = F.nll_loss(log_probs, targets[2:], reduction='sum')
+            return nll
+        
     def get_nll_withoutmasking(self, seq, weightsfromarg=None, getnll=None):
         if weightsfromarg is not None:
             weightstouse = weightsfromarg
