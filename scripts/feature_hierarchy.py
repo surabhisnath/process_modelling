@@ -1,3 +1,4 @@
+from re import S
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -5,6 +6,7 @@ from collections import deque
 import pandas as pd
 import pickle as pk
 import statsmodels.api as sm
+import scipy.stats
 
 unrecovered_HS = [
     "feature_Is monotreme",
@@ -155,7 +157,6 @@ def longest_feature_paths(M):
     return longest_paths
 
 
-
 # def all_feature_paths(M, features):
 #     F = M.shape[0]
 #     all_paths = []
@@ -277,6 +278,7 @@ X = sm.add_constant(X)   # adds intercept
 model = sm.OLS(y, X).fit()
 print("HS ablation ~ depth")
 print(model.summary())
+print(scipy.stats.pearsonr(feature_depths_HS, barplot_HS), scipy.stats.spearmanr(feature_depths_HS, barplot_HS))
 
 # plt.figure()
 # plt.scatter(feature_depths_Activity, barplot_Activity)
@@ -289,6 +291,7 @@ X = sm.add_constant(X)   # adds intercept
 model = sm.OLS(y, X).fit()
 print("Activity ablation ~ depth")
 print(model.summary())
+print(scipy.stats.pearsonr(feature_depths_Activity, barplot_Activity), scipy.stats.spearmanr(feature_depths_Activity, barplot_Activity))
 
 df_HS = pd.DataFrame({
     "depth": feature_depths_HS,

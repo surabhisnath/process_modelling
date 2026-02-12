@@ -532,7 +532,13 @@ def run(config):
         print(len(switchornot))
 
         df = pd.DataFrame({"response": responses, "freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "trial": trials, "patchnum": patchnum, "numwithinpatch": numwithinpatch, "switchornot": switchornot, "cue_transitions": cue_transitions_forreg, "patchnum2": patchnum2_forreg, "numwithinpatch2": numwithinpatch2_forreg})
+        df = df[df["logRT"] > -1.6]   # removes RT < 200 ms
+        
         df.to_csv("../csvs/RT_analysis.csv", index=False)
+
+        plt.hist(df["logRT"], bins=50)
+        plt.savefig("../plots/logRT_histogram.png", dpi=300)
+        
 
         corrs = (
             df
@@ -555,7 +561,7 @@ def run(config):
 
         non_continuous_cols = ["response", "cue_transitions"]
         continuous_cols = df.columns.difference(non_continuous_cols)
-        # df[continuous_cols] = (df[continuous_cols] - df[continuous_cols].mean()) / df[continuous_cols].std(ddof=0)
+        df[continuous_cols] = (df[continuous_cols] - df[continuous_cols].mean()) / df[continuous_cols].std(ddof=0)
 
         print(df[continuous_cols].corr(method="spearman"))
 
@@ -569,12 +575,34 @@ def run(config):
 
         df = df.dropna()
 
+        print("log(RT) ~ freq + HS + activity + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print(model.summary())
+
         print("log(RT) ~ freq + HS + activity + trial + cue_transitions + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ freq + HS + activity + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print(model.summary())
+        var_random = model.cov_re.iloc[0, 0]
+        var_resid = model.scale
+        X = model.model.exog
+        beta = model.fe_params.values
+        fitted_fixed = X @ beta
+        var_fixed = np.var(fitted_fixed, ddof=1)
+        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
+        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
+        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
+
+        print("log(RT) ~ log(P(rej)) + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print(model.summary())
+
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
 
         print("log(RT) ~ freq + HS + activity + trial + cue_transitions + patchnum2 + numwithinpatch2 + 1|pid")
@@ -658,10 +686,30 @@ def run(config):
         print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
         print(model.summary())
+        var_random = model.cov_re.iloc[0, 0]
+        var_resid = model.scale
+        X = model.model.exog
+        beta = model.fe_params.values
+        fitted_fixed = X @ beta
+        var_fixed = np.var(fitted_fixed, ddof=1)
+        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
+        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
+        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
 
         print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial", df, groups=df["pid"]).fit()
         print(model.summary())
+        var_random = model.cov_re.iloc[0, 0]
+        var_resid = model.scale
+        X = model.model.exog
+        beta = model.fe_params.values
+        fitted_fixed = X @ beta
+        var_fixed = np.var(fitted_fixed, ddof=1)
+        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
+        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
+        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
 
         print("log(RT) ~ freq + HS + activity + log(P(rej)) * trial + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej * trial", df, groups=df["pid"]).fit()
@@ -853,24 +901,24 @@ def run(config):
             t_stat, p_val = ttest_ind(vals1, vals2, equal_var=False)
             print(f"{name1} vs {name2}: t = {t_stat:.3f}, p = {p_val:.5f}")
         
-        data = np.array([[1.49, 1.09],
-                        [1.56, 1.23]])
+        data = np.array([[1.48, 1.09],
+                        [1.57, 1.22]])
         errors = np.array([[0.03, 0.03],
                         [0.03, 0.04]])
         
-        # probs:
+        # # probs:
         # data = np.array([[0.026, 0.107],
         #                 [0.024, 0.067]])
         # errors = np.array([[0.001, 0.004],
         #                 [0.001, 0.004]])
 
         fig, ax = plt.subplots(figsize=(5,5))
-        im = ax.imshow(data, cmap='Reds', vmin=1.0, vmax=1.6, alpha=0.5)
+        im = ax.imshow(data, cmap='Reds', alpha=0.5)
 
         # text annotations
         for i in range(2):
             for j in range(2):
-                ax.text(j, i, f"{data[i,j]:.2f} ± {errors[i,j]:.02f}",
+                ax.text(j, i, f"{data[i,j]:.2f} ±\n{errors[i,j]:.02f}",
                         ha='center', va='center', fontsize=13, color='black')
 
         ax.set_xticks([0, 1])
@@ -879,7 +927,9 @@ def run(config):
         ax.set_yticklabels(["Freq/wAct", "wHS"], fontsize=15)
         ax.set_xlabel("To", fontsize=18, labelpad=10)
         ax.set_ylabel("From", fontsize=18, labelpad=10)
-        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04, label='Mean log(RT)')
+        cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label('Mean log(RT)', fontsize=15)
+        cbar.ax.tick_params(labelsize=15)
         plt.tight_layout()
         plt.savefig("../plots/meanlogRT_transitions.png", dpi=300)
     
