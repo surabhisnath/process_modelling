@@ -9,7 +9,7 @@
     "FreqWeightedHS": 1, 
     "Activity": 1, 
     "WeightedHSActivity": 1, 
-    "FreqWeightedHSActivity": 1, 
+    "FreqWeightedHSActivity": 1,
     
     "OneCueStaticLocal": 1, 
     "OneCueStaticLocalWeighted": 0,

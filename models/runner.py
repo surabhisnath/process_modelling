@@ -70,7 +70,7 @@ def changeweights(weights, i):
         fakeweights = weights.clone()
         idx = torch.randperm(len(weights))[:int(0.15 * len(weights))].to(device)
         fakeweights[idx] = 0
-    elif i == 9:
+    elif i == 9:    
         # Variation 9: Truncate weights to be within 1 std deviation around the mean
         fakeweights = torch.clamp(weights, 0.15 - 0.63, 0.15 + 0.63)
     elif i == 10:
@@ -575,16 +575,8 @@ def run(config):
 
         df = df.dropna()
 
-        print("log(RT) ~ freq + HS + activity + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + C(cue_transitions)", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
         print(model.summary())
         var_random = model.cov_re.iloc[0, 0]
         var_resid = model.scale
@@ -596,95 +588,9 @@ def run(config):
         R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
         print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
         print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-
-        print("log(RT) ~ log(P(rej)) + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + patchnum2 + numwithinpatch2 + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions) + patchnum2 + numwithinpatch2", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        # print("log(RT) ~ freq + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ HS + 1|pid")
-        # model = smf.mixedlm("logRT ~ HS", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ activity + 1|pid")
-        # model = smf.mixedlm("logRT ~ activity", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ log(P(rej)) + 1|pid")
-        # model = smf.mixedlm("logRT ~ logPrej", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ chosen + 1|pid")
-        # model3 = smf.mixedlm("logRT ~ chosen", df, groups=df["pid"]).fit()
-        # print(model3.summary(), "\n")
-
-        print("log(RT) ~ chosen + log(P(rej)) + 1|pid")
-        model3 = smf.mixedlm("logRT ~ chosen + logPrej", df, groups=df["pid"]).fit()
-        print(model3.summary(), "\n")
-
-        print("log(RT) ~ chosen + log(P(rej)) + trial + 1|pid")
-        model3 = smf.mixedlm("logRT ~ chosen + logPrej + trial", df, groups=df["pid"]).fit()
-        print(model3.summary(), "\n")
-
-        # print("log(RT) ~ freq + HS + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ HS + activity + 1|pid")
-        # model = smf.mixedlm("logRT ~ HS + activity", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        # print("log(RT) ~ freq + activity + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + activity", df, groups=df["pid"]).fit()
-        # print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + trial + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + trial", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ log(P(rej)) + trial + 1|pid")
-        model = smf.mixedlm("logRT ~ logPrej + trial", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("Model 1: log(RT) ~ trial + 1|pid")
-        model_trial = smf.mixedlm("logRT ~ trial", df, groups=df["pid"]).fit()
-        print(model_trial.summary())
-        df["logRT_resid"] = model_trial.resid
-        print("Model 2: residual log(RT) ~ log(P(rej)) + 1|pid")
-        model_logPrej = smf.ols("logRT_resid ~ logPrej", data=df).fit()
-        print(model_logPrej.summary())
-        print("Model 3: residual log(RT) ~ freq + HS + activity + 1|pid")
-        model_logPrej = smf.ols("logRT_resid ~ freq + HS + activity", data=df).fit()
-        print(model_logPrej.summary())
-        print("Model 4: residual log(RT) ~ freq + HS + activity + logPrej + 1|pid")
-        model_logPrej = smf.ols("logRT_resid ~ freq + HS + activity + logPrej", data=df).fit()
-        print(model_logPrej.summary())
-
-        print("log(RT) ~ log(P(rej)) * trial + 1|pid")
-        model = smf.mixedlm("logRT ~ logPrej * trial", df, groups=df["pid"]).fit()
-        print(model.summary())
-
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit()
+        
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit()
         print(model.summary())
         var_random = model.cov_re.iloc[0, 0]
         var_resid = model.scale
@@ -711,30 +617,40 @@ def run(config):
         print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
         print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
 
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) * trial + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej * trial", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + cue_transitions + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print(model.summary())
+        var_random = model.cov_re.iloc[0, 0]
+        var_resid = model.scale
+        X = model.model.exog
+        beta = model.fe_params.values
+        fitted_fixed = X @ beta
+        var_fixed = np.var(fitted_fixed, ddof=1)
+        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
+        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
+        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
+
+        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + patchnum2 + numwithinpatch2 + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions) + patchnum2 + numwithinpatch2", df, groups=df["pid"]).fit()
         print(model.summary())
 
-        print("log(RT) ~ freq + HS + activity + trial + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions)", df, groups=df["pid"]).fit()
+        print("log(RT) ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch + 1|pid")
+        model = smf.mixedlm("logRT ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch", df, groups=df["pid"]).fit()
         print(model.summary())
 
+        
         df = df.dropna(subset=["prev_freq"])
-
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity", df, groups=df["pid"]).fit()
         print(model.summary())
-
         df = df.dropna(subset=["prev_prev_freq"])
-
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity", df, groups=df["pid"]).fit()
         print(model.summary())
-
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej", df, groups=df["pid"]).fit()
         print(model.summary())
-
         print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + chosen + 1|pid")
         model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej + chosen", df, groups=df["pid"]).fit()
         print(model.summary())

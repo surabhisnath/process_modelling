@@ -82,9 +82,8 @@ def make_TSNE(embeddings, responses, clusters, show_responses=False):
     # ax.grid(False)
     # ax.axis("off")
 
-
 def view_pickle(filepath):
-    """Print the length of a pickled object."""
+    """Print the contents of a pickled object."""
     with open(filepath, "rb") as f:
         obj = pk.load(f)
-    print(len(obj))
+    print(obj)
