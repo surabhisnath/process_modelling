@@ -1,0 +1,15 @@
+nohup: ignoring input
+CUDA available: True
+GPU count: 1
+CONFIG: {'dataset': 'hills', 'representation': 'clip', 'fit': True, 'save': False, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 5000, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'gpt41', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours': True, 'reglambda': 0.1, 'regtype': 'l2', 'print': True, 'simulate': True, 'fitfulldata': False, 'recovery': False, 'parameterrecovery': False, 'ablation': False, 'RT_analysis': False, 'ARS': False, 'visweights': False, 'simulatewithindividualweights': False, 'BICvsiBIC': False, 'test': True, 'remove_features_that_donot_recover': False, 'remove_weights_that_donot_recover': False}
+NUM. UNIQUE, RESPONSES 350
+HUMAN BLEU SCORE = 0.29533333333333334
+HUMAN BLEU SE = 0.0024135858852331778
+HUMAN BLEU SD = 0.009347777938149384
+138
+--------------------------------FITTING MODELS--------------------------------
+ours FreqWeightedHSActivity
+LBFGS iterations run: 763
+LBFGS iterations run: 780
+LBFGS iterations run: 762
+LBFGS iterations run: 774

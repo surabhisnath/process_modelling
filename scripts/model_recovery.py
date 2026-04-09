@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import json
+from scipy.stats import rankdata
 
 os.makedirs("../plots/model_recovery", exist_ok=True)
 modelstorun = json.load(open("../files/modelstorun.json", "r"))
@@ -18,7 +19,10 @@ for m1 in models:
         print(m1, m2)
         sums = []
         for i in range(3):
-            fit = pk.load(open(f"../fits/model_recovery/{m2.lower()}_fits_gpt41_recovery_{m1.lower()}_{i+1}.pk", "rb"))
+            try:
+                fit = pk.load(open(f"../fits/model_recovery/{m2.lower()}_fits_gpt41_recovery_{m1.lower()}_{i+1}.pk", "rb"))
+            except:
+                continue
             sum_test_NLL = sum(fit[f"testNLLs_recovery_{m1.lower()}_{i + 1}"])
             sums.append(sum_test_NLL)
         mean_sumtestnlls.append(np.mean(sums))
@@ -37,3 +41,40 @@ for m1 in models:
     plt.ylim(min(sorted_sums) - 50, max(sorted_sums) + 50)
     plt.tight_layout()
     plt.savefig(f"../plots/model_recovery/model_recovery_{m1.lower()}.png", dpi=300)
+
+
+
+for m1 in models:
+    print(f"\nGenerating model: {m1}")
+    # Store ranks for each m2 across runs
+    ranks_per_model = {m2: [] for m2 in models}
+
+    for i in range(3):
+        run_sums = {}
+        for m2 in models:
+            try:
+                fit = pk.load(open(f"../fits/model_recovery/{m2.lower()}_fits_gpt41_recovery_{m1.lower()}_{i+1}.pk", "rb"))
+            except:
+                continue
+            
+            sum_test_NLL = sum(fit[f"testNLLs_recovery_{m1.lower()}_{i + 1}"])
+            run_sums[m2] = sum_test_NLL
+        
+        if len(run_sums) == 0:
+            continue
+
+        models_in_run = list(run_sums.keys())
+        nll_values = np.array([run_sums[m] for m in models_in_run])
+        
+        ranks = rankdata(nll_values, method="average")  # ascending by default
+        for m2, r in zip(models_in_run, ranks):
+            ranks_per_model[m2].append(r)
+
+    avg_ranks = {
+        m2: np.mean(ranks_per_model[m2])
+        for m2 in ranks_per_model
+        if len(ranks_per_model[m2]) > 0
+    }
+    print("Average ranks:")
+    sorted_avg_ranks = dict(sorted(avg_ranks.items(), key=lambda x: x[1]))
+    print(sorted_avg_ranks)

@@ -1,0 +1,41 @@
+nohup: ignoring input
+CUDA available: True
+GPU count: 1
+CONFIG: {'dataset': 'hills', 'representation': 'clip', 'fit': True, 'save': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 3000, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'gpt41', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours': True, 'reglambda': 0, 'print': True, 'simulate': True, 'fitfulldata': False, 'recovery': False, 'parameterrecovery': False, 'ablation': False, 'RT_analysis': False, 'ARS': False, 'visweights': False, 'simulatewithindividualweights': False, 'BICvsiBIC': False, 'test': True, 'remove_features_that_donot_recover': False, 'remove_weights_that_donot_recover': False}
+NUM. UNIQUE, RESPONSES 350
+HUMAN BLEU SCORE = 0.29533333333333334
+HUMAN BLEU SE = 0.0024135858852331778
+HUMAN BLEU SD = 0.009347777938149384
+138
+--------------------------------FITTING MODELS--------------------------------
+ours Freq_HS_Pers
+LBFGS iterations run: 948
+LBFGS iterations run: 4
+LBFGS iterations run: 181
+LBFGS iterations run: 4
+LBFGS iterations run: 3
+Mean +- SE trainNLL over 5 fold(s) 19189.384375 +- 57.48161470039314
+Sum testNLL over 5 fold(s) 23988.24462890625
+weights for each 5 fold [tensor([9.1705e-01, 1.1882e+01, 1.0260e-02], device='cuda:0'), tensor([9.1663e-01, 1.1889e+01, 1.0200e-02], device='cuda:0'), tensor([9.0906e-01, 1.1904e+01, 8.3843e-03], device='cuda:0'), tensor([9.0899e-01, 1.1902e+01, 8.3848e-03], device='cuda:0'), tensor([9.0521e-01, 1.1821e+01, 8.2829e-03], device='cuda:0')]
+Freq_HS_Pers completed in 628.11 seconds
+--------------------------------SIMULATING MODELS--------------------------------nohup: ignoring input
+CUDA available: True
+GPU count: 1
+CONFIG: {'dataset': 'hills', 'representation': 'clip', 'fit': True, 'save': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 5000, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'gpt41', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours': True, 'reglambda': 0, 'print': True, 'simulate': True, 'fitfulldata': False, 'recovery': False, 'parameterrecovery': False, 'ablation': False, 'RT_analysis': False, 'ARS': False, 'visweights': False, 'simulatewithindividualweights': False, 'BICvsiBIC': False, 'test': True, 'remove_features_that_donot_recover': False, 'remove_weights_that_donot_recover': False}
+NUM. UNIQUE, RESPONSES 350
+HUMAN BLEU SCORE = 0.29533333333333334
+HUMAN BLEU SE = 0.0024135858852331778
+HUMAN BLEU SD = 0.009347777938149384
+138
+--------------------------------FITTING MODELS--------------------------------
+ours Freq_HS_Pers
+LBFGS iterations run: 475
+LBFGS iterations run: 2
+LBFGS iterations run: 60
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SE trainNLL over 5 fold(s) 19188.9984375 +- 57.56053399395658
+Sum testNLL over 5 fold(s) 23986.82470703125
+weights for each 5 fold [tensor([ 0.9138, 11.9069,  1.0329], device='cuda:0'), tensor([ 0.9137, 11.9078,  1.0330], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9891], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9890], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9890], device='cuda:0')]
+Freq_HS_Pers completed in 296.56 seconds
+--------------------------------SIMULATING MODELS--------------------------------

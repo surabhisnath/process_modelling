@@ -7,6 +7,20 @@ import os
 import pickle as pk
 import re
 import matplotlib.pyplot as plt
+plt.rcParams.update({
+    "axes.facecolor": "white",                      
+    "axes.edgecolor": "black",                      
+    "patch.facecolor": "lightcoral",
+    "text.usetex": False,                           
+    "font.family": "sans-serif",                    
+    "axes.spines.top": False,                       
+    "axes.spines.right": False,                     
+    "axes.labelsize": 16,                           
+    "xtick.labelsize": 14,                          
+    "ytick.labelsize": 14,                          
+    "axes.titlesize": 18,                           
+    "figure.dpi": 100,                              
+})
 
 def extract_test_nll(filepath, keyword):
     """Find the test NLL value located after a matching keyword."""
@@ -47,31 +61,32 @@ traditional_embedding_models = ["clip", "minilm",
                                 "bgesmall", "bgebase", "bgelarge",
                                 "e5small", "e5base", "e5large",
                                 "rubert",
-                                "gtelarge", "gtebert"
+                                "gtelarge", "gtebert",
+                                # "infly"
                             ]
 
 # Build x/y pairs for baseline and weighted variants.
 traditional_embedding_models_x = []
 traditional_embedding_models_y = [] 
 for traditional_embedding_model in traditional_embedding_models:
-    filepath = f"../models/logfiles/{traditional_embedding_model}_andweighted.log"
+    filepath = f"../models/logfiles/scaling_plot/{traditional_embedding_model}_andweighted.log"
     embedding_dim = extract_embedding_dim(filepath)
 
     traditional_embedding_models_x.append(2)
     combinedcuestatic = extract_test_nll(filepath, "CombinedCueStatic")
-    traditional_embedding_models_y.append(-1 * combinedcuestatic)
+    traditional_embedding_models_y.append(combinedcuestatic)
 
     traditional_embedding_models_x.append(embedding_dim + 1)
     combinedcuestaticweighted = extract_test_nll(filepath, "CombinedCueStaticWeighted")
-    traditional_embedding_models_y.append(-1 * combinedcuestaticweighted)
+    traditional_embedding_models_y.append(combinedcuestaticweighted)
 
     traditional_embedding_models_x.append(2*embedding_dim + 1)
     combinedcuestaticweightedactivity = extract_test_nll(filepath, "CombinedCueStaticWeightedActivity")
-    traditional_embedding_models_y.append(-1 * combinedcuestaticweightedactivity)         
+    traditional_embedding_models_y.append(combinedcuestaticweightedactivity)         
     print(traditional_embedding_model, "\t", combinedcuestatic, "\t", combinedcuestaticweighted, "\t", combinedcuestaticweightedactivity)   
 
-our_embedding_models_x = [2, 131, 261]
-our_embedding_models_y = [-23990, -22512, -20839]
+our_embedding_models_x = [2, 139, 277]
+our_embedding_models_y = [23990, 22509, 20778]
 
 # plt.scatter(traditional_embedding_models_x, traditional_embedding_models_y, label='Traditional', color='blue')
 # plt.scatter(our_embedding_models_x, our_embedding_models_y, label='Ours', color='orange')
@@ -92,14 +107,14 @@ x_ours_fit = np.linspace(min(our_embedding_models_x), max(our_embedding_models_x
 y_ours_fit = poly_ours(x_ours_fit)
 
 # Plot
-plt.scatter(traditional_embedding_models_x, traditional_embedding_models_y, label='Traditional', color='blue')
-plt.plot(x_trad_fit, y_trad_fit, color='blue', linestyle='--')
+plt.scatter(traditional_embedding_models_x, traditional_embedding_models_y, label='Pre-trained', color='#FFD470')
+plt.plot(x_trad_fit, y_trad_fit, color="#FFD470", linestyle='--')
 
-plt.scatter(our_embedding_models_x, our_embedding_models_y, label='Ours', color='orange')
-plt.plot(x_ours_fit, y_ours_fit, color='orange', linestyle='--')
+plt.scatter(our_embedding_models_x, our_embedding_models_y, label='Fauna', color='#8FCF8F')
+plt.plot(x_ours_fit, y_ours_fit, color="#8FCF8F", linestyle='--')
 
 plt.xlabel('Number of Weights')
-plt.ylabel('Sum test LL')
+plt.ylabel('Sum test NLL')
 plt.title('Scaling of Embedding Models')
 plt.legend()
 plt.tight_layout()

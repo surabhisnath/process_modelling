@@ -1,0 +1,24 @@
+nohup: ignoring input
+CUDA available: True
+GPU count: 1
+CONFIG: {'dataset': 'hills', 'representation': 'clip', 'fit': True, 'save': True, 'lr': 0.01, 'initval': 1.0, 'tol': 1e-06, 'maxiter': 1500, 'fitting': 'group', 'cv': 5, 'refnll': 'none', 'featurestouse': 'gpt41', 'mask': True, 'usehillsresp': True, 'useapifreq': True, 'hills': True, 'heineman': True, 'ours': True, 'reglambda': 0, 'print': True, 'simulate': True, 'recovery': False, 'parameterrecovery': False, 'ablation': False, 'RT_analysis': False, 'ARS': False, 'visweights': False, 'simulatewithindividualweights': False, 'BICvsiBIC': False, 'test': True}
+TRUE BLEUS MEAN: {'bleu1': 0.9086666666666667, 'bleu2': 0.242, 'bleu3': 0.030000000000000002, 'bleu4': 0.0006666666666666666}
+--------------------------------FITTING MODELS--------------------------------
+ours Freq_HS_Pers
+LBFGS iterations run: 475
+LBFGS iterations run: 2
+LBFGS iterations run: 60
+LBFGS iterations run: 2
+LBFGS iterations run: 2
+Mean +- SE trainNLL over 5 fold(s) 19188.9984375 +- 57.56053399395658
+Sum testNLL over 5 fold(s) 23986.82470703125
+weights for each 5 fold [tensor([ 0.9138, 11.9069,  1.0329], device='cuda:0'), tensor([ 0.9137, 11.9078,  1.0330], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9891], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9890], device='cuda:0'), tensor([ 0.9141, 11.8554,  0.9890], device='cuda:0')]
+Freq_HS_Pers completed in 313.65 seconds
+--------------------------------SIMULATING MODELS--------------------------------
+ours Freq_HS_Pers
+Freq_HS_Pers
+SIM BLEUS MEAN: {'bleu1': 0.7466666666666666, 'bleu2': 0.043333333333333335, 'bleu3': 0.0, 'bleu4': 0.0}
+ours simulations..................
+cat	  dog	  ostrich	  colt	  duck	  goose	  gull	  owl	  pelican	  bison	  falcon	  stag	  tick	  bear	  leopard	  aardvark	  loon	  swan	  crane	  woodpecker	  chicken	  lamb	  cattle	  mouse	  devil	  beaver	  python	  blue gill	  flounder	  eel	  salmon	  seahorse	  angelfish	  penguin	  human	  hare	  bull
+penguin	  bear	  rat	  rabbit	  grizzly	  bison	  porcupine	  elephant	  human	  dolphin	  porpoise	  squirrel	  marmoset	  toucan	  stallion	  cattle	  bird	  finch	  macaw	  kitten	  piranha	  pike	  trout	  hare	  lizards	  fish	  lizard	  cat	  zebra	  fox	  gazelle	  hen	  turtle	  antelope	  bulldog	  siamese cat	  camel	  bunny	  ferret	  chinchilla
+deer	  snake	  leopard	  bear	  cat	  warthog	  akita	  dove	  human	  mole	  badger	  tiger	  rhinoceros	  stallion	  sheep	  horse	  cheetah	  elk	  donkey	  goat	  zebra	  cow	  cattle	  mule	  ewe	  bull	  hedgehog	  peacock	  fly	  cockroach	  buck	  calf	  lamb	  terrier	  crocodile	  white tailed deer	  bullfrog	  toad

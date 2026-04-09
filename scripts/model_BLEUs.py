@@ -25,7 +25,7 @@ model_name_to_color = json.load(open("../files/model_name_to_color.json", "r"))
 
 labels = ["Random", "Freq", "HS", "Freq_HS", "WeightedHS", "FreqWeightedHS", "Activity", "WeightedHSActivity", "FreqWeightedHSActivity", "OneCueStaticLocal", "CombinedCueStatic", "CombinedCueDynamicCat", "Freq_Sim_Subcategory", "Subcategory", "Freq_Subcategory", "Sim_Subcategory"]
 
-with open("../models/logfiles/fit_and_simulate_models.log", "r") as f:
+with open("../models/logfiles/model_fitting/fit_and_simulate_models_CVfixed.log", "r") as f:
     log_data = f.read()
 matches = re.findall(r"SIM BLEUS MEAN:\s*(\{.*?\})", log_data)
 bleu_dicts = [ast.literal_eval(match) for match in matches]
@@ -47,4 +47,4 @@ plt.ylabel('Cross-Validated BLEU Score')
 plt.axhline(y=human_bleu, color='black', linestyle='--', linewidth=1.2)
 plt.text(len(bleus) - 0.5, human_bleu + 0.005, f'\nHuman BLEU = {human_bleu:.3f}', color='black', fontsize=10, va='top', ha='right')
 plt.tight_layout()
-plt.savefig(f"../plots/model_bleus.pdf", transparent=True)
+plt.savefig(f"../plots/model_bleus.png", transparent=True, dpi=300)

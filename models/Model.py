@@ -39,6 +39,7 @@ import pickle as pk
 from model2vec import StaticModel
 from concurrent.futures import ThreadPoolExecutor
 import torch.multiprocessing as mp
+import copy
 
 SEED = 42
 np.random.seed(SEED)
@@ -47,9 +48,9 @@ torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-ref_nlls = []
-train_ref_nlls = []
-test_ref_nlls = []
+# ref_nlls = []
+# train_ref_nlls = []
+# test_ref_nlls = []
 
 class Model:
     def __init__(self, config):
@@ -302,11 +303,6 @@ class Model:
             model = SentenceTransformer("Alibaba-NLP/gte-modernbert-base", device=device, local_files_only=True)
             embeddings = model.encode(self.unique_responses, normalize_embeddings=True)
         
-        if self.config["representation"] == "gtemicro":  #384
-            model = SentenceTransformer("Mihaiii/gte-micro")
-            embeddings = model.encode(self.unique_responses, normalize_embeddings=True, local_files_only=True)
-
-        
         return dict(zip(self.unique_responses, embeddings))
 
     def get_embedding_sim_mat(self):
@@ -392,18 +388,28 @@ class Model:
         else:
             splitstofit = self.custom_splits
         
-        refnll = self.config["refnll"].lower()
+        # refnll = self.config["refnll"].lower()
 
-        model = nn.DataParallel(self).to('cuda:0')
-        if model.module.num_weights > 0:
-            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+        # model = nn.DataParallel(self).to('cuda:0')
+        # if model.module.num_weights > 0:
+        #     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
             
         self.results = {}
 
         weights_list = []
         train_nlls = np.zeros(len(splitstofit))
         test_nlls = np.zeros(len(splitstofit))
+
+        init_state = copy.deepcopy(self.state_dict())       # added
+
         for split_ind, (train_sequences, test_sequences) in enumerate(splitstofit):
+            # Added:
+            self.load_state_dict(init_state)
+            model = nn.DataParallel(self).to('cuda:0')
+            if model.module.num_weights > 0:
+                optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+            ####
+
             self.split_ind = split_ind
             lbfgs_iters = 0
             loss_history = []
@@ -412,6 +418,16 @@ class Model:
                 nonlocal lbfgs_iters
                 optimizer.zero_grad()
                 loss = torch.stack([model.module.get_nll(seq) for seq in train_sequences]).sum()
+                if self.config["reglambda"] > 0:
+                    if self.config["regtype"] == "l1":
+                        reg_term = self.config["reglambda"] * torch.sum(torch.abs(model.module.weights))
+                    elif self.config["regtype"] == "l2":
+                        reg_term = self.config["reglambda"] * torch.sum(model.module.weights ** 2)
+                    else:
+                        reg_term = torch.tensor(0.0, device=loss.device)
+                        print("No regularisation added")
+                    # print(loss, reg_term)
+                    loss = loss + reg_term
                 loss.backward()
                 loss_history.append(loss.item())
                 param_history.append(model.module.weights.detach().cpu().clone())
@@ -425,25 +441,28 @@ class Model:
                 self.results[f"weights_fold{split_ind + 1}{self.suffix}"] = fittedweights
                 weights_list.append(fittedweights)
 
-                # if self.config["plot"] and self.suffix == "":
-                #     self.plot_group(loss_history, param_history)
-
             with torch.no_grad():
-                trainnll = sum([model.module.get_nll(seq) for seq in train_sequences])
-                testnll = sum([model.module.get_nll(seq) for seq in test_sequences])
-                if refnll == model.module.__class__.__name__.lower():
-                    train_ref_nlls.append(trainnll)
-                    test_ref_nlls.append(testnll)
-                    train_nlls[split_ind] = trainnll
-                    test_nlls[split_ind] = testnll
+                # trainnll = sum([model.module.get_nll(seq) for seq in train_sequences])
+                # testnll = sum([model.module.get_nll(seq) for seq in test_sequences])
+                trainnll = torch.stack([model.module.get_nll(seq) for seq in train_sequences]).sum().item()
+                # testnll = torch.stack([model.module.get_nll(seq) for seq in test_sequences]).sum().item()
+                if len(test_sequences) > 0:
+                    testnll = torch.stack([model.module.get_nll(seq) for seq in test_sequences]).sum().item()
                 else:
-                    try:
-                        train_nlls[split_ind] = trainnll - train_ref_nlls[split_ind]
-                        test_nlls[split_ind] = testnll - test_ref_nlls[split_ind]
-                    except:
-                        train_nlls[split_ind] = trainnll
-                        test_nlls[split_ind] = testnll
-            
+                    testnll = 0.0
+
+                # if refnll == model.module.__class__.__name__.lower():
+                #     train_ref_nlls.append(trainnll)
+                #     test_ref_nlls.append(testnll)
+                #     train_nlls[split_ind] = trainnll
+                #     test_nlls[split_ind] = testnll
+                # else:
+                #     try:
+                #         train_nlls[split_ind] = trainnll - train_ref_nlls[split_ind]
+                #         test_nlls[split_ind] = testnll - test_ref_nlls[split_ind]
+                #     except:
+                train_nlls[split_ind] = trainnll
+                test_nlls[split_ind] = testnll
 
         self.results[f"trainNLLs{self.suffix}"] = train_nlls
         self.results[f"mean_trainNLL{self.suffix}"] = np.mean(train_nlls)
