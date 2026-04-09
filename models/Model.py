@@ -48,10 +48,6 @@ torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-# ref_nlls = []
-# train_ref_nlls = []
-# test_ref_nlls = []
-
 class Model:
     def __init__(self, config):
         self.config = config
@@ -358,30 +354,6 @@ class Model:
                 splits.append((train_seqs, test_seqs))
             return splits
     
-    def plot_group(self, loss_history, param_history):
-        plot_dir = "../plots/"
-        plt.figure()
-        plt.plot(loss_history, label='Loss')
-        plt.xlabel("LBFGS internal iteration")
-        plt.ylabel("Loss")
-        plt.title("Loss during LBFGS optimization")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(os.path.join(plot_dir, f"trainloss_{self.__class__.__name__}.png"))
-        plt.close()
-
-        param_history = np.stack(param_history)
-        plt.figure()
-        for i in range(param_history.shape[1]):
-            plt.plot(param_history[:, i], label=f'weight[{i}]')
-        plt.xlabel("LBFGS internal iteration")
-        plt.ylabel("Weight Value")
-        plt.title("Parameter values during LBFGS optimization")
-        plt.legend()
-        plt.grid(True)
-        plt.savefig(os.path.join(plot_dir, f"params_{self.__class__.__name__}.png"))
-        plt.close()
-
     def fit(self, customsequences=None, folderinfits="model_fits"):
         if customsequences is None:
             splitstofit = self.splits
@@ -390,9 +362,9 @@ class Model:
         
         # refnll = self.config["refnll"].lower()
 
-        # model = nn.DataParallel(self).to('cuda:0')
-        # if model.module.num_weights > 0:
-        #     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+        model = nn.DataParallel(self).to('cuda:0')
+        if model.module.num_weights > 0:
+            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
             
         self.results = {}
 
@@ -404,10 +376,10 @@ class Model:
 
         for split_ind, (train_sequences, test_sequences) in enumerate(splitstofit):
             # Added:
-            self.load_state_dict(init_state)
-            model = nn.DataParallel(self).to('cuda:0')
-            if model.module.num_weights > 0:
-                optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+            # self.load_state_dict(init_state)
+            # model = nn.DataParallel(self).to('cuda:0')
+            # if model.module.num_weights > 0:
+            #     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
             ####
 
             self.split_ind = split_ind
@@ -426,7 +398,6 @@ class Model:
                     else:
                         reg_term = torch.tensor(0.0, device=loss.device)
                         print("No regularisation added")
-                    # print(loss, reg_term)
                     loss = loss + reg_term
                 loss.backward()
                 loss_history.append(loss.item())
@@ -487,29 +458,6 @@ class Model:
         if self.config["save"]:
             pk.dump(self.results, open(f"../fits/{folderinfits}/{model.module.__class__.__name__.lower()}_fits_{self.config["featurestouse"]}{self.suffix}.pk", "wb"))
 
-    def fit_one_participant(self, args):
-        """Worker function for E-step."""
-        pid, seq, mu_np, sigma2_np = args
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-
-        mu = torch.tensor(mu_np, dtype=torch.float32, device=device)
-        sigma2 = torch.tensor(sigma2_np, dtype=torch.float32, device=device)
-        w = mu.clone().detach().requires_grad_(True)
-
-        optimizer = torch.optim.LBFGS([w], lr=0.1, max_iter=50, line_search_fn="strong_wolfe")
-
-        def closure():
-            optimizer.zero_grad()
-            nll = self.get_nll(seq, weightsfromarg=w, getnll=True)
-            prior_term = 0.5 * torch.sum((w - mu)**2 / sigma2)
-            loss = nll + prior_term
-            loss.backward()
-            return loss
-        optimizer.step(closure)
-        # Hessian-based precision approximation
-        diag_hess_est = self.compute_diag_hessian(w, mu, sigma2, seq)
-        return pid, w.detach().cpu().numpy(), diag_hess_est.cpu().numpy()
-    
     def simulate(self, customsequences=None, folderinsimulations="model_simulations"):
         if customsequences is None:
             splitstofit = self.splits

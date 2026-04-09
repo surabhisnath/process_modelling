@@ -21,7 +21,6 @@ import random
 random.seed(42)
 import pickle as pk
 np.random.seed(42)
-import pickle as pk
 import os
 torch.manual_seed(42)
 from tqdm import tqdm
@@ -227,7 +226,7 @@ def run(config):
 
     def get_weights():
         results = get_results()
-        learned_weights = results[f"weights_fold1{suffix}"].detach()
+        learned_weights = results[f"weights_fold1_fulldata"].detach()
         features = models[best_model_class].models[best_model_name].feature_names
         learned_weights_freq = learned_weights[0]
         learned_weights_HS = learned_weights[1:1+len(features)]
@@ -249,7 +248,7 @@ def run(config):
         os.makedirs(f"../fits/{foldername}", exist_ok=True)
         
         results = get_results()
-        original_weights = results[f"weights_fold1{suffix}"].detach()
+        original_weights = results[f"weights_fold1_fulldata"].detach()
 
         for i in range(11):
             try:
@@ -276,9 +275,10 @@ def run(config):
     if config["ablation"]:
         print("--------------------------------ABLATION STUDY--------------------------------")
         results = get_results()
-        original_weights = results[f"weights_fold1{suffix}"].detach()
+        original_weights = results[f"weights_fold1_fulldata"].detach()
         best_model_nll = sum(results[f"trainNLLs{suffix}"])
         sequences = models[best_model_class].models[best_model_name].sequences
+        num_features = models[best_model_class].models[best_model_name].num_features
 
         try:
             barplot_HS = pk.load(open(f"../files/ablations_HS.pk", "rb"))
@@ -366,7 +366,7 @@ def run(config):
     if config["visweights"]:
         print("--------------------------------Visualize weights--------------------------------")
         results = get_results()
-        original_weights = results[f"weights_fold1{suffix}"].detach()
+        original_weights = results[f"weights_fold1_fulldata"].detach()
         train_nll = sum(results[f"trainNLLs{suffix}"])
         print(train_nll)
 
@@ -395,31 +395,20 @@ def run(config):
 
         bax.scatter(delta_ablations_HS, delta_ablations_Act,
                     color="slateblue", alpha=0.6, s=50)
-        highlight_idx = [
-            i for i in range(len(features))
-            if (delta_ablations_HS[i] > 20619 - train_nll and delta_ablations_Act[i] > 20700 - train_nll) or (i in top10_idx)
-        ]
+        highlight_idx = [i for i in range(len(features)) if (delta_ablations_HS[i] > 20619 - train_nll and delta_ablations_Act[i] > 20700 - train_nll) or (i in top10_idx)]
 
         colours = []
         for ind in highlight_idx:
             if weights_Act[ind] > 0 and weights_HS[ind] > 0:
                 colours.append("crimson")
             if weights_Act[ind] < 0 and weights_HS[ind] < 0:
-                # colours.append("blue")
                 colours.append("lawngreen")
             if weights_Act[ind] > 0 and weights_HS[ind] < 0:
-                # colours.append("green")
                 colours.append("gold")
             if weights_Act[ind] < 0 and weights_HS[ind] > 0:
-                # colours.append("pink")
                 colours.append("dodgerblue")
         
-        bax.scatter(
-            np.array(delta_ablations_HS)[highlight_idx],
-            np.array(delta_ablations_Act)[highlight_idx],
-            color=colours, alpha=0.8, s=50,
-            linewidth=0.4
-        )
+        bax.scatter(np.array(delta_ablations_HS)[highlight_idx], np.array(delta_ablations_Act)[highlight_idx], color=colours, alpha=0.8, s=50, linewidth=0.4)
         for ax in bax.axs:
             ax.tick_params(axis="both", labelsize=15)
 
@@ -429,7 +418,6 @@ def run(config):
         plt.tight_layout()
         plt.savefig("../plots/visweights.png", dpi=300)
         print("Saved")
-
 
         #-------------------------
 
@@ -473,45 +461,27 @@ def run(config):
     
     if config["RT_analysis"]:
         print("--------------------------------RT ANALYSIS--------------------------------")
-        weights = get_results()
+        results = get_results()
+        weights = results[f"weights_fold1_fulldata"].detach()
         RTs = models[best_model_class].models[best_model_name].RTs
+        sequences = models[best_model_class].models[best_model_name].sequences
+        data_metrics = models[best_model_class].models[best_model_name].data_metrics
         
-        RTs_forreg = []
-        logPrej_forreg = []
-        chosen_forreg = []
-        freq_forreg = []
-        HS_forreg = []
-        activity_forreg = []
-        global_forreg = []
-        pid = []
-        responses = []
-        trials = []
-
-        patchnum = []
-        numwithinpatch = []
-        switchornot = []
-        cue_transitions = pk.load(open("../files/cue_transitions.pk", "rb"))
-        patchnum2 = pk.load(open("../files/patchnum2.pk", "rb"))
-        numwithinpatch2 = pk.load(open("../files/numwithinpatch2.pk", "rb"))
+        RTs_forreg, logPrej_forreg, freq_forreg, HS_forreg, activity_forreg, pid, responses, trials, cue_transitions_forreg, patchnum2_forreg, numwithinpatch2_forreg  = [], [], [], [], [], [], [], [], [], [], []
+        patchnum, numwithinpatch, switchornot = [], [], []
+        patchnum2, numwithinpatch2, cue_transitions = pk.load(open("../files/patchnum2.pk", "rb")), pk.load(open("../files/numwithinpatch2.pk", "rb")), pk.load(open("../files/cue_transitions.pk", "rb"))
         
-        cue_transitions_forreg = []
-        patchnum2_forreg = []
-        numwithinpatch2_forreg = []
-
-
         for sid, seq in enumerate(sequences):
             logprobs_withoutmasking, nll, freq, HS, activity = models[best_model_class].models[best_model_name].get_nll_withoutmasking(seq, weights)
             freq_forreg.extend(freq.cpu().numpy())
             HS_forreg.extend(HS.cpu().numpy())
             activity_forreg.extend(activity.cpu().numpy())
-            global_forreg.extend(freq.cpu().numpy() + activity.cpu().numpy())
             cue_transitions_forreg.extend(cue_transitions[sid])
             patchnum2_forreg.extend(patchnum2[sid])
             numwithinpatch2_forreg.extend(numwithinpatch2[sid])
 
             den = torch.logsumexp(logprobs_withoutmasking, dim=1)      # shape len(seq) - 2
 
-            ''' Check this masking if it works in nback case still or not'''
             mask = np.ones((len(seq) - 2, len(models[best_model_class].models[best_model_name].unique_responses)))
             for i in range(2, len(seq)):
                 visited_responses = np.array([models[best_model_class].models[best_model_name].unique_response_to_index[resp] for resp in seq[:i-1]])
@@ -525,8 +495,6 @@ def run(config):
             logPrej_forreg.extend(logPrej.cpu().numpy())
             # logPrej_forreg.extend(logPrej.cpu().numpy() - np.log(np.arange(1, 1 + len(seq) - 2)))
 
-            chosen = nll.cpu().numpy()
-            chosen_forreg.extend(chosen)
             responses.extend(seq[2:])
             RT = np.log(np.array(RTs[sid][2:]) + 0.001)
             RTs_forreg.extend(RT)
@@ -536,34 +504,12 @@ def run(config):
             numwithinpatch.extend(data_metrics["numwithinpatch"][sid][2:])
             switchornot.extend(data_metrics["switchornot"][sid][2:])
 
-        df = pd.DataFrame({"response": responses, "freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "globalterm": global_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "chosen": chosen_forreg, "pid": pid, "trial": trials, "patchnum": patchnum, "numwithinpatch": numwithinpatch, "switchornot": switchornot, "cue_transitions": cue_transitions_forreg, "patchnum2": patchnum2_forreg, "numwithinpatch2": numwithinpatch2_forreg})
+        df = pd.DataFrame({"response": responses, "freq": freq_forreg, "HS": HS_forreg, "activity": activity_forreg, "logRT": RTs_forreg, "logPrej": logPrej_forreg, "pid": pid, "trial": trials, "patchnum": patchnum, "numwithinpatch": numwithinpatch, "switchornot": switchornot, "cue_transitions": cue_transitions_forreg, "patchnum2": patchnum2_forreg, "numwithinpatch2": numwithinpatch2_forreg})
         df = df[df["logRT"] > -1.6]   # removes RT < 200 ms
-        
         df.to_csv("../csvs/RT_analysis.csv", index=False)
-
-        plt.hist(df["logRT"], bins=50)
-        plt.savefig("../plots/logRT_histogram.png", dpi=300)
-        
-
-        corrs = df.groupby("pid").apply(lambda g: spearmanr(g["trial"], g["logRT"], nan_policy="omit")[0]).to_numpy()
-        plt.hist(corrs)
-        plt.xlabel("LogRT, Trial Spearman Correlation")
-        plt.ylabel("Number of Participants")
-        plt.savefig("../plots/ppt_logRT_trial_spearman.png", dpi=300)
-
-        plt.figure(figsize=(8, 5))
-        for pid, g in df.groupby("pid"):
-            plt.plot(g["trial"], g["logRT"], alpha=0.3)
-        plt.xlabel("Trial")
-        plt.ylabel("logRT")
-        plt.title("logRT over trials (per PID)")
-        plt.savefig("../plots/ppt_logRT_over_trials.png", dpi=300)
-
         non_continuous_cols = ["response", "cue_transitions", "switchornot"]
         continuous_cols = df.columns.difference(non_continuous_cols)
         df[continuous_cols] = (df[continuous_cols] - df[continuous_cols].mean()) / df[continuous_cols].std(ddof=0)
-
-        print(df[continuous_cols].corr(method="spearman"))
 
         df["prev_freq"] = df.groupby("pid")["freq"].shift(1)
         df["prev_HS"] = df.groupby("pid")["HS"].shift(1)
@@ -571,286 +517,45 @@ def run(config):
         df["prev_prev_freq"] = df.groupby("pid")["prev_freq"].shift(1)
         df["prev_prev_HS"] = df.groupby("pid")["prev_HS"].shift(1)
         df["prev_prev_activity"] = df.groupby("pid")["prev_activity"].shift(1)
-
         df = df.dropna()
 
-        print("log(RT) ~ freq + HS + activity + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
+        print(df[continuous_cols].corr(method="pearson"))
 
-        print("log(RT) ~ local + global + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
+        # ------------------------ RT Regression Models ---------------------------
+        def RT_model(modelname):
+            print(modelname + " + 1|pid")
+            model = smf.mixedlm(modelname, df, groups=df["pid"]).fit(reml=False)
+            print(model.summary())
+            var_random = model.cov_re.iloc[0, 0]
+            var_resid = model.scale
+            X = model.model.exog
+            beta = model.fe_params.values
+            fitted_fixed = X @ beta
+            var_fixed = np.var(fitted_fixed, ddof=1)
+            R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
+            R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+            print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
+            print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
+            print(f"Log-Likelihood: {model.llf:.2f}")
+            print(f"AIC: {model.aic:.2f}")
+            print(f"BIC: {model.bic:.2f}")
+            print()
 
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
+        RT_model("logRT ~ freq + HS + activity")
+        RT_model("logRT ~ freq + HS + activity + logPrej")
+        RT_model("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)")
 
-        print("log(RT) ~ local + global + log(P(rej)) + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm + logPrej", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ freq + activity + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + activity + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ freq + HS + activity + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ local + global + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("------------------------------------------------")
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + switchornot + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(switchornot)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-        
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ local + global + log(P(rej)) + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm + logPrej + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ local + gloabl + log(P(rej)) + trial + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm + logPrej + trial", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ freq + HS + activity + log(P(rej)) + trial + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ freq + HS + activity + logPrej + trial + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        print("log(RT) ~ local + global + log(P(rej)) + trial + cue_transitions + 1|pid")
-        model = smf.mixedlm("logRT ~ HS + globalterm + logPrej + trial + C(cue_transitions)", df, groups=df["pid"]).fit(reml=False)
-        print(model.summary())
-        var_random = model.cov_re.iloc[0, 0]
-        var_resid = model.scale
-        X = model.model.exog
-        beta = model.fe_params.values
-        fitted_fixed = X @ beta
-        var_fixed = np.var(fitted_fixed, ddof=1)
-        R2_marginal = var_fixed / (var_fixed + var_random + var_resid)
-        R2_conditional = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
-        print(f"Marginal R^2 (fixed effects): {R2_marginal:.3f}")
-        print(f"Conditional R^2 (fixed + random): {R2_conditional:.3f}")
-        print(f"Log-Likelihood: {model.llf:.2f}")
-        print(f"AIC: {model.aic:.2f}")
-        print(f"BIC: {model.bic:.2f}")
-        print()
-
-        # print("log(RT) ~ freq + HS + activity + trial + cue_transitions + patchnum2 + numwithinpatch2 + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + trial + C(cue_transitions) + patchnum2 + numwithinpatch2", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
-        # print("log(RT) ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + trial + switchornot + patchnum + numwithinpatch", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
-        # df = df.dropna(subset=["prev_freq"])
-        # print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
-        # df = df.dropna(subset=["prev_prev_freq"])
-        # print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
-        # print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
-        # print("log(RT) ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + log(P(rej)) + chosen + 1|pid")
-        # model = smf.mixedlm("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity + logPrej + chosen", df, groups=df["pid"]).fit(reml=False)
-        # print(model.summary())
+        # supplementary
+        RT_model("logRT ~ freq + HS + activity + logPrej + trial + C(cue_transitions)")
+        RT_model("logRT ~ freq + HS + activity + logPrej + C(switchornot)")
+        RT_model("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity")
     
     if config["ARS"]:
         print("--------------------------------ARS--------------------------------")
-        weights = get_results()
+        results = get_results()
+        weights = results[f"weights_fold1_fulldata"].detach()
+        sequences = models[best_model_class].models[best_model_name].sequences
+        RTs = models[best_model_class].models[best_model_name].RTs
 
         def map_type(t):
             """Map 'HS' → 0, 'freq'/'activity'/'global' → 1."""
@@ -891,21 +596,21 @@ def run(config):
             cue_transitions_seq = [np.nan]
             max_list = []
             for i in range(len(seq) - 2):
-                if config["normalisation_type"] == "max":
+                if config["ARS_normalisation_type"] == "max":
                     f1, h1, a1, g1 = (freqeratiomax[i].item(), HSeratiomax[i].item(), activityeratiomax[i].item(), globaleratiomax[i].item())
-                    if config["segmentation_type"] == 1:
+                    if config["ARS_segmentation_type"] == 3:
                         max_type1 = ["HS", "freq", "activity"][torch.tensor([h1, f1, a1]).argmax().item()]
-                    elif config["segmentation_type"] == 2:
+                    elif config["ARS_segmentation_type"] == 2:
                         max_type1 = ["HS", "global"][torch.tensor([h1, g1]).argmax().item()]
                     max_list.append(max_type1)
                     if i > 0:
                         cue_transitions_seq.append(classify_transition(max_list[-2], max_list[-1]))
 
-                if config["normalisation_type"] == "mean":
+                if config["ARS_normalisation_type"] == "mean":
                     f2, h2, a2, g2 = (freqeratiosum[i].item(), HSeratiosum[i].item(), activityeratiosum[i].item(), globaleratiosum[i].item())
-                    if config["segmentation_type"] == 1:
+                    if config["ARS_segmentation_type"] == 3:
                         max_type2 = ["HS", "freq", "activity"][torch.tensor([h2, f2, a2]).argmax().item()]
-                    elif config["segmentation_type"] == 2:
+                    elif config["ARS_segmentation_type"] == 2:
                         max_type2 = ["HS", "global"][torch.tensor([h2, g2]).argmax().item()]
                     max_list.append(max_type2)
                     if i > 0:
@@ -1086,6 +791,10 @@ if __name__ == "__main__":
     parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
     parser.add_argument("--remove_features_that_donot_recover", action="store_true", help="remove features that do not recover (default: False)")
     parser.add_argument("--remove_weights_that_donot_recover", action="store_true", help="remove features that do not recover (default: False)")
+
+    parser.add_argument("--ARS_normalisation_type", type=str, default="max", help="normalisation type for ARS: max or mean")
+    parser.add_argument("--ARS_segmentation_type", type=int, default=3, help="segmentation type for ARS: 3 (wHS, IF, wFA) or 2 (local-global)")
+    
 
     args = parser.parse_args()
     config = vars(args)
