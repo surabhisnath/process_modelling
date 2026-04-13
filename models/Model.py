@@ -361,10 +361,9 @@ class Model:
             splitstofit = self.custom_splits
         
         # refnll = self.config["refnll"].lower()
-
-        model = nn.DataParallel(self).to('cuda:0')
-        if model.module.num_weights > 0:
-            optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+        # model = nn.DataParallel(self).to('cuda:0')
+        # if model.module.num_weights > 0:
+        #     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
             
         self.results = {}
 
@@ -376,10 +375,10 @@ class Model:
 
         for split_ind, (train_sequences, test_sequences) in enumerate(splitstofit):
             # Added:
-            # self.load_state_dict(init_state)
-            # model = nn.DataParallel(self).to('cuda:0')
-            # if model.module.num_weights > 0:
-            #     optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
+            self.load_state_dict(init_state)
+            model = nn.DataParallel(self).to('cuda:0')
+            if model.module.num_weights > 0:
+                optimizer = torch.optim.LBFGS(model.module.parameters(), lr=self.config["lr"], max_iter=self.config["maxiter"], tolerance_grad=self.config["tol"], tolerance_change=self.config["tol"])
             ####
 
             self.split_ind = split_ind

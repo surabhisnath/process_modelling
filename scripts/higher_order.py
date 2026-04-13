@@ -19,12 +19,12 @@ import json
 import pickle as pk
 
 modelNLLs = {
-    "Freq_HS": 23990.56494140625,
-    "Freq_HS_Pers": 23988.24462890625,     #23986.82470703125
-    "FreqWeightedHS": 22509.7685546875,
-    "FreqWeightedHSWeightedPers": 22171.61767578125,        #22171.130859375
-    "FreqWeightedHSActivity": 20778.630615234375,
-    "FreqWeightedHSActivityWeightedPers": 20726.793701171875, #20639.78662109375
+    "Freq_HS": 23993.01220703125,
+    "Freq_HS_Pers": 23991.2451171875,
+    "FreqWeightedHS": 22579.26611328125,
+    "FreqWeightedHSWeightedPers": 22260.5673828125,
+    "FreqWeightedHSActivity": 20922.8115234375,
+    "FreqWeightedHSActivityWeightedPers": 20953.670166015625
 }
 
 model_name_to_model_print = {
