@@ -427,7 +427,7 @@ def run(config):
         bax.set_ylabel("Activity Ablation Effect", labelpad=50)
         
         plt.tight_layout()
-        plt.savefig("../plots/visweights.png", dpi=300)
+        plt.savefig("../plots/visweights.png", dpi=600)
         print("Saved")
     
     if config["RT_analysis"]:
@@ -522,183 +522,6 @@ def run(config):
         RT_model("logRT ~ freq + HS + activity + logPrej + C(switchornot)")
         RT_model("logRT ~ freq + HS + activity + prev_freq + prev_HS + prev_activity + prev_prev_freq + prev_prev_HS + prev_prev_activity")
     
-    # if config["ARS"]:
-    #     print("--------------------------------ARS--------------------------------")
-    #     results = get_results()
-    #     weights = results[f"weights_fold1_fulldata"].detach()
-    #     sequences = models[best_model_class].models[best_model_name].sequences
-    #     RTs = models[best_model_class].models[best_model_name].RTs
-
-    #     def map_type(t):
-    #         """Map 'HS' → 0, 'freq'/'activity'/'global' → 1."""
-    #         return 0 if t == "HS" else 1
-
-    #     def classify_transition(prev_type, curr_type):
-    #         if (prev_type == "global" or prev_type == "freq" or prev_type == "activity") and (curr_type == "global" or curr_type == "freq" or curr_type == "activity"):
-    #             return 0
-    #         elif (prev_type == "global" or prev_type == "freq" or prev_type == "activity") and curr_type == "HS":
-    #             return 1
-    #         elif prev_type == "HS" and (curr_type == "global" or curr_type == "freq" or curr_type == "activity"):
-    #             return 2
-    #         elif prev_type == "HS" and curr_type == "HS":
-    #             return 3
-    #         return np.nan
-
-    #     per_seq_logrt = []
-    #     per_seq_probs = []
-
-    #     cue_transitions = []
-    #     patchnum2 = []
-    #     numwithinpatch2 = []
-
-    #     ######
-    #     example_seq = ["owl", "octopus", "dog", "cat", "tiger", "lion", "ant", "bee", "wasp", "shark", "whale", "dolphin", "duck", "swan", "goose", "frog"]
-    #     (_, log_probs, nll, freqlogit, HSlogit, Actlogit, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, globaleratiomax, freqeratiosum, HSeratiosum, activityeratiosum, globaleratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(example_seq, weights)
-    #     temp = list(zip(HSeratiomax, globaleratiomax, HSeratiomax/globaleratiomax, freqeratiomax, activityeratiomax, HSlogit, freqlogit, Actlogit))
-    #     print(len(example_seq), len(temp))
-    #     for a in temp:
-    #         print([float(i) for i in a])
-    #     #####
-
-    #     for sid, seq in enumerate(sequences):
-    #         rt_seq = RTs[sid]
-    #         (_, log_probs, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, globaleratiomax, freqeratiosum, HSeratiosum, activityeratiosum, globaleratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
-    #         model_probs = np.exp(log_probs.detach().cpu().numpy())
-            
-    #         cue_transitions_seq = [np.nan]
-    #         max_list = []
-    #         for i in range(len(seq) - 2):
-    #             if config["ARS_normalisation_type"] == "max":
-    #                 f1, h1, a1, g1 = (freqeratiomax[i].item(), HSeratiomax[i].item(), activityeratiomax[i].item(), globaleratiomax[i].item())
-    #                 if config["ARS_segmentation_type"] == 3:
-    #                     max_type1 = ["HS", "freq", "activity"][torch.tensor([h1, f1, a1]).argmax().item()]
-    #                 elif config["ARS_segmentation_type"] == 2:
-    #                     max_type1 = ["HS", "global"][torch.tensor([h1, g1]).argmax().item()]
-    #                 max_list.append(max_type1)
-    #                 if i > 0:
-    #                     cue_transitions_seq.append(classify_transition(max_list[-2], max_list[-1]))
-
-    #             if config["ARS_normalisation_type"] == "mean":
-    #                 f2, h2, a2, g2 = (freqeratiosum[i].item(), HSeratiosum[i].item(), activityeratiosum[i].item(), globaleratiosum[i].item())
-    #                 if config["ARS_segmentation_type"] == 3:
-    #                     max_type2 = ["HS", "freq", "activity"][torch.tensor([h2, f2, a2]).argmax().item()]
-    #                 elif config["ARS_segmentation_type"] == 2:
-    #                     max_type2 = ["HS", "global"][torch.tensor([h2, g2]).argmax().item()]
-    #                 max_list.append(max_type2)
-    #                 if i > 0:
-    #                     cue_transitions_seq.append(classify_transition(max_list[-2], max_list[-1]))
-
-    #         # calculate hills metrics for our segmentations:
-    #         patchnum2_seq = []
-    #         numwithinpatch2_seq = []
-    #         current_patch = 0
-    #         within_patch = 0
-    #         for i, ct in enumerate(cue_transitions_seq):                
-    #             if i == 0 or np.isnan(ct):
-    #                 # First response always starts patch 0
-    #                 current_patch = 0
-    #                 within_patch = 0
-    #             elif ct in (0, 1, 2):
-    #                 # Boundary → new patch
-    #                 current_patch += 1
-    #                 within_patch = 0
-    #             else:  # ct == 3 (HS → HS)
-    #                 within_patch += 1
-    #             patchnum2_seq.append(current_patch)
-    #             numwithinpatch2_seq.append(within_patch)
-    #         cue_transitions.append(cue_transitions_seq)
-    #         patchnum2.append(patchnum2_seq)
-    #         numwithinpatch2.append(numwithinpatch2_seq)
-
-    #         logrt = [[[] for _ in range(2)] for _ in range(2)]
-    #         probs = [[[] for _ in range(2)] for _ in range(2)]
-
-    #         for i in range(1, len(max_list)):
-    #             t_from, t_to = map_type(max_list[i-1]), map_type(max_list[i])
-
-    #             rt_val = np.log(rt_seq[i + 2] + 0.001)
-    #             logrt[t_from][t_to].append(rt_val)
-    #             probs[t_from][t_to].append(model_probs[i])
-    #         per_seq_logrt.append(logrt)
-    #         per_seq_probs.append(probs)
-
-    #     pk.dump(cue_transitions, open("../files/cue_transitions.pk", "wb"))
-    #     pk.dump(patchnum2, open("../files/patchnum2.pk", "wb"))
-    #     pk.dump(numwithinpatch2, open("../files/numwithinpatch2.pk", "wb"))
-
-    #     mean_logrt = np.zeros((2, 2))
-    #     se_logrt = np.zeros((2, 2))
-    #     mean_probs = np.zeros((2, 2))
-    #     se_probs = np.zeros((2, 2))
-    #     for i in range(2):
-    #         for j in range(2):
-    #             # I've checked this logic to be true
-    #             vals = [np.mean(logrt[i][j]) for logrt in per_seq_logrt if logrt[i][j]]       # not everyone may have all 4 types of transitions in their seq therefore if logrt[i][j] ie if it is not empty
-    #             mean_logrt[i, j] = np.mean(vals)
-    #             se_logrt[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals))
-
-    #             vals = [np.mean(probs[i][j]) for probs in per_seq_probs if probs[i][j]]       # not everyone may have all 4 types of transitions in their seq therefore if probs[i][j] ie if it is not empty
-    #             mean_probs[i, j] = np.mean(vals)
-    #             se_probs[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals))
-
-    #     labels = ["local", "global"]
-    #     print("\n=== Mean ± SEM log(RT) (max_type) ===")
-    #     df_mean = pd.DataFrame(mean_logrt, index=labels, columns=labels)
-    #     df_se   = pd.DataFrame(se_logrt, index=labels, columns=labels)
-    #     print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
-
-    #     labels = ["local", "global"]
-    #     print("\n=== Mean ± SEM probs (max_type) ===")
-    #     df_mean = pd.DataFrame(mean_probs, index=labels, columns=labels)
-    #     df_se   = pd.DataFrame(se_probs, index=labels, columns=labels)
-    #     print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
-        
-    #     # ---------------------------------
-
-    #     # t-tests:
-    #     transition_labels = ["local→local", "local→global", "global→local", "global→global"]
-    #     idx = [(0,0), (0,1), (1,0), (1,1)]
-    #     all_vals = {}
-    #     for name, (r, c) in zip(transition_labels, idx):
-    #         all_vals[name] = [np.mean(lr[r][c]) for lr in per_seq_logrt if lr[r][c]]
-    #     for (name1, vals1), (name2, vals2) in combinations(all_vals.items(), 2):
-    #         if len(vals1) > 1 and len(vals2) > 1:
-    #             t_stat, p_val = ttest_ind(vals1, vals2, equal_var=False)
-    #             print(f"{name1} vs {name2}: t = {t_stat:.3f}, p = {p_val:.5f}")
-        
-    #     # ---------------------------------
-
-    #     def plot_transition_heatmap(data, errors, title, cbar_label, save_path):
-    #         fig, ax = plt.subplots(figsize=(5, 5))
-    #         im = ax.imshow(data, cmap="Reds", alpha=0.5)
-
-    #         for i in range(2):
-    #             for j in range(2):
-    #                 if np.isnan(data[i, j]):
-    #                     text = "NaN"
-    #                 else:
-    #                     text = f"{data[i, j]:.3f} ±\n{errors[i, j]:.3f}"
-    #                 ax.text(j, i, text, ha='center', va='center', fontsize=13, color='black')
-
-    #         ax.set_xticks([0, 1])
-    #         ax.set_yticks([0, 1])
-    #         ax.set_xticklabels(labels, fontsize=15)
-    #         ax.set_yticklabels(labels, fontsize=15)
-    #         ax.set_xlabel("To", fontsize=18, labelpad=10)
-    #         ax.set_ylabel("From", fontsize=18, labelpad=10)
-    #         ax.set_title(title, fontsize=15, pad=12)
-
-    #         cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    #         cbar.set_label(cbar_label, fontsize=15)
-    #         cbar.ax.tick_params(labelsize=15)
-
-    #         plt.tight_layout()
-    #         plt.savefig(save_path, dpi=300)
-    #         plt.close()
-        
-    #     plot_transition_heatmap(mean_logrt, se_logrt, title="Mean log(RT) by transition type", cbar_label="Mean log(RT)", save_path="../plots/meanlogRT_transitions.png")
-    #     plot_transition_heatmap(mean_probs, se_probs, title="Mean probability by transition type", cbar_label="Mean probability", save_path="../plots/meanprob_transitions.png")
-    
     if config["ARS"]:
         print("--------------------------------ARS--------------------------------")
         results = get_results()
@@ -707,7 +530,7 @@ def run(config):
         RTs = models[best_model_class].models[best_model_name].RTs
 
         def map_type(t):
-            """Map local(HS) -> 0, global(freq/activity/global) -> 1."""
+            """Map 'HS' → 0, 'freq'/'activity'/'global' → 1."""
             return 0 if t == "HS" else 1
 
         def classify_transition(prev_type, curr_type):
@@ -721,58 +544,6 @@ def run(config):
                 return 3
             return np.nan
 
-        def build_max_list(segmentation_type, hs_vals, freq_vals=None, act_vals=None, global_vals=None):
-            """
-            Returns a list of labels of length len(hs_vals).
-
-            segmentation_type == 3:
-                argmax over [HS, freq, activity]
-            segmentation_type == 2:
-                argmax over [HS, global]
-            segmentation_type == 1:
-                first label = global
-                then:
-                - HS if current HS < previous HS
-                - global if current HS > previous HS
-                - keep previous label if equal
-            """
-            max_list = []
-
-            if segmentation_type == 3:
-                for i in range(len(hs_vals)):
-                    h, f, a = hs_vals[i], freq_vals[i], act_vals[i]
-                    max_type = ["HS", "freq", "activity"][torch.tensor([h, f, a]).argmax().item()]
-                    max_list.append(max_type)
-
-            elif segmentation_type == 2:
-                for i in range(len(hs_vals)):
-                    h, g = hs_vals[i], global_vals[i]
-                    max_type = ["HS", "global"][torch.tensor([h, g]).argmax().item()]
-                    max_list.append(max_type)
-
-            elif segmentation_type == 1:
-                if len(hs_vals) == 0:
-                    return max_list
-
-                # first transition starts as global
-                max_list.append("global")
-
-                for i in range(1, len(hs_vals)):
-                    prev_h = hs_vals[i - 1]
-                    curr_h = hs_vals[i]
-
-                    if curr_h < prev_h:
-                        max_list.append("global")
-                    elif curr_h > prev_h:
-                        max_list.append("local")
-                    else:
-                        max_list.append(max_list[-1])  # tie -> keep previous label
-
-            else:
-                raise ValueError(f"Unsupported ARS_segmentation_type: {segmentation_type}")
-
-            return max_list
-
         per_seq_logrt = []
         per_seq_probs = []
 
@@ -781,71 +552,60 @@ def run(config):
         numwithinpatch2 = []
 
         ######
-        example_seq = ["owl", "octopus", "dog", "cat", "tiger", "lion", "ant", "bee", "wasp", "shark", "whale", "dolphin", "duck", "swan", "goose", "frog"]
+        example_seq = ["owl", "crocodile", "dog", "cat", "tiger", "lion", "ant", "beetle", "wasp", "shark", "whale", "dolphin", "duck", "swan", "goose", "frog"]
         (_, log_probs, nll, freqlogit, HSlogit, Actlogit, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, globaleratiomax, freqeratiosum, HSeratiosum, activityeratiosum, globaleratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(example_seq, weights)
-        temp = list(zip(HSeratiomax, globaleratiomax, HSeratiomax/globaleratiomax, freqeratiomax, activityeratiomax, HSlogit, freqlogit, Actlogit))
+        temp = list(zip(HSeratiomax, freqeratiomax, activityeratiomax, globaleratiomax, HSeratiomax/globaleratiomax, HSlogit, freqlogit, Actlogit, HSeratiosum, freqeratiosum, activityeratiosum))
         print(len(example_seq), len(temp))
         for a in temp:
             print([float(i) for i in a])
-        if config["ARS_segmentation_type"] == 1:
-            example_labels = build_max_list(
-                segmentation_type=1,
-                hs_vals=[x.item() for x in HSeratiomax]
-            )
-            print("Example segmentation labels:", example_labels)            
         #####
 
         for sid, seq in enumerate(sequences):
             rt_seq = RTs[sid]
             (_, log_probs, _, _, _, _, _, _, _, freqeratiomax, HSeratiomax, activityeratiomax, globaleratiomax, freqeratiosum, HSeratiosum, activityeratiosum, globaleratiosum) = models[best_model_class].models[best_model_name].get_logits_maxlogits(seq, weights)
             model_probs = np.exp(log_probs.detach().cpu().numpy())
-
-            # choose which normalised quantities to use
-            if config["ARS_normalisation_type"] == "max":
-                hs_vals = [x.item() for x in HSeratiomax]
-                freq_vals = [x.item() for x in freqeratiomax]
-                act_vals = [x.item() for x in activityeratiomax]
-                global_vals = [x.item() for x in globaleratiomax]
-
-            elif config["ARS_normalisation_type"] == "mean":
-                hs_vals = [x.item() for x in HSeratiosum]
-                freq_vals = [x.item() for x in freqeratiosum]
-                act_vals = [x.item() for x in activityeratiosum]
-                global_vals = [x.item() for x in globaleratiosum]
-
-            else:
-                raise ValueError(f"Unsupported ARS_normalisation_type: {config['ARS_normalisation_type']}")
-
-            max_list = build_max_list(
-                segmentation_type=config["ARS_segmentation_type"],
-                hs_vals=hs_vals,
-                freq_vals=freq_vals,
-                act_vals=act_vals,
-                global_vals=global_vals
-            )
-
+            
             cue_transitions_seq = [np.nan]
-            for i in range(1, len(max_list)):
-                cue_transitions_seq.append(classify_transition(max_list[i - 1], max_list[i]))
+            max_list = []
+            for i in range(len(seq) - 2):
+                if config["ARS_normalisation_type"] == "max":
+                    f1, h1, a1, g1 = (freqeratiomax[i].item(), HSeratiomax[i].item(), activityeratiomax[i].item(), globaleratiomax[i].item())
+                    if config["ARS_segmentation_type"] == 3:
+                        max_type1 = ["HS", "freq", "activity"][torch.tensor([h1, f1, a1]).argmax().item()]
+                    elif config["ARS_segmentation_type"] == 2:
+                        max_type1 = ["HS", "global"][torch.tensor([h1, g1]).argmax().item()]
+                    max_list.append(max_type1)
+                    if i > 0:
+                        cue_transitions_seq.append(classify_transition(max_list[-2], max_list[-1]))
+
+                if config["ARS_normalisation_type"] == "mean":
+                    f2, h2, a2, g2 = (freqeratiosum[i].item(), HSeratiosum[i].item(), activityeratiosum[i].item(), globaleratiosum[i].item())
+                    if config["ARS_segmentation_type"] == 3:
+                        max_type2 = ["HS", "freq", "activity"][torch.tensor([h2, f2, a2]).argmax().item()]
+                    elif config["ARS_segmentation_type"] == 2:
+                        max_type2 = ["HS", "global"][torch.tensor([h2, g2]).argmax().item()]
+                    max_list.append(max_type2)
+                    if i > 0:
+                        cue_transitions_seq.append(classify_transition(max_list[-2], max_list[-1]))
 
             # calculate hills metrics for our segmentations:
             patchnum2_seq = []
             numwithinpatch2_seq = []
             current_patch = 0
             within_patch = 0
-            for i, ct in enumerate(cue_transitions_seq):
+            for i, ct in enumerate(cue_transitions_seq):                
                 if i == 0 or np.isnan(ct):
+                    # First response always starts patch 0
                     current_patch = 0
                     within_patch = 0
                 elif ct in (0, 1, 2):
+                    # Boundary → new patch
                     current_patch += 1
                     within_patch = 0
-                else:  # ct == 3 (HS -> HS)
+                else:  # ct == 3 (HS → HS)
                     within_patch += 1
-
                 patchnum2_seq.append(current_patch)
                 numwithinpatch2_seq.append(within_patch)
-
             cue_transitions.append(cue_transitions_seq)
             patchnum2.append(patchnum2_seq)
             numwithinpatch2.append(numwithinpatch2_seq)
@@ -854,12 +614,11 @@ def run(config):
             probs = [[[] for _ in range(2)] for _ in range(2)]
 
             for i in range(1, len(max_list)):
-                t_from, t_to = map_type(max_list[i - 1]), map_type(max_list[i])
+                t_from, t_to = map_type(max_list[i-1]), map_type(max_list[i])
 
                 rt_val = np.log(rt_seq[i + 2] + 0.001)
                 logrt[t_from][t_to].append(rt_val)
                 probs[t_from][t_to].append(model_probs[i])
-
             per_seq_logrt.append(logrt)
             per_seq_probs.append(probs)
 
@@ -873,14 +632,14 @@ def run(config):
         se_probs = np.zeros((2, 2))
         for i in range(2):
             for j in range(2):
-                vals = [np.mean(logrt[i][j]) for logrt in per_seq_logrt if logrt[i][j]]
-                print(i, j, vals, len(vals))
-                mean_logrt[i, j] = np.mean(vals) if len(vals) > 0 else np.nan
-                se_logrt[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals)) if len(vals) > 1 else np.nan
+                # I've checked this logic to be true
+                vals = [np.mean(logrt[i][j]) for logrt in per_seq_logrt if logrt[i][j]]       # not everyone may have all 4 types of transitions in their seq therefore if logrt[i][j] ie if it is not empty
+                mean_logrt[i, j] = np.mean(vals)
+                se_logrt[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals))
 
-                vals = [np.mean(probs[i][j]) for probs in per_seq_probs if probs[i][j]]
-                mean_probs[i, j] = np.mean(vals) if len(vals) > 0 else np.nan
-                se_probs[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals)) if len(vals) > 1 else np.nan
+                vals = [np.mean(probs[i][j]) for probs in per_seq_probs if probs[i][j]]       # not everyone may have all 4 types of transitions in their seq therefore if probs[i][j] ie if it is not empty
+                mean_probs[i, j] = np.mean(vals)
+                se_probs[i, j] = np.std(vals, ddof=1) / np.sqrt(len(vals))
 
         labels = ["local", "global"]
         print("\n=== Mean ± SEM log(RT) (max_type) ===")
@@ -888,10 +647,13 @@ def run(config):
         df_se   = pd.DataFrame(se_logrt, index=labels, columns=labels)
         print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
 
+        labels = ["local", "global"]
         print("\n=== Mean ± SEM probs (max_type) ===")
         df_mean = pd.DataFrame(mean_probs, index=labels, columns=labels)
         df_se   = pd.DataFrame(se_probs, index=labels, columns=labels)
         print(df_mean.round(3).astype(str) + " ± " + df_se.round(3).astype(str))
+        
+        # ---------------------------------
 
         # t-tests:
         transition_labels = ["local→local", "local→global", "global→local", "global→global"]
@@ -903,6 +665,8 @@ def run(config):
             if len(vals1) > 1 and len(vals2) > 1:
                 t_stat, p_val = ttest_ind(vals1, vals2, equal_var=False)
                 print(f"{name1} vs {name2}: t = {t_stat:.3f}, p = {p_val:.5f}")
+        
+        # ---------------------------------
 
         def plot_transition_heatmap(data, errors, title, cbar_label, save_path):
             fig, ax = plt.subplots(figsize=(5, 5))
@@ -913,8 +677,7 @@ def run(config):
                     if np.isnan(data[i, j]):
                         text = "NaN"
                     else:
-                        err_text = "NaN" if np.isnan(errors[i, j]) else f"{errors[i, j]:.3f}"
-                        text = f"{data[i, j]:.3f} ±\n{err_text}"
+                        text = f"{data[i, j]:.3f} ±\n{errors[i, j]:.3f}"
                     ax.text(j, i, text, ha='center', va='center', fontsize=13, color='black')
 
             ax.set_xticks([0, 1])
@@ -932,7 +695,7 @@ def run(config):
             plt.tight_layout()
             plt.savefig(save_path, dpi=300)
             plt.close()
-
+        
         plot_transition_heatmap(mean_logrt, se_logrt, title="Mean log(RT) by transition type", cbar_label="Mean log(RT)", save_path="../plots/meanlogRT_transitions.png")
         plot_transition_heatmap(mean_probs, se_probs, title="Mean probability by transition type", cbar_label="Mean probability", save_path="../plots/meanprob_transitions.png")
     
@@ -944,11 +707,21 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", type=str, default="hills", help="claire or hills or divergent")
     parser.add_argument("--representation", type=str, default="clip", help="representation to use for embedding responses: clip (768), gtelarge (1024), minilm (348), potion_256 (256), potion_128 (128), potion_64 (64)")
     
-    parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
-    parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
+    # parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
+    # parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
+    parser.add_argument("--fit", action="store_true", help="fit all models (default: False)")
 
-    parser.add_argument("--save", action="store_true", default=True, help="save pk files (default: True)")
-    parser.add_argument("--nosave", action="store_false", dest="save", help="don't save files")
+    # parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
+    # parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
+    parser.add_argument("--simulate", action="store_true", help="simulate all models (default: False)")
+
+    # parser.add_argument("--save", action="store_true", default=True, help="save pk files (default: True)")
+    # parser.add_argument("--nosave", action="store_false", dest="save", help="don't save files")
+    parser.add_argument("--save", action="store_true", help="save pk files (default: False)")
+
+    # parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
+    # parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")
+    parser.add_argument("--print", action="store_true", help="print all models (default: False)")
 
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
     parser.add_argument("--initval", type=float, default=1.0, help="initial parameter value")
@@ -979,12 +752,6 @@ if __name__ == "__main__":
     parser.add_argument("--noours", action="store_false", dest="ours", help="don't implement our models")
     parser.add_argument("--reglambda", type=float, default=0, help="regularisation lambda")
     parser.add_argument("--regtype", type=str, default="none", help="regularisation type - l1 or l2 (default: none)")
-
-    parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
-    parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")
-
-    parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
-    parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
 
     parser.add_argument("--printweights", action="store_true", help="run fit on fulldata (default: False)")
     parser.add_argument("--recovery", action="store_true", help="recover all models (default: False)")
