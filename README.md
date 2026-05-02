@@ -44,7 +44,12 @@ pip install -r requirements.txt
 `models/runner.py` is the main runner script for the following analyses. All settings can be set using arguments of `runner.py`.
 Before you being, ensure all models you wish to run are set to 1 in `files/model_to_run`.
 
-1. Model Fitting and Simulation: `python models/runner.py` (can add `--nofit` or `--nosimulate` if either is not desired).
+1. To replicate Figure 1C: run `scripts/make_TSNE.py`
+2. To replicate Figure 2: 
+
+1. Model Fitting: `python models/runner.py --fit`
+2. Model Fitting: `python models/runner.py --simulate`
+
 
 Plotting NLLs: `python scripts/model_NLLs.py`, plot saved as `plots/model_nlls.png`
 

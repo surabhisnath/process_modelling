@@ -86,46 +86,40 @@ def changeweights(weights, i):
 
 def run(config):
     models = {}
-    fit_results = {}
 
     # Initialize shared data and configuration.
     modelobj = Model(config)
-    print("NUM. UNIQUE, RESPONSES", len(modelobj.unique_responses))
 
-    BLEUs = []
-    for (train_sequences, test_sequences) in modelobj.splits:
-        for i in range(modelobj.numsubsamples):
-            train_sample = random.sample(train_sequences, k=len(test_sequences))
-            BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
-    human_scores = []
-    for d in BLEUs:
-        combined = 0.25 * (d["bleu1"] + d["bleu2"] + d["bleu3"] + d["bleu4"])
-        human_scores.append(combined)
-    human_scores = np.array(human_scores)
-    mean_human_bleu = np.mean(human_scores)
-    sd_human_bleu = np.std(human_scores, ddof=1)
-    se_human_bleu = sd_human_bleu / np.sqrt(len(human_scores))
-    print("HUMAN BLEU SCORE =", mean_human_bleu)
-    print("HUMAN BLEU SE =", se_human_bleu)
-    print("HUMAN BLEU SD =", sd_human_bleu)
+    if config["printBLEU"]:
+        BLEUs = []
+        for (train_sequences, test_sequences) in modelobj.splits:
+            for i in range(modelobj.numsubsamples):
+                train_sample = random.sample(train_sequences, k=len(test_sequences))
+                BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
+        human_scores = []
+        for d in BLEUs:
+            combined = 0.25 * (d["bleu1"] + d["bleu2"] + d["bleu3"] + d["bleu4"])
+            human_scores.append(combined)
+        human_scores = np.array(human_scores)
+        mean_human_bleu = np.mean(human_scores)
+        sd_human_bleu = np.std(human_scores, ddof=1)
+        se_human_bleu = sd_human_bleu / np.sqrt(len(human_scores))
+        print("HUMAN BLEU SCORE =", mean_human_bleu)
+        print("HUMAN BLEU SE =", se_human_bleu)
+        print("HUMAN BLEU SD =", sd_human_bleu)
  
-    if config["ours"]:
-        ours = Ours(modelobj)
-        ours.create_models()
-        models["ours"] = ours
-        fit_results["ours"] = {}
+    ours = Ours(modelobj)
+    ours.create_models()
+    models["ours"] = ours
     
-    if config["hills"]:
-        hills = Hills(modelobj)
-        hills.create_models()
-        models["hills"] = hills
-        fit_results["hills"] = {}
+    hills = Hills(modelobj)
+    hills.create_models()
+    models["hills"] = hills
     
-    if config["heineman"] and config["dataset"] == "hills":
+    if config["dataset"] == "hills":        # category cue only defined on animals from Hills dataset
         heineman = Heineman(modelobj)
         heineman.create_models()
         models["heineman"] = heineman
-        fit_results["heineman"] = {}
     
     if config["fit"]:
         print("--------------------------------FITTING MODELS--------------------------------")
@@ -237,7 +231,7 @@ def run(config):
         learned_weights_Act = learned_weights[1+len(features):]
         return learned_weights, learned_weights_HS, learned_weights_freq, learned_weights_Act
 
-    if config["printweights"]:
+    if config["printweightsfulldata"]:
         all_learned_weights, learned_weights_HS, learned_weights_freq, learned_weights_Act = get_weights()
         print("learned_weights", all_learned_weights)
         print("learned_weights_HS", learned_weights_HS)
@@ -694,23 +688,12 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="process_modelling", description="Implements various models of semantic exploration")
 
-    parser.add_argument("--dataset", type=str, default="hills", help="claire or hills or divergent")
+    parser.add_argument("--dataset", type=str, default="hills", help="hills or claire or data_LLMs_VF")
     parser.add_argument("--representation", type=str, default="clip", help="representation to use for embedding responses: clip (768), gtelarge (1024), minilm (348), potion_256 (256), potion_128 (128), potion_64 (64)")
     
-    # parser.add_argument("--fit", action="store_true", default=True, help="fit all models (default: True)")
-    # parser.add_argument("--nofit", action="store_false", dest="fit", help="don't fit models")
     parser.add_argument("--fit", action="store_true", help="fit all models (default: False)")
-
-    # parser.add_argument("--simulate", action="store_true", default=True, help="simulate all models (default: True)")
-    # parser.add_argument("--nosimulate", action="store_false", dest="simulate", help="don't simulate models")
     parser.add_argument("--simulate", action="store_true", help="simulate all models (default: False)")
-
-    # parser.add_argument("--save", action="store_true", default=True, help="save pk files (default: True)")
-    # parser.add_argument("--nosave", action="store_false", dest="save", help="don't save files")
     parser.add_argument("--save", action="store_true", help="save pk files (default: False)")
-
-    # parser.add_argument("--print", action="store_true", default=True, help="print all models (default: True)")
-    # parser.add_argument("--noprint", action="store_false", dest="print", help="don't print models")
     parser.add_argument("--print", action="store_true", help="print all models (default: False)")
 
     parser.add_argument("--lr", type=float, default=0.01, help="learning rate")
@@ -718,9 +701,8 @@ if __name__ == "__main__":
     parser.add_argument("--tol", type=float, default=1e-6, help="gradient and function/param tolerance")
     parser.add_argument("--maxiter", type=int, default=5000, help="maximum number of training iterations")
 
-    parser.add_argument("--fitting", type=str, default="group", help="how to fit betas: individual, group or hierarchical")
+    parser.add_argument("--fitting", type=str, default="group", help="how to fit betas: individual or group")
     parser.add_argument("--cv", type=int, default=5, help="cross-validation folds for group fitting. 1 = train-test:80-20. >1 = cv folds")
-    parser.add_argument("--refnll", type=str, default="none", help="Which model to use as baseline - random, freq, none")
 
     parser.add_argument("--featurestouse", type=str, default="gpt41", help="features to use: gpt41, llama or random")
     parser.add_argument("--mask", action="store_true", default=True, help="use mask over previous responses (default: True)")
@@ -732,34 +714,26 @@ if __name__ == "__main__":
     parser.add_argument("--useapifreq", action="store_true", default=True, help="use API frequency (default: True)")
     parser.add_argument("--usehillsfreq", action="store_false", dest="useapifreq", help="use hills frequency")
 
-    parser.add_argument("--hills", action="store_true", default=True, help="implement hills models (default: True)")
-    parser.add_argument("--nohills", action="store_false", dest="hills", help="don't implement hills models")
-
-    parser.add_argument("--heineman", action="store_true", default=True, help="implement heineman models (default: True)")
-    parser.add_argument("--noheineman", action="store_false", dest="heineman", help="don't implement heineman models")
-
-    parser.add_argument("--ours", action="store_true", default=True, help="implement our models (default: True)")
-    parser.add_argument("--noours", action="store_false", dest="ours", help="don't implement our models")
     parser.add_argument("--reglambda", type=float, default=0, help="regularisation lambda")
     parser.add_argument("--regtype", type=str, default="none", help="regularisation type - l1 or l2 (default: none)")
 
-    parser.add_argument("--printweights", action="store_true", help="run fit on fulldata (default: False)")
+    parser.add_argument("--printweightsfulldata", action="store_true", help="print weights on fulldata (default: False)")
+    parser.add_argument("--printBLEU", action="store_true", help="print human-human BLEU (default: False)")
+    
     parser.add_argument("--recovery", action="store_true", help="recover all models (default: False)")
     parser.add_argument("--parameterrecovery", action="store_true", help="simulate fake weights (default: False)")
+    
     parser.add_argument("--ablation", action="store_true", help="ablate weights (default: False)")
-    parser.add_argument("--RT_analysis", action="store_true", help="analyse RTs (default: False)")
-    parser.add_argument("--ARS", action="store_true", help="analyse RTs (default: False)")
     parser.add_argument("--visweights", action="store_true", help="visualise weights (default: False)")
-    parser.add_argument("--simulatewithindividualweights", action="store_true", help="simulate sequences with individual weights (default: False)")
-    parser.add_argument("--BICvsiBIC", action="store_true", help="simulate sequences with individual weights (default: False)")
 
-    parser.add_argument("--test", action="store_true", default=True, help="test all models (default: True)")
-    parser.add_argument("--notest", action="store_false", dest="test", help="don't test models")
+    parser.add_argument("--RT_analysis", action="store_true", help="analyse RTs (default: False)")
+    
+    parser.add_argument("--ARS", action="store_true", help="analyse RTs (default: False)")
+    parser.add_argument("--ARS_normalisation_type", type=str, default="max", help="normalisation type for ARS: max or mean")
+    parser.add_argument("--ARS_segmentation_type", type=int, default=3, help="segmentation type for ARS: 3 (wHS, IF, wFA), or 2 (local-global)")
+    
     parser.add_argument("--remove_features_that_donot_recover", action="store_true", help="remove features that do not recover (default: False)")
     parser.add_argument("--remove_weights_that_donot_recover", action="store_true", help="remove features that do not recover (default: False)")
-
-    parser.add_argument("--ARS_normalisation_type", type=str, default="max", help="normalisation type for ARS: max or mean")
-    parser.add_argument("--ARS_segmentation_type", type=int, default=3, help="segmentation type for ARS: 3 (wHS, IF, wFA), or 2 (local-global), or 1 if only local decreasing")
     
 
     args = parser.parse_args()

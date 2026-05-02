@@ -8,3 +8,4 @@ scripts/keys.json
 scripts/LLM_features/keys.json
 category-fluency
 forager/
+other_csvs/

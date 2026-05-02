@@ -41,12 +41,9 @@ class Ours(Model):
         """Instantiate enabled subclasses, respecting fitting mode."""
         if self.config["fitting"] == "individual":
             subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1 and not getattr(instance := subclass(self), 'onlyforgroup', False)]
-        # elif self.config["fitting"] == "group":
         else:
             subclasses = [subclass for subclass in Ours.__subclasses__() if self.modelstorun.get(subclass.__name__) == 1]
-        ref_name = self.config["refnll"]
-        ordered_subclasses = sorted(subclasses, key=lambda cls: 0 if cls.__name__.lower() == ref_name else 1)
-        self.models = {cls.__name__: cls(self) for cls in ordered_subclasses}
+        self.models = {cls.__name__: cls(self) for cls in subclasses}
 
     def get_features(self):
         """Load binary feature vectors for each response."""
@@ -54,15 +51,11 @@ class Ours(Model):
         feature_names = list(next(iter(featuredict.values())).keys())
         parameter_recovery_df = pd.read_csv("../csvs/parameter_recovery.csv")
         if self.config["remove_features_that_donot_recover"]:
-            # unrecovered_features = ["feature_Is warm-blooded", "feature_Has fur", "feature_Is bird", "feature_Is a parasite", "feature_Is a host for parasites", "feature_Has feathers", "feature_Has tusks", "feature_Has segmented body", "feature_Is found in zoos", "feature_Is used for transportation", "feature_Is invertebrate", "feature_Is monotreme", "feature_Displays mating rituals"]
             unrecovered_features = [f"feature_{feat}" for feat in parameter_recovery_df.loc[(parameter_recovery_df["R2_HS"] < 0.5) & (parameter_recovery_df["R2_Activity"] < 0.5), "Feature"]] 
             print(unrecovered_features)
             feature_names_that_recover = [f for f in feature_names if f not in unrecovered_features]
             return feature_names_that_recover, {self.corrections.get(k, k): torch.tensor([1 if values.get(f, "").lower()[:4] == "true" else 0 for f in feature_names_that_recover], dtype=torch.int8, device=device) for k, values in featuredict.items()}
         if self.config["remove_weights_that_donot_recover"]:
-            # unrecovered_features = ["feature_Is bird", "feature_Is a parasite", "feature_Is a host for parasites", "feature_Has feathers", "feature_Has tusks", "feature_Has segmented body", "feature_Is found in zoos", "feature_Is used for transportation", "feature_Is invertebrate", "feature_Is monotreme", "feature_Displays mating rituals"]
-            # unrecovered_weights_HS = unrecovered_features + ["feature_Is amphibian", "feature_Is feline", "feature_Is vertebrate"]
-            # unrecovered_features_Act = unrecovered_features + ["feature_Has exoskeleton", "feature_Can fly", "feature_Lives on land", "feature_Lays eggs", "feature_Gives birth", "feature_Exhibits seasonal color changes", "feature_Can regenerate body parts"]
             unrecovered_weights_HS = [f"feature_{feat}" for feat in parameter_recovery_df.loc[parameter_recovery_df["R2_HS"] < 0.5, "Feature"]]
             unrecovered_weights_Act = [f"feature_{feat}" for feat in parameter_recovery_df.loc[parameter_recovery_df["R2_Activity"] < 0.5, "Feature"]]
             print(unrecovered_weights_HS)
