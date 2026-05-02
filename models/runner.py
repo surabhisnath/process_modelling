@@ -92,15 +92,6 @@ def run(config):
     modelobj = Model(config)
     print("NUM. UNIQUE, RESPONSES", len(modelobj.unique_responses))
 
-    # BLEUs = []
-    # for (train_sequences, test_sequences) in modelobj.splits:
-    #     for i in range(modelobj.numsubsamples):
-    #         train_sample = random.sample(train_sequences, k=len(test_sequences))
-    #         BLEUs.append(calculate_bleu([trseq[2:] for trseq in train_sample], [teseq[2:] for teseq in test_sequences]))
-    # true_bleu = {k: sum(d[k] for d in BLEUs) / len(BLEUs) for k in BLEUs[0]}
-    # print("TRUE BLEUS MEAN:", true_bleu)
-    # print("HUMAN BLEU SCORE =", 0.25 * true_bleu["bleu1"] + 0.25 * true_bleu["bleu2"] + 0.25 * true_bleu["bleu3"] + 0.25 * true_bleu["bleu4"])
-
     BLEUs = []
     for (train_sequences, test_sequences) in modelobj.splits:
         for i in range(modelobj.numsubsamples):
@@ -117,7 +108,6 @@ def run(config):
     print("HUMAN BLEU SCORE =", mean_human_bleu)
     print("HUMAN BLEU SE =", se_human_bleu)
     print("HUMAN BLEU SD =", sd_human_bleu)
-
  
     if config["ours"]:
         ours = Ours(modelobj)
